@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include "pslib_linux.h"
 
-
-
 int
 main()
 {
-  Pslib_Sysinfo *st;
-  st = get_sysinfo();
-  printf("Total ram : %ld\n", st->totalram);
+  DiskUsage du;
+  disk_usage("/", &du);
+  printf("total: %ld\nused: %ld\nfree: %ld\npercent: %f\n", du.total, du.used, du.free, du.percent);
   return 0;
 }
+
+
+

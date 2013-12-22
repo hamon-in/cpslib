@@ -1,15 +1,13 @@
 #ifndef __pslib_linux_h
 #define __pslib_linux_h
 
-typedef struct  {
-  unsigned long totalram;
-  unsigned long freeram;
-  unsigned long bufferram;
-  unsigned long sharedram;
-  unsigned long totalswap;
-  unsigned long freeswap;
-} Pslib_Sysinfo;
+typedef struct {
+  unsigned long total;
+  unsigned long used;
+  unsigned long free;
+  float percent;
+} DiskUsage;
 
-Pslib_Sysinfo* get_sysinfo();
 
+int disk_usage(char [], DiskUsage *);
 #endif

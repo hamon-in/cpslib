@@ -1,23 +1,20 @@
 #include <stdlib.h>
-#include <sys/sysinfo.h>
+#include <sys/statvfs.h>
+
 #include "pslib_linux.h"
+#include "common.h"
 
-Pslib_Sysinfo*
-get_sysinfo()
+int
+disk_usage(char path[], DiskUsage *ret) 
 {
-  struct sysinfo info;
-  Pslib_Sysinfo *pslib_sysinfo = (Pslib_Sysinfo*)malloc(sizeof(Pslib_Sysinfo));
-  if (sysinfo(&info) != 0) {
-    /* Error out over here */
-    ;
-  }
-  pslib_sysinfo->totalram  = info.totalram  * info.mem_unit;
-  pslib_sysinfo->freeram   = info.freeram   * info.mem_unit;
-  pslib_sysinfo->bufferram = info.bufferram * info.mem_unit;
-  pslib_sysinfo->sharedram = info.sharedram * info.mem_unit;
-  pslib_sysinfo->totalswap = info.totalswap * info.mem_unit;
-  pslib_sysinfo->freeswap  = info.freeswap  * info.mem_unit;
+  struct statvfs s;
+  statvfs(path, &s); /* TBD: Handle failure conditions properly */
 
-  return pslib_sysinfo;
+  ret->free = s.f_bavail * s.f_frsize;
+  ret->total = s.f_blocks * s.f_frsize;
+  ret->used = (s.f_blocks - s.f_bfree ) * s.f_frsize;
+  ret->percent = percentage(ret->used, ret->total);
+
+  return 0;
 }
 
