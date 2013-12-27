@@ -21,7 +21,7 @@ typedef struct {
 } DiskPartitionInfo;
 
 int disk_usage(char [], DiskUsage *);
-int disk_partitions(DiskPartitionInfo *);
+DiskPartitionInfo *disk_partitions();
 void free_disk_partition_info(DiskPartitionInfo *);
 #endif
 

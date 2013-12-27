@@ -21,15 +21,14 @@ disk_usage(char path[], DiskUsage *ret)
   return 0;
 }
 
-int 
-disk_partitions(DiskPartitionInfo *ret)
+DiskPartitionInfo *
+disk_partitions()
 {
   FILE *file = NULL;
   struct mntent *entry;
   int nparts = 5, c = 0;
-  DiskPartition *partitions = (DiskPartition *)malloc(sizeof(DiskPartition) * nparts);
-
-  memset(partitions, 0, sizeof(DiskPartition) * nparts); /* TBD: Handle allocation failure */
+  DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition) * nparts);
+  DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
   file = setmntent(MOUNTED, "r"); /* TBD: Handle null file */
   
   while ((entry = getmntent(file))) { /* TBD: Failure conditions here */
@@ -48,7 +47,7 @@ disk_partitions(DiskPartitionInfo *ret)
   ret->partitions = partitions;
   
   endmntent(file);
-  return 0;
+  return ret;
 }
 
 void
@@ -62,4 +61,5 @@ free_disk_partition_info(DiskPartitionInfo *dp)
     free(dp->partitions[i].opts);
   }
   free(dp->partitions);
+  free(dp);
 }
