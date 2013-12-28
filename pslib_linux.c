@@ -13,14 +13,17 @@ int
 disk_usage(char path[], DiskUsage *ret) 
 {
   struct statvfs s;
-  statvfs(path, &s); /* TBD: Handle failure conditions properly */
-
+  int r;
+  r = statvfs(path, &s); /* TBD: Handle failure conditions properly */
+  check(!r, "Error in calling statvfs for %s", path);
   ret->free = s.f_bavail * s.f_frsize;
   ret->total = s.f_blocks * s.f_frsize;
   ret->used = (s.f_blocks - s.f_bfree ) * s.f_frsize;
   ret->percent = percentage(ret->used, ret->total);
 
   return 0;
+ error:
+  return -1;
 }
 
 DiskPartitionInfo *
@@ -31,9 +34,13 @@ disk_partitions()
   int nparts = 5, c = 0;
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition) * nparts);
   DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
-  file = setmntent(MOUNTED, "r"); /* TBD: Handle null file */
-  
-  while ((entry = getmntent(file))) { /* TBD: Failure conditions here */
+  check_mem(partitions);
+  check_mem(ret);
+
+  file = setmntent(MOUNTED, "r");
+  check(file, "Couldn't open %s", MOUNTED);
+
+  while ((entry = getmntent(file))) { 
     partitions[c].device  = strdup(entry->mnt_fsname);
     partitions[c].mountpoint = strdup(entry->mnt_dir);
     partitions[c].fstype = strdup(entry->mnt_type);
@@ -42,6 +49,7 @@ disk_partitions()
     if (c == nparts) {
       nparts *= 2;
       partitions = realloc(partitions, sizeof(DiskPartition) * nparts); /* Handle allocation failures here */
+      check_mem(partitions);
     }
   }
 
@@ -50,6 +58,8 @@ disk_partitions()
   
   endmntent(file);
   return ret;
+ error:
+  return NULL;
 }
 
 void
@@ -72,6 +82,8 @@ disk_io_counters()
   const int sector_size = 512;
   
   FILE *fp = fopen("/proc/partitions", "r");
+  check(fp, "Couldn't open /proc/partitions");
+
   char *tmp;
   int i = 0, nparts = 0;
   size_t nmemb;
@@ -80,15 +92,19 @@ disk_io_counters()
   DiskIOCounters *counters = NULL;
   DiskIOCounters *ci = NULL;
   DiskIOCounterInfo *ret = (DiskIOCounterInfo *)calloc(1, sizeof(DiskIOCounterInfo));
+  check_mem(line);
+  check_mem(partitions);
+  check_mem(ret);
   while (fgets(line, 40, fp) != NULL) {
-    if (i++ < 2) {continue;}   
+    if (i++ < 2) {continue;}
     tmp = strtok(line, " \n"); /* major number */
     tmp = strtok(NULL, " \n"); /* minor number */
     tmp = strtok(NULL, " \n"); /* Number of blocks */
     tmp = strtok(NULL, " \n"); /* Name */
     if (isdigit(tmp[strlen(tmp)-1])) { /* Only partitions (i.e. skip things like 'sda')*/
       /* TBD: Skipping handling http://code.google.com/p/psutil/issues/detail?id=338 for now */
-      partitions[nparts] = strndup(tmp, 10); 
+      partitions[nparts] = strndup(tmp, 10);
+      check_mem(partitions[nparts]);
       nparts++; /* TBD: We can't handle more than 30 partitions now */
     }
   }
@@ -96,8 +112,10 @@ disk_io_counters()
   
   nmemb = nparts;
   counters = (DiskIOCounters *)calloc(nparts, sizeof(DiskIOCounters) * nparts);
+  check_mem(counters);
   ci = counters;
   fp = fopen("/proc/diskstats", "r");
+  check(fp, "Couldn't open /proc/diskstats");
   
   while (fgets(line, 120, fp) != NULL) {
     tmp = strtok(line, " \n"); /* major number (skip) */
@@ -105,6 +123,7 @@ disk_io_counters()
     tmp = strtok(NULL, " \n"); /* name */
     if (lfind(&tmp, partitions, &nmemb, sizeof(char *), str_comp)) {
       ci->name = strdup(tmp);
+      check_mem(ci->name);
 
       tmp = strtok(NULL, " \n"); /* reads completed successfully */
       ci->reads = strtoul(tmp, NULL, 10);
@@ -139,6 +158,8 @@ disk_io_counters()
   ret->nitems = nparts;
   ret->iocounters = counters;
   return ret;
+ error:
+  return NULL;
 }
 
 void
