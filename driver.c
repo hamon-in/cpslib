@@ -40,13 +40,14 @@ test_diskiocounters()
   dp = d->iocounters;
   int i;
   for (i = 0 ; i < d->nitems; i ++) {
-    printf("%s: ", dp->name);
-    printf("rbytes=%ld,", dp->readbytes);
-    printf("wbytes=%ld,", dp->writebytes);
-    printf("reads=%ld,", dp->reads);
-    printf("writes=%ld,", dp->writes);
-    printf("rtime=%ld,", dp->readtime);
-    printf("wtime=%ld\n", dp->writetime);
+    printf("%s: rbytes=%ld,wbytes=%ld,reads=%ld,writes=%ld,rtime=%ld,wtime=%ld\n",
+           dp->name,
+           dp->readbytes,
+           dp->writebytes,
+           dp->reads,
+           dp->writes,
+           dp->readtime,
+           dp->writetime);
     dp++;
   }
   free_disk_iocounter_info(d);
