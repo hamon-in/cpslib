@@ -20,8 +20,27 @@ typedef struct {
   DiskPartition *partitions;
 } DiskPartitionInfo;
 
+typedef struct {
+  char *name;
+  unsigned long readbytes;
+  unsigned long writebytes;
+  unsigned long reads;
+  unsigned long writes;
+  unsigned long readtime;
+  unsigned long writetime;
+} DiskIOCounters;
+
+typedef struct {
+  int nitems;
+  DiskIOCounters *iocounters;
+} DiskIOCounterInfo;
+
+
 int disk_usage(char [], DiskUsage *);
 DiskPartitionInfo *disk_partitions();
 void free_disk_partition_info(DiskPartitionInfo *);
+DiskIOCounterInfo *disk_io_counters();
+void free_disk_iocounter_info(DiskIOCounterInfo *);
+
 #endif
 
