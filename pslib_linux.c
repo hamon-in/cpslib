@@ -173,3 +173,80 @@ free_disk_iocounter_info(DiskIOCounterInfo *d)
   free(d);
 }
 
+NetIOCounterInfo *
+net_io_counters()
+{
+  FILE *fp = NULL;
+  NetIOCounterInfo *ret = (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
+  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters) * 15);
+  NetIOCounters *nc = counters;
+  int i = 0, ninterfaces = 0;
+  char *line = (char *)calloc(200, sizeof(char) * 200);
+  char *tmp = NULL;
+  check_mem(line);
+  check_mem(counters);
+  check_mem(ret);
+  fp = fopen("/proc/net/dev", "r");
+  check(fp, "Couldn't open /proc/net/dev");
+  
+  while (fgets(line, 150, fp) != NULL) {
+    if (i++ < 2) continue;
+
+    ninterfaces++;
+
+    tmp = strtok(line, " \n:"); /* Name */
+    nc->name = strdup(tmp);
+
+    tmp = strtok(NULL, " \n"); /* Bytes received 0*/
+    nc->bytes_recv = strtoul(tmp, NULL, 10);
+
+    tmp = strtok(NULL, " \n"); /* Packets received 1 */
+    nc->packets_recv = strtoul(tmp, NULL, 10);
+
+    tmp = strtok(NULL, " \n"); /* Errors in 2 */
+    nc->errin = strtoul(tmp, NULL, 10);
+
+    tmp = strtok(NULL, " \n"); /* Drops in 3 */
+    nc->dropin = strtoul(tmp, NULL, 10);
+
+    for (i = 0; i < 4; i++)  tmp = strtok(NULL, " \n"); /* Skip  4, 5, 6 and 7*/
+
+    tmp = strtok(NULL, " \n"); /* Bytes sent 8*/
+    nc->bytes_sent = strtoul(tmp, NULL, 10);
+
+    tmp = strtok(NULL, " \n"); /* Packets sent 9*/
+    nc->packets_sent = strtoul(tmp, NULL, 10);
+
+    tmp = strtok(NULL, " \n"); /* Errors out 9*/
+    nc->errout = strtoul(tmp, NULL, 10);
+
+    tmp = strtok(NULL, " \n"); /* Drops out 10*/
+    nc->dropout = strtoul(tmp, NULL, 10);
+    
+    nc++;
+  }
+
+  fclose(fp);
+  free(line);
+  ret->iocounters = counters;
+  ret->nitems = ninterfaces;
+  return ret;
+
+ error:
+  if (fp) fclose(fp);
+  if (line) free(line);
+  if (counters) free(counters);
+  if (nc) free(nc);
+  return NULL;
+}
+
+void
+free_net_iocounter_info(NetIOCounterInfo *d)
+{
+  int i;
+  for (i=0; i < d->nitems; i++) {
+    free(d->iocounters[i].name);
+  }
+  free(d->iocounters);
+  free(d);
+}

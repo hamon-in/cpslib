@@ -35,12 +35,33 @@ typedef struct {
   DiskIOCounters *iocounters;
 } DiskIOCounterInfo;
 
+typedef struct {
+  char * name;
+  unsigned long bytes_sent;
+  unsigned long bytes_recv;
+  unsigned long packets_sent;
+  unsigned long packets_recv;
+  unsigned long errin;
+  unsigned long errout;
+  unsigned long dropin;
+  unsigned long dropout;
+} NetIOCounters;
+
+typedef struct {
+  int nitems;
+  NetIOCounters *iocounters;
+} NetIOCounterInfo;
 
 int disk_usage(char [], DiskUsage *);
+
 DiskPartitionInfo *disk_partitions();
 void free_disk_partition_info(DiskPartitionInfo *);
+
 DiskIOCounterInfo *disk_io_counters();
 void free_disk_iocounter_info(DiskIOCounterInfo *);
+
+NetIOCounterInfo *net_io_counters();
+void free_net_iocounter_info(NetIOCounterInfo *);
 
 #endif
 
