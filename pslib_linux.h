@@ -13,7 +13,7 @@ typedef struct {
   char *mountpoint;
   char *fstype;
   char *opts;
-} DiskPartition;
+} DiskPartition; /* TBD: Pluralise */
 
 typedef struct {
   int nitems;
