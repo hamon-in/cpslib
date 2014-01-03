@@ -18,6 +18,10 @@ test_diskpartitioninfo()
   DiskPartitionInfo *dp;
   printf(" Disk partitions \n");
   dp = disk_partitions();
+  if (!dp) {
+    printf("Aborting\n");
+    return;
+  }
   printf("Partitions : %d\n", dp->nitems);
   for(i = 0; i < dp->nitems; i++)
     printf("%s %s %s %s\n", 
@@ -36,6 +40,11 @@ test_diskiocounters()
   DiskIOCounterInfo *d;
   DiskIOCounters *dp;
   d = disk_io_counters();
+  if (! d) {
+    printf("Aborting");
+    return;
+  }
+
   printf(" Disk IO Counters \n");
   dp = d->iocounters;
   int i;
@@ -87,6 +96,10 @@ test_getusers()
   int i;
   printf(" Logged in users \n");
   r = get_users();
+  if (! r) {
+    printf("Failed \n");
+    return;
+  }
   printf("Total: %d\n", r->nitems);
   for (i = 0; i < r->nitems; i++) {
     printf("%s  %s   %s   %f\n",
