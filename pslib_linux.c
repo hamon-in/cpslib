@@ -32,9 +32,10 @@ disk_partitions()
 {
   FILE *file = NULL;
   struct mntent *entry;
-  int nparts = 5, c = 0;
+  int nparts = 5;
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
   DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
+  DiskPartition *d = partitions;
   check_mem(partitions);
   check_mem(ret);
 
@@ -42,20 +43,24 @@ disk_partitions()
   check(file, "Couldn't open %s", MOUNTED);
 
   while ((entry = getmntent(file))) { 
-    partitions[c].device  = strdup(entry->mnt_fsname); /* TBD: Use a moving pointer  */
-    partitions[c].mountpoint = strdup(entry->mnt_dir); /* here rather than this */
-    partitions[c].fstype = strdup(entry->mnt_type);    /* indexing */
-    partitions[c].opts = strdup(entry->mnt_opts);
-    c++;
-    if (c == nparts) {
+    d->device  = strdup(entry->mnt_fsname); /* TBD: Use a moving pointer  */
+    d->mountpoint = strdup(entry->mnt_dir); /* here rather than this */
+    d->fstype = strdup(entry->mnt_type);    /* indexing */
+    d->opts = strdup(entry->mnt_opts);
+    
+    ret->nitems ++;
+    d++;
+
+    if (ret->nitems == nparts) {
       nparts *= 2;
       partitions = realloc(partitions, sizeof(DiskPartition) * nparts);
       check_mem(partitions);
+      ret->partitions = partitions;
+      d = ret->partitions + ret->nitems; /* Move the cursor to the correct
+                                            value in case the realloc moved
+                                            the memory */
     }
   }
-
-  ret->nitems = c;
-  ret->partitions = partitions;
   
   endmntent(file);
   return ret;
