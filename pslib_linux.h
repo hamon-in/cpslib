@@ -52,6 +52,19 @@ typedef struct {
   NetIOCounters *iocounters;
 } NetIOCounterInfo;
 
+typedef struct {
+  char *username;
+  char *tty;
+  char *hostname;
+  float tstamp;
+} Users;
+
+typedef struct {
+  int nitems;
+  Users *users;
+} UsersInfo;
+
+
 int disk_usage(char [], DiskUsage *);
 
 DiskPartitionInfo *disk_partitions();
@@ -62,6 +75,9 @@ void free_disk_iocounter_info(DiskIOCounterInfo *);
 
 NetIOCounterInfo *net_io_counters();
 void free_net_iocounter_info(NetIOCounterInfo *);
+
+UsersInfo *get_users();
+void free_users_info(UsersInfo *);
 
 #endif
 

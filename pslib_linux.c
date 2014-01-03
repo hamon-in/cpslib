@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/statvfs.h>
-
+#include <utmp.h>
 
 #include "pslib_linux.h"
 #include "common.h"
@@ -42,14 +42,14 @@ disk_partitions()
   check(file, "Couldn't open %s", MOUNTED);
 
   while ((entry = getmntent(file))) { 
-    partitions[c].device  = strdup(entry->mnt_fsname);
-    partitions[c].mountpoint = strdup(entry->mnt_dir);
-    partitions[c].fstype = strdup(entry->mnt_type);
+    partitions[c].device  = strdup(entry->mnt_fsname); /* TBD: Use a moving pointer  */
+    partitions[c].mountpoint = strdup(entry->mnt_dir); /* here rather than this */
+    partitions[c].fstype = strdup(entry->mnt_type);    /* indexing */
     partitions[c].opts = strdup(entry->mnt_opts);
     c++;
     if (c == nparts) {
       nparts *= 2;
-      partitions = realloc(partitions, sizeof(DiskPartition) * nparts); /* Handle allocation failures here */
+      partitions = realloc(partitions, sizeof(DiskPartition) * nparts);
       check_mem(partitions);
     }
   }
@@ -60,6 +60,12 @@ disk_partitions()
   endmntent(file);
   return ret;
  error:
+  /* TBD: ret not freed here It might be a good idea to just delegate
+     the freeing to the public freeing function. For this to work,
+     nitems should be correct. If we maintain that, we might be able
+     to drop the `c`. This holds true for all the Info style
+     structures. In short, make this the same as get_users.
+  */
   return NULL;
 }
 
@@ -227,7 +233,6 @@ net_io_counters()
     
     nc++;
   }
-
   fclose(fp);
   free(line);
   ret->iocounters = counters;
@@ -235,6 +240,7 @@ net_io_counters()
   return ret;
 
  error:
+  /* TBD: ret not freed here */
   if (fp) fclose(fp);
   if (line) free(line);
   if (counters) free(counters);
@@ -257,7 +263,62 @@ free_net_iocounter_info(NetIOCounterInfo *d)
 UsersInfo *
 get_users ()
 {
-  UsersInfo *retval = (UsersInfo *)calloc(1, sizeof(UsersInfo));
+  int nusers = 100;
+  UsersInfo *ret = (UsersInfo *)calloc(1, sizeof(UsersInfo));
+  Users *users = (Users *)calloc(nusers, sizeof(Users));
+  Users *u = users;
   struct utmp *ut;
+  check_mem(ret);
+  check_mem(users);
+  
+  ret->nitems = 0;
+  ret->users = users;
+  
+  while (NULL != (ut = getutent())) {
+    if (ut->ut_type != USER_PROCESS) 
+      continue;
+    u->username = strdup(ut->ut_user);
+    check_mem(u->username);
 
+    u->tty = strdup(ut->ut_line);
+    check_mem(u->username);
+
+    u->hostname = strdup(ut->ut_host);
+    check_mem(u->hostname);
+
+    u->tstamp = ut->ut_tv.tv_sec;
+    
+    ret->nitems++;
+    u++;
+    
+    if (ret->nitems == nusers) { /* More users than we've allocated space for. */
+      nusers *= 2;
+      users = realloc(users, sizeof(Users) * nusers);
+      check_mem(users);                                 
+      ret->users = users;
+      u = ret->users + ret->nitems; /* Move the cursor to the correct
+                                       value in case the realloc moved
+                                       the memory */
+    }
+  }
+  endutent();
+  return ret;
+
+ error:
+  return NULL;
+
+}
+
+void 
+free_users_info(UsersInfo * ui)
+{
+  Users *u = ui->users;
+  while (ui->nitems--) {
+    free(u->username);
+    free(u->tty);
+    free(u->hostname);
+    u++;
+  }
+  free(ui->users);
+  free(ui);
 }

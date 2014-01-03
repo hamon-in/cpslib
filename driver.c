@@ -80,13 +80,32 @@ test_netiocounters()
   printf("\n");
 }
 
+void
+test_getusers() 
+{
+  UsersInfo *r;
+  int i;
+  printf(" Logged in users \n");
+  r = get_users();
+  printf("Total: %d\n", r->nitems);
+  for (i = 0; i < r->nitems; i++) {
+    printf("%s  %s   %s   %f\n",
+           r->users[i].username,
+           r->users[i].tty,
+           r->users[i].hostname,
+           r->users[i].tstamp);
+  }
+  free_users_info(r);
+}
+
 int
 main()
 {
   /* test_diskusage(); */
   /* test_diskpartitioninfo(); */
   /* test_diskiocounters(); */
-  test_netiocounters();
+  /* test_netiocounters(); */
+  test_getusers();
   return 0;
 }
 
