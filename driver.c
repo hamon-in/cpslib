@@ -109,6 +109,7 @@ test_getusers()
            r->users[i].tstamp);
   }
   free_users_info(r);
+  printf("\n");
 }
 
 void
