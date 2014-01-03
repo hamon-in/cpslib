@@ -323,6 +323,7 @@ get_users ()
   return ret;
 
  error:
+  free_users_info(ret);
   return NULL;
 
 }
