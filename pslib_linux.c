@@ -129,7 +129,9 @@ disk_io_counters()
   ci = counters;
   fp = fopen("/proc/diskstats", "r");
   check(fp, "Couldn't open /proc/diskstats");
-  
+
+  ret->iocounters = counters;
+
   while (fgets(line, 120, fp) != NULL) {
     tmp = strtok(line, " \n"); /* major number (skip) */
     tmp = strtok(NULL, " \n"); /* minor number (skip) */
@@ -159,6 +161,7 @@ disk_io_counters()
       ci->writetime = strtoul(tmp, NULL, 10);
       
       ci++; /* TBD: Realloc here if necessary */
+      ret->nitems++;
     }
   }
 
@@ -168,10 +171,18 @@ disk_io_counters()
   free(line);
   fclose(fp);
 
-  ret->nitems = nparts;
-  ret->iocounters = counters;
   return ret;
+
  error:
+  if (fp) fclose(fp);
+  if (line) free(line);
+  if (partitions) {
+    for(i = 0; i < nparts; i++)
+      free(partitions[i]);
+    free(partitions);
+  }
+  free_disk_iocounter_info(ret);
+
   return NULL;
 }
 
