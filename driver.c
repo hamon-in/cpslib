@@ -62,7 +62,7 @@ test_netiocounters()
   int i;
   n = net_io_counters();
   dp = n->iocounters;
-  printf("%d\n", n->nitems);
+  printf("Interfaces: %d\n", n->nitems);
   for (i=0; i < n->nitems; i++) {
     printf("%s: bytes_sent=%ld bytes_rec=%ld packets_sen=%ld packets_rec=%ld erri=%ld errou=%ld dropi=%ld dropou=%ld \n", 
            dp->name,
