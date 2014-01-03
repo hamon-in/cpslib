@@ -39,6 +39,9 @@ disk_partitions()
   check_mem(partitions);
   check_mem(ret);
 
+  ret->nitems = 0;
+  ret->partitions = partitions;
+
   file = setmntent(MOUNTED, "r");
   check(file, "Couldn't open %s", MOUNTED);
 
@@ -61,16 +64,13 @@ disk_partitions()
                                             the memory */
     }
   }
-  
   endmntent(file);
   return ret;
+
  error:
-  /* TBD: ret not freed here It might be a good idea to just delegate
-     the freeing to the public freeing function. For this to work,
-     nitems should be correct. If we maintain that, we might be able
-     to drop the `c`. This holds true for all the Info style
-     structures. In short, make this the same as get_users.
-  */
+  if (file) 
+    endmntent(file);
+  free_disk_partition_info(ret);
   return NULL;
 }
 
