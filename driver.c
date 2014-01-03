@@ -111,6 +111,18 @@ test_getusers()
   free_users_info(r);
 }
 
+void
+test_boottime()
+{
+  unsigned long t = get_boot_time();
+  printf(" Boot time \n");
+  if (t == -1) {
+    printf("Aborting\n");
+    return;
+  }
+  printf("%ld\n", t);
+}
+
 int
 main()
 {

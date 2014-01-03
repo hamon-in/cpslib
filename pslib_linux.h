@@ -79,5 +79,7 @@ void free_net_iocounter_info(NetIOCounterInfo *);
 UsersInfo *get_users();
 void free_users_info(UsersInfo *);
 
+unsigned long int get_boot_time();
+
 #endif
 

@@ -341,3 +341,34 @@ free_users_info(UsersInfo * ui)
   free(ui->users);
   free(ui);
 }
+
+unsigned long int
+get_boot_time()
+{
+  FILE *fp = fopen("/proc/stat", "r");
+  char *line = (char *)calloc(200, sizeof(char));
+  char *tmp = NULL;
+  unsigned long ret = -1;
+  check(fp, "Couldn't open /proc/stat");
+  check_mem(line);
+
+  while (fgets(line, 150, fp)) {
+    if (strncmp(line, "btime", 5) == 0) {
+      strtok(line, " ");
+      tmp = strtok(NULL, "\n");
+      ret = strtoul(tmp, NULL, 10);
+      break;
+    }
+  }
+  check(ret != -1, "Couldn't find 'btime' line in /proc/stat");
+  fclose(fp);
+  free(line);
+  
+  return ret;
+  
+error:
+  if (fp) fclose(fp);
+  if (line) free(line);
+  if (tmp) free(tmp);
+  return -1;
+}
