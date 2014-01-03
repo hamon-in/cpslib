@@ -70,17 +70,18 @@ disk_partitions()
 }
 
 void
-free_disk_partition_info(DiskPartitionInfo *dp)
+free_disk_partition_info(DiskPartitionInfo *di)
 {
-  int i;
-  for(i = 0; i < dp->nitems; i++) {
-    free(dp->partitions[i].device);
-    free(dp->partitions[i].mountpoint);
-    free(dp->partitions[i].fstype);
-    free(dp->partitions[i].opts);
+  DiskPartition *d = di->partitions;
+  while(di->nitems--) {
+    free(d->device);
+    free(d->mountpoint);
+    free(d->fstype);
+    free(d->opts);
+    d++;
   }
-  free(dp->partitions);
-  free(dp);
+  free(di->partitions);
+  free(di);
 }
 
 DiskIOCounterInfo *
@@ -170,14 +171,15 @@ disk_io_counters()
 }
 
 void
-free_disk_iocounter_info(DiskIOCounterInfo *d)
+free_disk_iocounter_info(DiskIOCounterInfo *di)
 {
-  int i;
-  for (i=0; i < d->nitems; i++) {
-    free(d->iocounters[i].name);
+  DiskIOCounters *d = di->iocounters;
+  while (di->nitems--) {
+    free (d->name);
+    d++;
   }
-  free(d->iocounters);
-  free(d);
+  free(di->iocounters);
+  free(di);
 }
 
 NetIOCounterInfo *
