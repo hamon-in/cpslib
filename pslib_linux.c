@@ -1,10 +1,11 @@
-#include <search.h>
 #include <ctype.h>
 #include <mntent.h>
+#include <search.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/statvfs.h>
+
 
 #include "pslib_linux.h"
 #include "common.h"
@@ -252,3 +253,11 @@ free_net_iocounter_info(NetIOCounterInfo *d)
   free(d);
 }
 
+
+UsersInfo *
+get_users ()
+{
+  UsersInfo *retval = (UsersInfo *)calloc(1, sizeof(UsersInfo));
+  struct utmp *ut;
+
+}
