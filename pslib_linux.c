@@ -209,7 +209,8 @@ net_io_counters()
     tmp = strtok(NULL, " \n"); /* Drops in 3 */
     nc->dropin = strtoul(tmp, NULL, 10);
 
-    for (i = 0; i < 4; i++)  tmp = strtok(NULL, " \n"); /* Skip  4, 5, 6 and 7*/
+    for (i = 0; i < 4; i++)  
+      tmp = strtok(NULL, " \n"); /* Skip  4, 5, 6 and 7*/
 
     tmp = strtok(NULL, " \n"); /* Bytes sent 8*/
     nc->bytes_sent = strtoul(tmp, NULL, 10);
@@ -250,3 +251,4 @@ free_net_iocounter_info(NetIOCounterInfo *d)
   free(d->iocounters);
   free(d);
 }
+
