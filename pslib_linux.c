@@ -32,7 +32,7 @@ disk_partitions()
   FILE *file = NULL;
   struct mntent *entry;
   int nparts = 5, c = 0;
-  DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition) * nparts);
+  DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
   DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
   check_mem(partitions);
   check_mem(ret);
@@ -87,8 +87,8 @@ disk_io_counters()
   char *tmp;
   int i = 0, nparts = 0;
   size_t nmemb;
-  char *line = (char *)calloc(150, sizeof(char) * 150);
-  char **partitions = (char **)calloc(30, sizeof(char *) * 30);
+  char *line = (char *)calloc(150, sizeof(char));
+  char **partitions = (char **)calloc(30, sizeof(char *));
   DiskIOCounters *counters = NULL;
   DiskIOCounters *ci = NULL;
   DiskIOCounterInfo *ret = (DiskIOCounterInfo *)calloc(1, sizeof(DiskIOCounterInfo));
@@ -111,7 +111,7 @@ disk_io_counters()
   fclose(fp);
   
   nmemb = nparts;
-  counters = (DiskIOCounters *)calloc(nparts, sizeof(DiskIOCounters) * nparts);
+  counters = (DiskIOCounters *)calloc(nparts, sizeof(DiskIOCounters));
   check_mem(counters);
   ci = counters;
   fp = fopen("/proc/diskstats", "r");
@@ -178,10 +178,10 @@ net_io_counters()
 {
   FILE *fp = NULL;
   NetIOCounterInfo *ret = (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
-  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters) * 15);
+  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
   NetIOCounters *nc = counters;
   int i = 0, ninterfaces = 0;
-  char *line = (char *)calloc(200, sizeof(char) * 200);
+  char *line = (char *)calloc(200, sizeof(char));
   char *tmp = NULL;
   check_mem(line);
   check_mem(counters);
