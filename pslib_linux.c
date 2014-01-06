@@ -15,7 +15,7 @@ disk_usage(char path[], DiskUsage *ret)
 {
   struct statvfs s;
   int r;
-  r = statvfs(path, &s); /* TBD: Handle failure conditions properly */
+  r = statvfs(path, &s); 
   check(r == 0, "Error in calling statvfs for %s", path);
   ret->free = s.f_bavail * s.f_frsize;
   ret->total = s.f_blocks * s.f_frsize;
