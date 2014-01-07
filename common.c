@@ -10,7 +10,6 @@ percentage(unsigned long int n, unsigned long int d)
 }
 
 
-
 int
 str_comp(const void *key, const void *memb) 
 {
@@ -18,3 +17,9 @@ str_comp(const void *key, const void *memb)
   const char **b = (const char **)memb;
   return strcmp(*a, *b);
 }
+
+  
+/* TBD : Write something to extract fields from a string */
+  
+  
+  
