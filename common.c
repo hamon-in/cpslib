@@ -18,6 +18,17 @@ str_comp(const void *key, const void *memb)
   return strcmp(*a, *b);
 }
 
+int
+int_comp(const void *key, const void *memb) 
+{
+  const int a = *(int *)key;
+  const int b = *(int *)memb;
+  if (a == b) 
+    return 0;
+  else
+    return -1;
+}
+
   
 /* TBD : Write something to extract fields from a string */
   

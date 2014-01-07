@@ -3,6 +3,7 @@
 
 float percentage(unsigned long int, unsigned long int);
 int str_comp(const void *, const void *);
+int int_comp(const void *, const void *);
 
 #include <stdio.h>
 #include <errno.h>
