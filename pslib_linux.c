@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/statvfs.h>
+#include <sys/sysinfo.h>
 #include <utmp.h>
 
 #include "pslib_linux.h"
@@ -370,5 +371,59 @@ error:
   if (fp) fclose(fp);
   if (line) free(line);
   if (tmp) free(tmp);
+  return -1;
+}
+
+int 
+virtual_memory(VmemInfo *ret) 
+{
+  struct sysinfo info;
+  FILE *fp = NULL;
+  unsigned long long totalram, freeram, bufferram;
+  unsigned long long cached = -1, active = -1, inactive = -1;
+  char *line = (char *)calloc(50, sizeof(char));
+  check_mem(line);
+  check(sysinfo(&info) == 0, "sysinfo failed");
+  totalram  = info.totalram  * info.mem_unit;
+  freeram   = info.freeram  * info.mem_unit;
+  bufferram = info.bufferram  * info.mem_unit;
+  
+  fp = fopen("/proc/meminfo", "r");
+  check(fp, "Couldn't open /proc/meminfo");
+  while (fgets(line, 40, fp) != NULL) {
+    if (strncmp(line, "Cached:", 7) == 0){
+      strtok(line, ":"); /* Drop "Cached:" */
+      cached = strtoull(strtok(NULL, " "), NULL, 10);
+    }
+    if (strncmp(line, "Active:", 7) == 0){
+      strtok(line, ":"); /* Drop "Active:" */
+      active = strtoull(strtok(NULL, " "), NULL, 10);
+    }
+    if (strncmp(line, "Inactive:", 7) == 0){
+      strtok(line, ":"); /* Drop "Inactive:" */
+      inactive = strtoull(strtok(NULL, " "), NULL, 10);
+    }
+  }
+  if (cached == -1 || active == -1 || inactive == -1) {
+    log_warn("Couldn't determine 'cached', 'active' and 'inactive' memory stats. Setting them to 0");
+    cached = active = inactive = 0;
+  }
+  fclose(fp);
+  free(line);
+
+  ret->total = totalram;
+  ret->available = freeram + bufferram + cached;
+  ret->percent = percentage((totalram - ret->available), totalram);
+  ret->used = totalram - freeram;
+  ret->free = freeram;
+  ret->active = active;
+  ret->inactive = inactive;
+  ret->buffers = bufferram;
+  ret->cached = cached;
+
+  return 0;
+ error:
+  if(fp) fclose(fp);
+  if (line) free(line);
   return -1;
 }

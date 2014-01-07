@@ -64,6 +64,17 @@ typedef struct {
   Users *users;
 } UsersInfo;
 
+typedef struct {
+  unsigned long total;
+  unsigned long available;
+  float percent;
+  unsigned long used;
+  unsigned long free;
+  unsigned long active;
+  unsigned long inactive;
+  unsigned long buffers;
+  unsigned long cached;
+} VmemInfo;
 
 int disk_usage(char [], DiskUsage *);
 
@@ -80,6 +91,8 @@ UsersInfo *get_users();
 void free_users_info(UsersInfo *);
 
 unsigned long int get_boot_time();
+
+int virtual_memory(VmemInfo *);
 
 #endif
 
