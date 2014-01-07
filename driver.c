@@ -121,17 +121,41 @@ test_boottime()
     printf("Aborting\n");
     return;
   }
-  printf("%ld\n", t);
+  printf("%ld\n\n", t);
 }
+
+void
+test_virtualmeminfo()
+{
+  VmemInfo r;
+  int t = virtual_memory(&r);
+  if (t == -1) {
+    printf("Aborting\n");
+    return;
+  }
+  printf(" Virtual memory\n");
+  printf("Total: %lu\n", r.total);
+  printf("Available: %lu\n", r.available);
+  printf("Percent: %f\n", r.percent);
+  printf("Used: %lu\n", r.used);
+  printf("Free: %lu\n", r.free);
+  printf("Active: %lu\n", r.active);
+  printf("Inactive: %lu\n", r.inactive);
+  printf("Buffers: %lu\n", r.buffers);
+  printf("Cached: %lu\n", r.cached);
+}
+
 
 int
 main()
 {
-  /* test_diskusage(); */
-  /* test_diskpartitioninfo(); */
-  /* test_diskiocounters(); */
-  /* test_netiocounters(); */
+  test_diskusage();
+  test_diskpartitioninfo();
+  test_diskiocounters();
+  test_netiocounters();
   test_getusers();
+  test_boottime();
+  test_virtualmeminfo();
   return 0;
 }
 
