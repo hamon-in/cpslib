@@ -46,9 +46,9 @@ disk_partitions()
   check(file, "Couldn't open %s", MOUNTED);
 
   while ((entry = getmntent(file))) { 
-    d->device  = strdup(entry->mnt_fsname); /* TBD: Use a moving pointer  */
-    d->mountpoint = strdup(entry->mnt_dir); /* here rather than this */
-    d->fstype = strdup(entry->mnt_type);    /* indexing */
+    d->device  = strdup(entry->mnt_fsname); 
+    d->mountpoint = strdup(entry->mnt_dir); 
+    d->fstype = strdup(entry->mnt_type);    
     d->opts = strdup(entry->mnt_opts);
     
     ret->nitems ++;
