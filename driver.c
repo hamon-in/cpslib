@@ -146,16 +146,32 @@ test_virtualmeminfo()
 }
 
 
+void
+test_cpu_count()
+{
+  int logical;
+  int physical;
+  logical = cpu_count(1);
+  physical = cpu_count(0);
+  printf(" CPU count \n");
+  if (logical == -1 || physical == -1) {
+    printf("Aborting\n");
+    return;
+  }
+  printf("Logical : %d\nPhysical : %d\n", logical ,physical);
+}
+
 int
 main()
 {
-  test_diskusage();
-  test_diskpartitioninfo();
-  test_diskiocounters();
-  test_netiocounters();
-  test_getusers();
-  test_boottime();
-  test_virtualmeminfo();
+  /* test_diskusage(); */
+  /* test_diskpartitioninfo(); */
+  /* test_diskiocounters(); */
+  /* test_netiocounters(); */
+  /* test_getusers(); */
+  /* test_boottime(); */
+  /* test_virtualmeminfo(); */
+  test_cpu_count();
   return 0;
 }
 
