@@ -6,13 +6,43 @@
 #include <string.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <utmp.h>
 
 
-#include "pslib_linux.h"
+#include "pslib.h"
 #include "common.h"
 
+/* TBD : Generic function to get field from a line in a file that starts with something */
+
+/* Internal functions */
+static unsigned int
+get_ppid(unsigned pid) 
+{
+  FILE *fp;
+  unsigned int ppid = -1;
+  char procfile[50];
+  char line[150];
+
+  sprintf(procfile,"/proc/%d/status", pid);
+  fp = fopen(procfile,"r");
+  check(fp, "Couldn't open process status file");
+
+  while (fgets(line, 120, fp) != NULL) {
+    if (strncasecmp(line, "PPid:", 5) == 0){
+      strtok(line, ":");
+      ppid = strtoul(strtok(NULL, " "), NULL, 10);
+    }
+  }
+  check(ppid != -1, "Couldnt' find Ppid in process status file");
+  return ppid;
+ error:
+  return -1;
+}
+
+
+/* Public functions */
 int
 disk_usage(char path[], DiskUsage *ret) 
 {
@@ -466,6 +496,7 @@ physical_cpu_count()
         id++;
         nprocs += 1;
       } else {
+        ;
       }
     }
   }
@@ -489,4 +520,14 @@ cpu_count(int logical)
     return physical_cpu_count();
   }
   return ret;
+}
+
+
+Process *
+get_process(unsigned pid) 
+{
+  Process *retval = calloc(1, sizeof(Process));
+  retval->pid = pid;
+  retval->ppid = get_ppid(pid);
+  return retval;
 }

@@ -1,5 +1,7 @@
 #include <stdio.h>
-#include "pslib_linux.h"
+#include <sys/types.h>
+#include <unistd.h>
+#include "pslib.h"
 
 void
 test_diskusage()
@@ -161,6 +163,14 @@ test_cpu_count()
   printf("Logical : %d\nPhysical : %d\n", logical ,physical);
 }
 
+void test_process()
+{
+  pid_t pid = getpid();
+  Process *process = get_process(pid);
+  printf("pid %d\n",process->pid);
+  printf("ppid %d\n",process->ppid);
+}
+
 int
 main()
 {
@@ -171,7 +181,8 @@ main()
   /* test_getusers(); */
   /* test_boottime(); */
   /* test_virtualmeminfo(); */
-  test_cpu_count();
+  /* test_cpu_count(); */
+  test_process();
   return 0;
 }
 
