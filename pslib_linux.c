@@ -20,24 +20,24 @@
 static unsigned int
 get_ppid(unsigned pid) 
 {
-  FILE *fp;
+  FILE *fp = NULL;
   unsigned int ppid = -1;
+  char *tmp;
   char procfile[50];
-  char line[150];
 
   sprintf(procfile,"/proc/%d/status", pid);
   fp = fopen(procfile,"r");
   check(fp, "Couldn't open process status file");
+  tmp = grep_awk(fp, "PPid", 1, ":");
+  ppid = tmp?strtoul(tmp, NULL, 10):-1;
 
-  while (fgets(line, 120, fp) != NULL) {
-    if (strncasecmp(line, "PPid:", 5) == 0){
-      strtok(line, ":");
-      ppid = strtoul(strtok(NULL, " "), NULL, 10);
-    }
-  }
   check(ppid != -1, "Couldnt' find Ppid in process status file");
+  fclose(fp);
+  free(tmp);
+
   return ppid;
  error:
+  if (fp) fclose(fp);
   return -1;
 }
 
@@ -531,3 +531,4 @@ get_process(unsigned pid)
   retval->ppid = get_ppid(pid);
   return retval;
 }
+

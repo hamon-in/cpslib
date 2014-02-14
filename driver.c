@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include "pslib.h"
@@ -169,6 +170,7 @@ void test_process()
   Process *process = get_process(pid);
   printf("pid %d\n",process->pid);
   printf("ppid %d\n",process->ppid);
+  free(process);
 }
 
 int
