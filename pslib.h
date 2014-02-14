@@ -76,6 +76,23 @@ typedef struct {
   unsigned long cached;
 } VmemInfo;
 
+typedef struct {
+  unsigned int pid;
+  unsigned int ppid;
+  char *name;
+  char *exe;
+  char *cmdline;
+  unsigned long create_time;
+  unsigned int uid;
+  unsigned int euid;
+  unsigned int suid;
+  unsigned int gid;
+  unsigned int egid;
+  unsigned int sgid;
+  char *username;
+  char *terminal;
+} Process;
+
 int disk_usage(char [], DiskUsage *);
 
 DiskPartitionInfo *disk_partitions();
@@ -98,7 +115,7 @@ int cpu_count(int);
 int logical_cpu_count();
 int physical_cpu_count();
 
-
+Process *get_process(unsigned int);
 
 #endif
 
