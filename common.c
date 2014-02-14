@@ -1,5 +1,9 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+#include "common.h"
 
 float
 percentage(unsigned long int n, unsigned long int d)
@@ -30,7 +34,30 @@ int_comp(const void *key, const void *memb)
 }
 
   
-/* TBD : Write something to extract fields from a string */
-  
-  
+char *
+grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
+{
+  char *line = (char *)calloc(500, sizeof(char));
+  check_mem(line);
+  char *ret = NULL;
+  int i;
+  while (fgets(line, 400, fp) != NULL) {
+    if (strncasecmp(line, fstr, strlen(fstr)) == 0){
+      ret = strtok(line, delim);
+      for (i = 0; i < nfield; i++) {
+        ret = strtok(NULL, delim);
+      }
+      if (ret) {
+        ret = strdup(ret);
+        check_mem(ret);
+        free(line);
+        return ret;
+      }
+    }
+  }
+  free(line);
+  return NULL;
+ error:
+  return NULL;
+}  
   
