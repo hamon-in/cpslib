@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
 #include <sys/types.h>
@@ -73,11 +74,21 @@ get_exe(unsigned pid)
   char procfile[50];
   ssize_t ret;
   unsigned int bufsize = 1024;
+  struct stat buf;
 
   sprintf(procfile,"/proc/%d/exe", pid);
   tmp = calloc(bufsize, sizeof(char));
   check_mem(tmp);
   ret = readlink(procfile, tmp, bufsize - 1);
+  if (ret == -1 && errno == ENOENT) {
+    if (lstat(procfile, &buf) == 0) {
+      debug("Probably a system process. No executable");
+      strcpy(tmp, "");
+      return tmp;
+    } else {
+      sentinel("No such process");
+    }
+  }
   check(ret != -1, "Couldn't expand symbolic link");
   while(ret == bufsize -1 ) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
