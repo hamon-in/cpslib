@@ -105,6 +105,28 @@ get_exe(unsigned pid)
   return NULL;
 }
 
+static char *
+get_cmdline(unsigned int pid)
+{
+  FILE *fp = NULL;
+  char procfile[50];
+  char *contents = NULL;
+  size_t size = 0;
+
+  sprintf(procfile,"/proc/%d/cmdline", pid);
+  fp = fopen(procfile, "r");
+  check(fp, "Couldn't open process cmdline file");
+  size = getline(&contents, &size, fp); /*size argument unused since *contents is NULL */
+  check(size != -1, "Couldn't read command line from /proc");
+  fclose(fp);
+  return contents;
+  
+ error:
+  if (fp) fclose(fp);
+  if (contents) free(contents);
+  return NULL;
+}
+
 /* Public functions */
 int
 disk_usage(char path[], DiskUsage *ret) 
@@ -594,6 +616,7 @@ get_process(unsigned pid)
   retval->ppid = get_ppid(pid);
   retval->name = get_procname(pid);
   retval->exe = get_exe(pid);
+  retval->cmdline = get_cmdline(pid);
   return retval;
 }
 
@@ -603,5 +626,6 @@ free_process(Process *p)
 {
   free(p->name);
   free(p->exe);
+  free(p->cmdline);
   free(p);
 }

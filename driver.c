@@ -172,6 +172,7 @@ void test_process()
   printf("ppid %d\n",process->ppid);
   printf("name %s\n",process->name);
   printf("exe %s\n",process->exe);
+  printf("cmdline %s\n",process->cmdline);
   free_process(process);
 }
 
