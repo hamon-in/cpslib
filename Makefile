@@ -16,7 +16,7 @@ common.o: common.c common.h
 	gcc -D${PLATFORM}  ${CFLAGS}  -O3 -c common.c -lm -o common.o
 
 clean:
-	rm -f *.o a.out
+	rm -f *.o a.out driver
 
 check-syntax:
 	gcc -Wall -o nul -S ${CHK_SOURCES}
