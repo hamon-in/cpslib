@@ -65,6 +65,35 @@ get_procname(unsigned pid)
   return NULL;
 }
 
+static char *
+get_exe(unsigned pid) 
+{
+  FILE *fp = NULL;
+  char *tmp = NULL;
+  char procfile[50];
+  ssize_t ret;
+  unsigned int bufsize = 1024;
+
+  sprintf(procfile,"/proc/%d/exe", pid);
+  tmp = calloc(bufsize, sizeof(char));
+  check_mem(tmp);
+  ret = readlink(procfile, tmp, bufsize - 1);
+  check(ret != -1, "Couldn't expand symbolic link");
+  while(ret == bufsize -1 ) {
+    /* Buffer filled. Might be incomplete. Increase size and try again. */
+    bufsize *= 2;
+    tmp = realloc(tmp, bufsize);
+    ret = readlink(procfile, tmp, bufsize - 1);
+    check(ret != -1, "Couldn't expand symbolic link");
+  }
+  tmp[ret] = '\0';
+  return tmp;
+ error:
+  if (fp) fclose(fp);
+  if (tmp) free(tmp);
+  return NULL;
+}
+
 /* Public functions */
 int
 disk_usage(char path[], DiskUsage *ret) 
@@ -553,6 +582,7 @@ get_process(unsigned pid)
   retval->pid = pid;
   retval->ppid = get_ppid(pid);
   retval->name = get_procname(pid);
+  retval->exe = get_exe(pid);
   return retval;
 }
 
@@ -561,5 +591,6 @@ void
 free_process(Process *p) 
 {
   free(p->name);
+  free(p->exe);
   free(p);
 }
