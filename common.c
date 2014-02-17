@@ -60,4 +60,25 @@ grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
  error:
   return NULL;
 }  
-  
+
+char * 
+squeeze(char *string, char *chars) 
+{
+  char *src = string;
+  char *target = string;
+  char ch;
+  for(;*chars; chars++) {
+    ch =*chars;
+    src = string;
+    target = string;
+    while(*src != '\0') {
+      if (*src != ch) {
+        *target = *src;
+        target++;
+       }
+      src++;
+    }
+    *target='\0';
+  }
+  return string;
+}

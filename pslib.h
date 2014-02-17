@@ -116,6 +116,7 @@ int logical_cpu_count();
 int physical_cpu_count();
 
 Process *get_process(unsigned int);
+void free_process(Process *);
 
 #endif
 

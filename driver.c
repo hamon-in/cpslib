@@ -170,7 +170,8 @@ void test_process()
   Process *process = get_process(pid);
   printf("pid %d\n",process->pid);
   printf("ppid %d\n",process->ppid);
-  free(process);
+  printf("name %s\n",process->name);
+  free_process(process);
 }
 
 int

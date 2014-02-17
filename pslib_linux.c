@@ -41,6 +41,29 @@ get_ppid(unsigned pid)
   return -1;
 }
 
+static char *
+get_procname(unsigned pid)
+{
+  FILE *fp = NULL;
+  char *tmp;
+  char procfile[50];
+  char line[350];
+
+  sprintf(procfile,"/proc/%d/stat", pid);
+  fp = fopen(procfile,"r");
+  check(fp, "Couldn't open process status file");
+  fgets(line, 300, fp);
+  fclose(fp);
+
+  tmp = strtok(line, " ");
+  tmp = strtok(NULL, " "); /* Name field */
+  tmp = squeeze(tmp, "()");
+
+  return strdup(tmp);
+ error:
+  if (fp) fclose(fp);
+  return NULL;
+}
 
 /* Public functions */
 int
@@ -529,6 +552,14 @@ get_process(unsigned pid)
   Process *retval = calloc(1, sizeof(Process));
   retval->pid = pid;
   retval->ppid = get_ppid(pid);
+  retval->name = get_procname(pid);
   return retval;
 }
 
+
+void 
+free_process(Process *p) 
+{
+  free(p->name);
+  free(p);
+}
