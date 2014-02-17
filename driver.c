@@ -146,6 +146,7 @@ test_virtualmeminfo()
   printf("Inactive: %lu\n", r.inactive);
   printf("Buffers: %lu\n", r.buffers);
   printf("Cached: %lu\n", r.cached);
+  printf("\n");
 }
 
 
@@ -162,31 +163,35 @@ test_cpu_count()
     return;
   }
   printf("Logical : %d\nPhysical : %d\n", logical ,physical);
+  printf("\n");
 }
 
 void test_process()
 {
   pid_t pid = getpid();
   Process *process = get_process(pid);
+  printf(" Process information \n");
   printf("pid %d\n",process->pid);
   printf("ppid %d\n",process->ppid);
   printf("name %s\n",process->name);
   printf("exe %s\n",process->exe);
   printf("cmdline %s\n",process->cmdline);
+
+  printf("\n");
   free_process(process);
 }
 
 int
 main()
 {
-  /* test_diskusage(); */
-  /* test_diskpartitioninfo(); */
-  /* test_diskiocounters(); */
-  /* test_netiocounters(); */
-  /* test_getusers(); */
-  /* test_boottime(); */
-  /* test_virtualmeminfo(); */
-  /* test_cpu_count(); */
+  test_diskusage();
+  test_diskpartitioninfo();
+  test_diskiocounters();
+  test_netiocounters();
+  test_getusers();
+  test_boottime();
+  test_virtualmeminfo();
+  test_cpu_count();
   test_process();
   return 0;
 }
