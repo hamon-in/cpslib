@@ -127,6 +127,25 @@ get_cmdline(unsigned int pid)
   return NULL;
 }
 
+static unsigned long
+get_create_time(unsigned int pid)
+{
+  FILE *fp = NULL;
+  char procfile[50];
+  char *contents = NULL;
+  size_t size = 0;
+
+  sprintf(procfile,"/proc/%d/stat", pid);
+  fp = fopen(procfile, "r");
+  check(fp, "Couldn't open process stat file");
+  size = getline(&contents, &size, fp); /* size argument unused */
+  
+ error:
+  if (fp) fclose(fp);
+  if (contents) free(contents);
+  return -1;
+}
+
 /* Public functions */
 int
 disk_usage(char path[], DiskUsage *ret) 
@@ -617,6 +636,7 @@ get_process(unsigned pid)
   retval->name = get_procname(pid);
   retval->exe = get_exe(pid);
   retval->cmdline = get_cmdline(pid);
+  retval->create_time = get_create_time(pid);
   return retval;
 }
 
