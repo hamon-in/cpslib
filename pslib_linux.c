@@ -146,6 +146,43 @@ get_create_time(unsigned int pid)
   return -1;
 }
 
+static unsigned int *
+get_uids(unsigned int pid)
+{
+  FILE *fp = NULL;
+  char *tmp;
+  char procfile[50];
+  char line[400];  
+  unsigned int* retval = NULL;
+
+  sprintf(procfile,"/proc/%d/status", pid);
+  fp = fopen(procfile,"r");
+  check(fp, "Couldn't open process status file");
+  while (fgets(line, 399, fp) != NULL) {
+    if (strncmp(line, "Uid:", 4) == 0) {
+      retval = (unsigned int *)calloc(3, sizeof(unsigned int));
+      check_mem(retval);
+      tmp = strtok(line, "\t");
+      tmp = strtok(NULL, "\t");
+      retval[0] = strtoul(tmp, NULL, 10); /* Real UID */
+      tmp = strtok(NULL, "\t");
+      retval[1] = strtoul(tmp, NULL, 10); /* Effective UID */
+      tmp = strtok(NULL, "\t");
+      retval[2] = strtoul(tmp, NULL, 10); /* Saved UID */
+      break;
+    }
+  }
+
+  check(retval != NULL, "Couldnt' find Uid in process status file");
+  fclose(fp);
+
+  return retval;
+ error:
+  if (fp) fclose(fp);
+  return NULL;
+}
+
+
 /* Public functions */
 int
 disk_usage(char path[], DiskUsage *ret) 
@@ -631,12 +668,19 @@ Process *
 get_process(unsigned pid) 
 {
   Process *retval = calloc(1, sizeof(Process));
+  unsigned int *uids;
   retval->pid = pid;
   retval->ppid = get_ppid(pid);
   retval->name = get_procname(pid);
   retval->exe = get_exe(pid);
   retval->cmdline = get_cmdline(pid);
   retval->create_time = get_create_time(pid);
+  uids = get_uids(pid);
+  retval->uid = uids[0];
+  retval->euid = uids[1];
+  retval->suid = uids[2];
+
+  free(uids);
   return retval;
 }
 
