@@ -182,6 +182,7 @@ void test_process()
   printf("Real gid %d\n", process->gid);
   printf("Effective gid %d\n", process->egid);
   printf("Saved gid %d\n", process->sgid);
+  printf("Username %s\n", process->username);
   printf("\n");
   free_process(process);
 }

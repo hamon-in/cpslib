@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <mntent.h>
+#include <pwd.h>
 #include <search.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -183,6 +184,19 @@ get_ids(unsigned int pid, const char *field)
   return NULL;
 }
 
+static char *
+get_username(unsigned int ruid)
+{
+  struct passwd *ret = NULL;
+  char *username = NULL;
+  ret = getpwuid(ruid);
+  check(ret, "Couldn't access passwd database for entry %d", ruid);
+  username = strdup(ret->pw_name);
+  check(username, "Couldn't allocate memory for name");
+  return username;
+ error:
+  return NULL;
+}
 
 
 
@@ -684,8 +698,10 @@ get_process(unsigned pid)
     retval->uid = uids[0];
     retval->euid = uids[1];
     retval->suid = uids[2];
+    retval->username = get_username(retval->uid); /* Uses real uid and not euid */
   } else {
     retval->uid = retval->euid = retval->suid = 0;
+    retval->username = NULL;
   }
 
   gids = get_ids(pid, "Gid:");
@@ -696,7 +712,6 @@ get_process(unsigned pid)
   } else {
     retval->uid = retval->euid = retval->suid = 0;
   }
-
 
   if (uids) free(uids);
   if (gids) free(gids);
@@ -710,5 +725,6 @@ free_process(Process *p)
   free(p->name);
   free(p->exe);
   free(p->cmdline);
+  free(p->username);
   free(p);
 }
