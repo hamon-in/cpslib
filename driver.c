@@ -168,7 +168,7 @@ test_cpu_count()
 
 void test_process()
 {
-  pid_t pid = 686; /*getpid(); */
+  pid_t pid = getpid();
   Process *process = get_process(pid);
   printf(" Process information \n");
   printf("pid %d\n",process->pid);
@@ -179,6 +179,9 @@ void test_process()
   printf("Real uid %d\n", process->uid);
   printf("Effective uid %d\n", process->euid);
   printf("Saved uid %d\n", process->suid);
+  printf("Real gid %d\n", process->gid);
+  printf("Effective gid %d\n", process->egid);
+  printf("Saved gid %d\n", process->sgid);
   printf("\n");
   free_process(process);
 }

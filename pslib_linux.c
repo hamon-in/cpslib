@@ -147,7 +147,8 @@ get_create_time(unsigned int pid)
 }
 
 static unsigned int *
-get_uids(unsigned int pid)
+get_ids(unsigned int pid, const char *field)
+/* field parameter is used to determine which line to parse (Uid or Gid) */
 {
   FILE *fp = NULL;
   char *tmp;
@@ -159,7 +160,7 @@ get_uids(unsigned int pid)
   fp = fopen(procfile,"r");
   check(fp, "Couldn't open process status file");
   while (fgets(line, 399, fp) != NULL) {
-    if (strncmp(line, "Uid:", 4) == 0) {
+    if (strncmp(line, field, 4) == 0) {
       retval = (unsigned int *)calloc(3, sizeof(unsigned int));
       check_mem(retval);
       tmp = strtok(line, "\t");
@@ -181,6 +182,8 @@ get_uids(unsigned int pid)
   if (fp) fclose(fp);
   return NULL;
 }
+
+
 
 
 /* Public functions */
@@ -668,19 +671,35 @@ Process *
 get_process(unsigned pid) 
 {
   Process *retval = calloc(1, sizeof(Process));
-  unsigned int *uids;
+  unsigned int *uids = NULL;
+  unsigned int *gids = NULL;
   retval->pid = pid;
   retval->ppid = get_ppid(pid);
   retval->name = get_procname(pid);
   retval->exe = get_exe(pid);
   retval->cmdline = get_cmdline(pid);
   retval->create_time = get_create_time(pid);
-  uids = get_uids(pid);
-  retval->uid = uids[0];
-  retval->euid = uids[1];
-  retval->suid = uids[2];
+  uids = get_ids(pid, "Uid:");
+  if (uids) {
+    retval->uid = uids[0];
+    retval->euid = uids[1];
+    retval->suid = uids[2];
+  } else {
+    retval->uid = retval->euid = retval->suid = 0;
+  }
 
-  free(uids);
+  gids = get_ids(pid, "Gid:");
+  if (uids) {
+    retval->gid = gids[0];
+    retval->egid = gids[1];
+    retval->sgid = gids[2];
+  } else {
+    retval->uid = retval->euid = retval->suid = 0;
+  }
+
+
+  if (uids) free(uids);
+  if (gids) free(gids);
   return retval;
 }
 
