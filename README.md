@@ -10,3 +10,25 @@ The top level header file `cpslib.h` has all the constants and structures necess
  * I'm unsure about the types I've used in the wrapper functions. I've indiscriminately used basic numeric types for various system parameters like process id etc. 
 
 
+# Status of implementation
+## APIs available
+This is a quick list of the APIs currently implemented. Proper
+documentation will be done separately.
+
+  * `disk_usage` - Information on total, used and free space on a partition
+  * `disk_partitions` - Information on disk partitions on the system (device, mountpoint, type and options).
+  * `disk_io_counters` - Information on disk I/O counters (number of reads/writes, bytes read/written, readtime, writetime).
+  * `net_io_counters` - Information I/O counters on network interfaces (bytes/packets sent/recieved, input/output errors/drops).
+  * `get_users` - List of users logged in and their information (username, tty, hostname and timestamp).
+  * `get_boot_time` - Returns time of system boot.
+  * `virtual_memory` - Returns Virtual memory information (used, free, available etc.)
+  * `logical_cpu_count` - Returns number of logical CPUs.
+  * `physical_cpu_count` - Returns number of physical CPUs.
+  * `cpu_count` - Entry point for above functions.
+  * `get_process` - Get detailed information about a process.
+
+## Platforms supported
+ * Linux - In progress
+ * MacOS - Planned
+ * *BSD - Planned
+ * Windows - Planned
