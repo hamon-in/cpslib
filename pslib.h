@@ -112,8 +112,6 @@ unsigned long int get_boot_time();
 int virtual_memory(VmemInfo *);
 
 int cpu_count(int);
-int logical_cpu_count();
-int physical_cpu_count();
 
 Process *get_process(unsigned int);
 void free_process(Process *);

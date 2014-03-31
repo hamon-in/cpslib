@@ -19,6 +19,56 @@
 /* TBD : Generic function to get field from a line in a file that starts with something */
 
 /* Internal functions */
+static int
+logical_cpu_count()
+{
+  int ret;
+  ret = (int)sysconf(_SC_NPROCESSORS_ONLN);
+  if (ret == -1) {
+    /* TDB: Parse /proc/cpuinfo */
+    ;
+  }
+  return ret;
+}
+
+static int
+physical_cpu_count()
+{
+  FILE * fp = NULL;
+  size_t s = 100;
+  long int ids[s]; /* Assume we don't have more than 100 physical CPUs */
+  memset(&ids, -1, sizeof(long int) * 100);
+  long int *cid = ids;
+  long int id;
+  int nprocs = 0;
+  fp = fopen("/proc/cpuinfo", "r");
+  check(fp, "Couldn't open '/proc/cpuinfo'");
+  char *line = (char *)calloc(100, sizeof(char));
+  check_mem(line);
+
+  while (fgets(line, 90, fp) != NULL) {
+    if (strncasecmp(line, "physical id", 11) == 0){
+      strtok(line, ":");
+      id = strtol(strtok(NULL, " "), NULL, 10); /* TBD: Assuming that physical id is a number */
+      if (! lfind(&id, ids, &s, sizeof(int), int_comp)) { /* TBD: Replace this with lsearch */
+        *cid = id;
+        id++;
+        nprocs += 1;
+      } else {
+        ;
+      }
+    }
+  }
+
+  fclose(fp);
+  free(line);
+  return nprocs;
+ error:
+  if (fp) fclose(fp);
+  free(line);
+  return -1;
+}
+
 static unsigned int
 get_ppid(unsigned pid) 
 {
@@ -646,55 +696,6 @@ virtual_memory(VmemInfo *ret)
   return -1;
 }
 
-int
-logical_cpu_count()
-{
-  int ret;
-  ret = (int)sysconf(_SC_NPROCESSORS_ONLN);
-  if (ret == -1) {
-    /* TDB: Parse /proc/cpuinfo */
-    ;
-  }
-  return ret;
-}
-
-int
-physical_cpu_count()
-{
-  FILE * fp = NULL;
-  size_t s = 100;
-  long int ids[s]; /* Assume we don't have more than 100 physical CPUs */
-  memset(&ids, -1, sizeof(long int) * 100);
-  long int *cid = ids;
-  long int id;
-  int nprocs = 0;
-  fp = fopen("/proc/cpuinfo", "r");
-  check(fp, "Couldn't open '/proc/cpuinfo'");
-  char *line = (char *)calloc(100, sizeof(char));
-  check_mem(line);
-
-  while (fgets(line, 90, fp) != NULL) {
-    if (strncasecmp(line, "physical id", 11) == 0){
-      strtok(line, ":");
-      id = strtol(strtok(NULL, " "), NULL, 10); /* TBD: Assuming that physical id is a number */
-      if (! lfind(&id, ids, &s, sizeof(int), int_comp)) { /* TBD: Replace this with lsearch */
-        *cid = id;
-        id++;
-        nprocs += 1;
-      } else {
-        ;
-      }
-    }
-  }
-
-  fclose(fp);
-  free(line);
-  return nprocs;
- error:
-  if (fp) fclose(fp);
-  free(line);
-  return -1;
-}
 
 int
 cpu_count(int logical)
