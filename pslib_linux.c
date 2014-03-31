@@ -70,7 +70,7 @@ physical_cpu_count()
 }
 
 static unsigned int
-get_ppid(unsigned pid) 
+get_ppid(unsigned pid)
 {
   FILE *fp = NULL;
   unsigned int ppid = -1;
@@ -88,7 +88,7 @@ get_ppid(unsigned pid)
   free(tmp);
 
   return ppid;
- error:
+error:
   if (fp) fclose(fp);
   return -1;
 }
@@ -112,13 +112,13 @@ get_procname(unsigned pid)
   tmp = squeeze(tmp, "()");
 
   return strdup(tmp);
- error:
+error:
   if (fp) fclose(fp);
   return NULL;
 }
 
 static char *
-get_exe(unsigned pid) 
+get_exe(unsigned pid)
 {
   FILE *fp = NULL;
   char *tmp = NULL;
@@ -150,7 +150,7 @@ get_exe(unsigned pid)
   }
   tmp[ret] = '\0';
   return tmp;
- error:
+error:
   if (fp) fclose(fp);
   if (tmp) free(tmp);
   return NULL;
@@ -171,8 +171,8 @@ get_cmdline(unsigned int pid)
   check(size != -1, "Couldn't read command line from /proc");
   fclose(fp);
   return contents;
-  
- error:
+
+error:
   if (fp) fclose(fp);
   if (contents) free(contents);
   return NULL;
@@ -190,8 +190,8 @@ get_create_time(unsigned int pid)
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process stat file");
   size = getline(&contents, &size, fp); /* size argument unused */
-  
- error:
+
+error:
   if (fp) fclose(fp);
   if (contents) free(contents);
   return -1;
@@ -204,7 +204,7 @@ get_ids(unsigned int pid, const char *field)
   FILE *fp = NULL;
   char *tmp;
   char procfile[50];
-  char line[400];  
+  char line[400];
   unsigned int* retval = NULL;
 
   sprintf(procfile,"/proc/%d/status", pid);
@@ -229,7 +229,7 @@ get_ids(unsigned int pid, const char *field)
   fclose(fp);
 
   return retval;
- error:
+error:
   if (fp) fclose(fp);
   return NULL;
 }
@@ -277,14 +277,105 @@ get_terminal(unsigned int pid)
   return NULL;
 }
 
+static long
+get_clock_ticks() {
+  static long ret;
+  if(ret == 0) {
+    ret = sysconf(_SC_CLK_TCK);
+  }
+  return ret;
+}
+
+static int
+parse_proc_stat_line(char* line, CpuTimes *ret) {
+  unsigned long values[10] = {};
+
+  char *pos = strtok(line, " ");
+
+  pos = strtok(NULL, " "); // skip cpu
+  int i;
+  for(i = 0; i < 10 && pos != NULL; i++) {
+    values[i] = strtoul(pos, NULL, 10);
+    pos = strtok(NULL, " ");
+  }
+  if(i < 10) return -1;
+
+  double tick = (double)get_clock_ticks();
+  ret->user = values[0] / tick;
+  ret->nice = values[1] / tick;
+  ret->system = values[2] / tick;
+  ret->idle = values[3] / tick;
+  ret->iowait = values[4] / tick;
+  ret->irq = values[5] / tick;
+  ret->softirq = values[6] / tick;
+  ret->steal = values[7] / tick;
+  ret->guest = values[8] / tick;
+  ret->guest_nice = values[9] / tick;
+
+  return 0;
+}
+
+static double sum_cpu_time(CpuTimes *t) {
+  double ret = 0.0;
+  ret += t->user;
+  ret += t->system;
+  ret += t->idle;
+  ret += t->nice;
+  ret += t->iowait;
+  ret += t->irq;
+  ret += t->softirq;
+  ret += t->steal;
+  ret += t->guest;
+  ret += t->guest_nice;
+  return ret;
+}
+
+static double
+calc_cpu_busy_diff(CpuTimes *t1, CpuTimes *t2) {
+  double t1_all = sum_cpu_time(t1);
+  double t1_busy = t1_all - t1->idle;
+
+  double t2_all = sum_cpu_time(t2);
+  double t2_busy = t2_all - t2->idle;
+
+  if(t2_busy <= t1_busy)
+    return 0.0;
+
+  double busy_delta = t2_busy - t1_busy;
+  double all_delta = t2_all - t1_all;
+  double busy_perc = (busy_delta / all_delta) * 100;
+  return busy_perc;
+}
+
+static double
+f_diff_percent(double f2, double f1, double all_delta) {
+  double field_delta = f2 - f1;
+
+  double field_perc;
+  if(all_delta <= 0)
+    field_perc = 0.0;
+  else
+    field_perc = (100*field_delta) / all_delta;
+
+// https://code.google.com/p/psutil/issues/detail?id=392
+#if defined(_WIN64) || defined(_WIN32) || defined(_WIN64)
+  if(field_perc > 100.0)
+    field_perc = 0.0;
+  if(field_perc < 0.0)
+    field_perc = 0.0;
+#endif
+
+  return field_perc;
+}
+
 
 /* Public functions */
 int
-disk_usage(char path[], DiskUsage *ret) 
+disk_usage(char path[], DiskUsage *ret)
 {
   struct statvfs s;
   int r;
-  r = statvfs(path, &s); 
+  r = statvfs(path, &s);
   check(r == 0, "Error in calling statvfs for %s", path);
   ret->free = s.f_bavail * s.f_frsize;
   ret->total = s.f_blocks * s.f_frsize;
@@ -292,7 +383,7 @@ disk_usage(char path[], DiskUsage *ret)
   ret->percent = percentage(ret->used, ret->total);
 
   return 0;
- error:
+error:
   return -1;
 }
 
@@ -314,12 +405,12 @@ disk_partitions()
   file = setmntent(MOUNTED, "r");
   check(file, "Couldn't open %s", MOUNTED);
 
-  while ((entry = getmntent(file))) { 
-    d->device  = strdup(entry->mnt_fsname); 
-    d->mountpoint = strdup(entry->mnt_dir); 
-    d->fstype = strdup(entry->mnt_type);    
+  while ((entry = getmntent(file))) {
+    d->device  = strdup(entry->mnt_fsname);
+    d->mountpoint = strdup(entry->mnt_dir);
+    d->fstype = strdup(entry->mnt_type);
     d->opts = strdup(entry->mnt_opts);
-    
+
     ret->nitems ++;
     d++;
 
@@ -336,8 +427,8 @@ disk_partitions()
   endmntent(file);
   return ret;
 
- error:
-  if (file) 
+error:
+  if (file)
     endmntent(file);
   free_disk_partition_info(ret);
   return NULL;
@@ -362,7 +453,7 @@ DiskIOCounterInfo *
 disk_io_counters()
 {
   const int sector_size = 512;
-  
+
   FILE *fp = fopen("/proc/partitions", "r");
   check(fp, "Couldn't open /proc/partitions");
 
@@ -391,7 +482,7 @@ disk_io_counters()
     }
   }
   fclose(fp);
-  
+
   nmemb = nparts;
   counters = (DiskIOCounters *)calloc(nparts, sizeof(DiskIOCounters));
   check_mem(counters);
@@ -428,7 +519,7 @@ disk_io_counters()
 
       tmp = strtok(NULL, " \n"); /* time spent writing */
       ci->writetime = strtoul(tmp, NULL, 10);
-      
+
       ci++; /* TBD: Realloc here if necessary */
       ret->nitems++;
     }
@@ -442,7 +533,7 @@ disk_io_counters()
 
   return ret;
 
- error:
+error:
   if (fp) fclose(fp);
   if (line) free(line);
   if (partitions) {
@@ -482,7 +573,7 @@ net_io_counters()
   check_mem(ret);
   fp = fopen("/proc/net/dev", "r");
   check(fp, "Couldn't open /proc/net/dev");
-  
+
   while (fgets(line, 150, fp) != NULL) {
     if (i++ < 2) continue;
 
@@ -503,7 +594,7 @@ net_io_counters()
     tmp = strtok(NULL, " \n"); /* Drops in 3 */
     nc->dropin = strtoul(tmp, NULL, 10);
 
-    for (i = 0; i < 4; i++)  
+    for (i = 0; i < 4; i++)
       tmp = strtok(NULL, " \n"); /* Skip  4, 5, 6 and 7*/
 
     tmp = strtok(NULL, " \n"); /* Bytes sent 8*/
@@ -517,7 +608,7 @@ net_io_counters()
 
     tmp = strtok(NULL, " \n"); /* Drops out 10*/
     nc->dropout = strtoul(tmp, NULL, 10);
-    
+
     nc++;
   }
   fclose(fp);
@@ -526,7 +617,7 @@ net_io_counters()
   ret->nitems = ninterfaces;
   return ret;
 
- error:
+error:
   /* TBD: ret not freed here */
   if (fp) fclose(fp);
   if (line) free(line);
@@ -557,12 +648,12 @@ get_users ()
   struct utmp *ut;
   check_mem(ret);
   check_mem(users);
-  
+
   ret->nitems = 0;
   ret->users = users;
-  
+
   while (NULL != (ut = getutent())) {
-    if (ut->ut_type != USER_PROCESS) 
+    if (ut->ut_type != USER_PROCESS)
       continue;
     u->username = strdup(ut->ut_user);
     check_mem(u->username);
@@ -574,14 +665,14 @@ get_users ()
     check_mem(u->hostname);
 
     u->tstamp = ut->ut_tv.tv_sec;
-    
+
     ret->nitems++;
     u++;
-    
+
     if (ret->nitems == nusers) { /* More users than we've allocated space for. */
       nusers *= 2;
       users = realloc(users, sizeof(Users) * nusers);
-      check_mem(users);                                 
+      check_mem(users);
       ret->users = users;
       u = ret->users + ret->nitems; /* Move the cursor to the correct
                                        value in case the realloc moved
@@ -591,13 +682,13 @@ get_users ()
   endutent();
   return ret;
 
- error:
+error:
   free_users_info(ret);
   return NULL;
 
 }
 
-void 
+void
 free_users_info(UsersInfo * ui)
 {
   Users *u = ui->users;
@@ -632,9 +723,9 @@ get_boot_time()
   check(ret != -1, "Couldn't find 'btime' line in /proc/stat");
   fclose(fp);
   free(line);
-  
+
   return ret;
-  
+
 error:
   if (fp) fclose(fp);
   if (line) free(line);
@@ -642,8 +733,8 @@ error:
   return -1;
 }
 
-int 
-virtual_memory(VmemInfo *ret) 
+int
+virtual_memory(VmemInfo *ret)
 {
   struct sysinfo info;
   FILE *fp = NULL;
@@ -655,7 +746,7 @@ virtual_memory(VmemInfo *ret)
   totalram  = info.totalram  * info.mem_unit;
   freeram   = info.freeram  * info.mem_unit;
   bufferram = info.bufferram  * info.mem_unit;
-  
+
   fp = fopen("/proc/meminfo", "r");
   check(fp, "Couldn't open /proc/meminfo");
   while (fgets(line, 40, fp) != NULL) {
@@ -690,12 +781,248 @@ virtual_memory(VmemInfo *ret)
   ret->cached = cached;
 
   return 0;
- error:
+error:
   if(fp) fclose(fp);
   if (line) free(line);
   return -1;
 }
 
+int swap_memory(SwapMem *ret) {
+  struct sysinfo info;
+  FILE *fp = NULL;
+
+  unsigned long totalswap, freeswap, usedswap;
+  unsigned long sin = -1, sout = -1;
+  check(sysinfo(&info) == 0, "sysinfo failed");
+
+  totalswap = info.totalswap;
+  freeswap = info.freeswap;
+  usedswap = totalswap - freeswap;
+
+  fp = fopen("/proc/vmstat", "r");
+  check(fp, "Couldn't open /proc/vmstat");
+
+  char *line = (char *)calloc(50, sizeof(char));
+  check_mem(line);
+
+  while (fgets(line, 40, fp) != NULL) {
+    if(strncmp(line, "pswpin", 6) == 0) {
+      sin = strtoul(line+7, NULL, 10);
+    }
+    if (strncmp(line, "pswpout", 7) == 0){
+      sout = strtoul(line+8, NULL, 10);
+    }
+  }
+  if (sin == -1 || sout == -1) {
+    log_warn("Couldn't determine 'sin' and 'sout' swap stats. Setting them to 0");
+    sout = sin = 0;
+  }
+  fclose(fp);
+  free(line);
+
+  ret->total = totalswap;
+  ret->used = usedswap;
+  ret->free = freeswap;
+  ret->percent = percentage(usedswap, totalswap);
+  ret->sin = sin;
+  ret->sout = sout;
+
+  return 0;
+error:
+  if(fp) fclose(fp);
+  if (line) free(line);
+  return -1;
+}
+
+
+int cpu_times(CpuTimes *ret) {
+  FILE *fp = NULL;
+  fp = fopen("/proc/stat", "r");
+  check(fp, "Couldn't open /proc/stat");
+
+  char *line = calloc(150, sizeof(char));
+  check_mem(line);
+  fgets(line, 140, fp);
+
+  int t = parse_proc_stat_line(line, ret);
+  check(t >= 0, "File /proc/stat is corrupted");
+
+  fclose(fp);
+  free(line);
+
+  return 0;
+error:
+  if(fp) fclose(fp);
+  if (line) free(line);
+  return -1;
+}
+
+int
+cpu_times_per_cpu(CpuTimes** ret) {
+  FILE *fp = NULL;
+  fp = fopen("/proc/stat", "r");
+  check(fp, "Couldn't open /proc/stat");
+
+  int t;
+
+  char *line = calloc(200, sizeof(char));
+  check_mem(line);
+  fgets(line, 190, fp); // skip first line
+
+  *ret = calloc(10, sizeof(CpuTimes));
+  check_mem(ret);
+
+  int cpus = 0;
+  while(1) {
+    fgets(line, 190, fp);
+    if(strncmp(line, "cpu", 3) != 0) break;
+
+    t = parse_proc_stat_line(line, *ret + cpus);
+    check(t >= 0, "File /proc/stat is corrupted");
+
+    cpus++;
+    if(cpus%10 == 9) {
+      CpuTimes* new_ret = realloc(*ret, (cpus+11)*sizeof(CpuTimes));
+      check_mem(new_ret);
+      *ret = new_ret;
+    }
+  }
+  fclose(fp);
+  free(line);
+  *ret = realloc(*ret, cpus*sizeof(CpuTimes));
+  return cpus;
+
+error:
+  if(fp) fclose(fp);
+  if (line) free(line);
+  return -1;
+}
+
+double
+cpu_percent() {
+  static CpuTimes last_cpu_times;
+
+  CpuTimes t1 = last_cpu_times;
+  int r = cpu_times(&last_cpu_times);
+
+  if(r < 0) {
+    log_warn("Couldnt fetch cpu_times return 0.0");
+    return 0.0;
+  }
+
+  return calc_cpu_busy_diff(&t1, &last_cpu_times);
+}
+
+
+// seems to report too much
+int
+cpu_percent_per_cpu(double **ret) {
+  static int last_cpu_count;
+  static CpuTimes* last_cpu_times;
+
+  CpuTimes *t1 = last_cpu_times;
+  int cpus = cpu_times_per_cpu(&last_cpu_times);
+  check(cpus > 0, "Couldn't find a cpu");
+
+  if(t1 == NULL) {
+    t1 = calloc(cpus, sizeof(CpuTimes));
+    last_cpu_count = cpus;
+  }
+
+  *ret = calloc(cpus, sizeof(double));
+  check_mem(*ret);
+
+  int min_cpus = min(cpus, last_cpu_count);
+  int i;
+  for(i=0;i < min_cpus; i++) {
+    (*ret)[i] = calc_cpu_busy_diff(t1+i, last_cpu_times+i);
+  }
+
+  last_cpu_count = cpus;
+
+  free(t1);
+  return min_cpus;
+
+error:
+  free(t1);
+  return -1;
+}
+
+
+
+int
+cpu_times_percent(CpuTimes *ret) {
+  static CpuTimes last_cpu_times;
+
+  CpuTimes t1 = last_cpu_times;
+  int r = cpu_times(&last_cpu_times);
+
+  if(r < 0) {
+    log_warn("Couldnt fetch cpu_times");
+    return -1;
+  }
+
+  double all_delta = sum_cpu_time(&last_cpu_times) - sum_cpu_time(&t1);
+
+  ret->user = f_diff_percent(last_cpu_times.user, t1.user, all_delta);
+  ret->system = f_diff_percent(last_cpu_times.system, t1.system, all_delta);
+  ret->idle = f_diff_percent(last_cpu_times.idle, t1.idle, all_delta);
+  ret->nice = f_diff_percent(last_cpu_times.nice, t1.nice, all_delta);
+  ret->iowait = f_diff_percent(last_cpu_times.iowait, t1.iowait, all_delta);
+  ret->irq = f_diff_percent(last_cpu_times.irq, t1.irq, all_delta);
+  ret->softirq = f_diff_percent(last_cpu_times.softirq, t1.softirq, all_delta);
+  ret->steal = f_diff_percent(last_cpu_times.steal, t1.steal, all_delta);
+  ret->guest = f_diff_percent(last_cpu_times.guest, t1.guest, all_delta);
+  ret->guest_nice = f_diff_percent(last_cpu_times.guest_nice, t1.guest_nice, all_delta);
+
+  return 0;
+}
+
+int
+cpu_times_percent_per_cpu(CpuTimes **ret) {
+  static int last_cpu_count;
+  static CpuTimes* last_cpu_times;
+
+  CpuTimes *t1 = last_cpu_times;
+  int cpus = cpu_times_per_cpu(&last_cpu_times);
+  check(cpus > 0, "Couldn't find a cpu");
+
+  if(t1 == NULL) {
+    t1 = calloc(cpus, sizeof(CpuTimes));
+    last_cpu_count = cpus;
+  }
+
+  *ret = calloc(cpus, sizeof(CpuTimes));
+  check_mem(*ret);
+
+  int min_cpus = min(cpus, last_cpu_count);
+  int i;
+  for(i=0;i < min_cpus; i++) {
+    //(*ret)[i] = calc_cpu_busy_diff(t1+i, last_cpu_times+i);
+    double all_delta = sum_cpu_time(last_cpu_times+i) - sum_cpu_time(t1+i);
+
+    (*ret+i)->user = f_diff_percent((last_cpu_times+i)->user, (t1+i)->user, all_delta);
+    (*ret+i)->system = f_diff_percent((last_cpu_times+i)->system, (t1+i)->system, all_delta);
+    (*ret+i)->idle = f_diff_percent((last_cpu_times+i)->idle, (t1+i)->idle, all_delta);
+    (*ret+i)->nice = f_diff_percent((last_cpu_times+i)->nice, (t1+i)->nice, all_delta);
+    (*ret+i)->iowait = f_diff_percent((last_cpu_times+i)->iowait, (t1+i)->iowait, all_delta);
+    (*ret+i)->irq = f_diff_percent((last_cpu_times+i)->irq, (t1+i)->irq, all_delta);
+    (*ret+i)->softirq = f_diff_percent((last_cpu_times+i)->softirq, (t1+i)->softirq, all_delta);
+    (*ret+i)->steal = f_diff_percent((last_cpu_times+i)->steal, (t1+i)->steal, all_delta);
+    (*ret+i)->guest = f_diff_percent((last_cpu_times+i)->guest, (t1+i)->guest, all_delta);
+    (*ret+i)->guest_nice = f_diff_percent((last_cpu_times+i)->guest_nice, (t1+i)->guest_nice, all_delta);
+
+  }
+
+  last_cpu_count = cpus;
+  free(t1);
+  return min_cpus;
+
+error:
+  free(t1);
+  return -1;
+
+}
 
 int
 cpu_count(int logical)
@@ -709,9 +1036,8 @@ cpu_count(int logical)
   return ret;
 }
 
-
 Process *
-get_process(unsigned pid) 
+get_process(unsigned pid)
 {
   Process *retval = calloc(1, sizeof(Process));
   unsigned int *uids = NULL;
@@ -749,8 +1075,8 @@ get_process(unsigned pid)
 }
 
 
-void 
-free_process(Process *p) 
+void
+free_process(Process *p)
 {
   free(p->name);
   free(p->exe);

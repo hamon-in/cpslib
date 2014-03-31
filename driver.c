@@ -149,6 +149,142 @@ test_virtualmeminfo()
   printf("\n");
 }
 
+void
+test_swap()
+{
+  SwapMem r;
+  int t = swap_memory(&r);
+  if (t == -1) {
+    printf("Aborting\n");
+    return;
+  }
+  printf(" Swap Memory\n");
+  printf("Total: %lu\n", r.total);
+  printf("Used: %lu\n", r.used);
+  printf("Free: %lu\n", r.free);
+  printf("Percent: %f\n", r.percent);
+  printf("Sin: %lu\n", r.sin);
+  printf("Sout: %lu\n", r.sout);
+  printf("\n");
+}
+
+void
+test_cpu_times()
+{
+  CpuTimes r;
+  int t = cpu_times(&r);
+  if(t < 0) {
+    printf("Aborting\n");
+    return;
+  }
+
+  printf(" CPU times\n");
+  printf("User: %.3lf\n", r.user);
+  printf("System: %.3lf\n", r.system);
+  printf("Idle: %.3lf\n", r.idle);
+  printf("Nice: %.3lf\n", r.nice);
+  printf("IOWait: %.3lf\n", r.iowait);
+  printf("IRQ: %.3lf\n", r.irq);
+  printf("SoftIRQ: %.3lf\n", r.softirq);
+  printf("Steal: %.3lf\n", r.steal);
+  printf("Guest: %.3lf\n", r.guest);
+  printf("Guest nice: %.3lf\n", r.guest_nice);
+  printf("\n");
+}
+
+void
+test_cpu_times_percent()
+{
+  CpuTimes r;
+  int t = cpu_times_percent(&r);
+  if(t < 0) {
+    printf("Aborting\n");
+    return;
+  }
+
+  printf(" CPU times in percent\n");
+  printf("User: %.3lf\n", r.user);
+  printf("System: %.3lf\n", r.system);
+  printf("Idle: %.3lf\n", r.idle);
+  printf("Nice: %.3lf\n", r.nice);
+  printf("IOWait: %.3lf\n", r.iowait);
+  printf("IRQ: %.3lf\n", r.irq);
+  printf("SoftIRQ: %.3lf\n", r.softirq);
+  printf("Steal: %.3lf\n", r.steal);
+  printf("Guest: %.3lf\n", r.guest);
+  printf("Guest nice: %.3lf\n", r.guest_nice);
+  printf("\n");
+}
+
+void
+test_cpu_times_percent_per_cpu() {
+  CpuTimes *r = NULL; 
+
+  int count = cpu_times_percent_per_cpu(&r);
+  if(count < 0) {
+    printf("Aborting test cpu_times_percent_per_cpu\n");
+    return;
+  }
+
+  printf(" CPU time percent per CPU\n");
+  int i;
+  for(i = 0;i < count; i++) {
+    CpuTimes *cur = r+i;
+    printf("CPU%d: ", i);
+    printf("User: %.2lf, System: %.2lf, Idle: %.3lf, ", cur->user, cur->system, cur->idle);
+    printf("Nice: %.2lf, IOWait: %.2lf, IRQ: %.2lf, ", cur->nice, cur->iowait, cur->irq);
+    printf("SoftIRQ: %.2lf, Steal: %.2lf, ", cur->softirq, cur->steal);
+    printf("Guest: %.2lf, Guest nice: %.2lf)\n", cur->guest, cur->guest_nice);
+  }
+}
+
+void
+test_cpu_percent() {
+  double r = cpu_percent();
+  printf("\nCPU Percent: %f\n\n", r);
+}
+
+void
+test_cpu_percent_per_cpu() {
+  double *r = NULL;
+  int count = cpu_percent_per_cpu(&r);
+  if(count < 0) {
+    printf("Aborting test cpu_percent_per_cpu\n");
+    return;
+  }
+
+  printf(" CPU percent per CPU\n");
+  int i;
+  for(i = 0;i < count; i++) {
+    printf("CPU%d: %f\n", i, r[i]);
+  }
+  printf("\n");
+  free(r);
+}
+
+void
+test_cpu_times_per_cpu() {
+  CpuTimes* r = NULL;
+  int count = cpu_times_per_cpu(&r);
+  if(count < 0) {
+    printf("Aborting test cpu_times_per_cpu\n");
+    return;
+  }
+
+  printf(" CPU times per CPU\n");
+
+  int i;
+  for (i = 0;i < count; i++) {
+    CpuTimes cur = r[i];
+    printf("CPU%d: (", i);
+    printf("User: %.2lf, System: %.2lf, Idle: %.3lf, ", cur.user, cur.system, cur.idle);
+    printf("Nice: %.2lf, IOWait: %.2lf, IRQ: %.2lf, ", cur.nice, cur.iowait, cur.irq);
+    printf("SoftIRQ: %.2lf, Steal: %.2lf, ", cur.softirq, cur.steal);
+    printf("Guest: %.2lf, Guest nice: %.2lf)\n", cur.guest, cur.guest_nice);
+  }
+  printf("\n\n");
+  free(r);
+}
 
 void
 test_cpu_count()
@@ -198,6 +334,13 @@ main()
   test_getusers();
   test_boottime();
   test_virtualmeminfo();
+  test_swap();
+  test_cpu_times();
+  test_cpu_times_per_cpu();
+  test_cpu_times_percent();
+  test_cpu_times_percent_per_cpu();
+  test_cpu_percent();
+  test_cpu_percent_per_cpu();
   test_cpu_count();
   test_process();
   return 0;
