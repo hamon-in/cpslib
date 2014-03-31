@@ -198,6 +198,34 @@ get_username(unsigned int ruid)
   return NULL;
 }
 
+static char *
+get_terminal(unsigned int pid)
+{
+  FILE *fp = NULL;
+  char *tmp = NULL;
+  char procfile[50];
+  ssize_t ret;
+  unsigned int bufsize = 1024;
+
+  sprintf(procfile,"/proc/%d/fd/0", pid);
+  tmp = calloc(bufsize, sizeof(char));
+  check_mem(tmp);
+  ret = readlink(procfile, tmp, bufsize - 1);
+  check(ret != -1, "Couldn't expand symbolic link");
+  while(ret == bufsize -1 ) {
+    /* Buffer filled. Might be incomplete. Increase size and try again. */
+    bufsize *= 2;
+    tmp = realloc(tmp, bufsize);
+    ret = readlink(procfile, tmp, bufsize - 1);
+    check(ret != -1, "Couldn't expand symbolic link");
+  }
+  tmp[ret] = '\0';
+  return tmp;
+ error:
+  if (fp) fclose(fp);
+  if (tmp) free(tmp);
+  return NULL;
+}
 
 
 /* Public functions */
@@ -713,6 +741,7 @@ get_process(unsigned pid)
     retval->uid = retval->euid = retval->suid = 0;
   }
 
+  retval->terminal = get_terminal(pid);
   if (uids) free(uids);
   if (gids) free(gids);
   return retval;
@@ -726,5 +755,6 @@ free_process(Process *p)
   free(p->exe);
   free(p->cmdline);
   free(p->username);
+  free(p->terminal);
   free(p);
 }
