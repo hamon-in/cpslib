@@ -1,6 +1,77 @@
 #ifndef __pslib_linux_h
 #define __pslib_linux_h
 
+
+enum proc_status {
+  STATUS_RUNNING,
+  STATUS_SLEEPING,
+  STATUS_DISK_SLEEP,
+  STATUS_STOPPED,
+  STATUS_TRACING_STOP,
+  STATUS_ZOMBIE,
+  STATUS_DEAD,
+  STATUS_WAKE_KILL,
+  STATUS_WAKING,
+  STATUS_IDLE,
+  STATUS_LOCKED,
+  STATUS_WAITING
+};
+
+enum ioprio_class {
+  IOPRIO_CLASS_NONE,
+  IOPRIO_CLASS_RT,
+  IOPRIO_CLASS_BE,
+  IOPRIO_CLASS_IDLE
+};
+
+enum rlimit {
+  RLIMIT_INFINITY,
+  RLIMIT_AS,
+  RLIMIT_CORE,
+  RLIMIT_CPU,
+  RLIMIT_DATA,
+  RLIMIT_FSIZE,
+  RLIMIT_LOCKS,
+  RLIMIT_MEMLOCK,
+  RLIMIT_MSGQUEUE,
+  RLIMIT_NICE,
+  RLIMIT_NOFILE,
+  RLIMIT_NPROC,
+  RLIMIT_RSS,
+  RLIMIT_RTPRIO,
+  RLIMIT_RTTIME,
+  RLIMIT_SIGPENDING,
+  RLIMIT_STACK
+};
+
+enum con_status {
+  ESTABLISHED,
+  SYN_SENT,
+  SYN_RECV,
+  FIN_WAIT1,
+  FIN_WAIT2,
+  TIME_WAIT,
+  CLOSE,
+  CLOSE_WAIT,
+  LAST_ACK,
+  LISTEN,
+  CLOSING,
+  NONE,
+  DELETE_TCB,
+  IDLE,
+  BOUND
+};
+
+enum proc_priority {
+  ABOVE_NORMAL_PRIORITY_CLASS,
+  BELOW_NORMAL_PRIORITY_CLASS,
+  HIGH_PRIORITY_CLASS,
+  IDLE_PRIORITY_CLASS,
+  NORMAL_PRIORITY_CLASS,
+  REALTIME_PRIORITY_CLASS
+};
+
+
 typedef struct {
   unsigned long total;
   unsigned long used;
@@ -77,6 +148,28 @@ typedef struct {
 } VmemInfo;
 
 typedef struct {
+  unsigned long total;
+  unsigned long used;
+  unsigned long free;
+  float percent;
+  unsigned long sin;
+  unsigned long sout;
+} SwapMem;
+
+typedef struct {
+  double user;
+  double system;
+  double idle;
+  double nice;
+  double iowait;
+  double irq;
+  double softirq;
+  double steal;
+  double guest;
+  double guest_nice;
+} CpuTimes;
+
+typedef struct {
   unsigned int pid;
   unsigned int ppid;
   char *name;
@@ -110,6 +203,16 @@ void free_users_info(UsersInfo *);
 unsigned long int get_boot_time();
 
 int virtual_memory(VmemInfo *);
+int swap_memory(SwapMem *);
+
+int cpu_times(CpuTimes *);
+int cpu_times_per_cpu(CpuTimes **);
+
+int cpu_times_percent(CpuTimes *);
+int cpu_times_percent_per_cpu(CpuTimes **);
+
+double cpu_percent();
+int cpu_percent_per_cpu(double **);
 
 int cpu_count(int);
 
