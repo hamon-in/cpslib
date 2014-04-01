@@ -63,14 +63,14 @@ physical_cpu_count()
   fclose(fp);
   free(line);
   return nprocs;
- error:
+error:
   if (fp) fclose(fp);
   free(line);
   return -1;
 }
 
 static unsigned int
-get_ppid(unsigned pid) 
+get_ppid(unsigned pid)
 {
   FILE *fp = NULL;
   unsigned int ppid = -1;
@@ -88,7 +88,7 @@ get_ppid(unsigned pid)
   free(tmp);
 
   return ppid;
- error:
+error:
   if (fp) fclose(fp);
   return -1;
 }
@@ -112,13 +112,13 @@ get_procname(unsigned pid)
   tmp = squeeze(tmp, "()");
 
   return strdup(tmp);
- error:
+error:
   if (fp) fclose(fp);
   return NULL;
 }
 
 static char *
-get_exe(unsigned pid) 
+get_exe(unsigned pid)
 {
   FILE *fp = NULL;
   char *tmp = NULL;
@@ -150,7 +150,7 @@ get_exe(unsigned pid)
   }
   tmp[ret] = '\0';
   return tmp;
- error:
+error:
   if (fp) fclose(fp);
   if (tmp) free(tmp);
   return NULL;
@@ -171,8 +171,8 @@ get_cmdline(unsigned int pid)
   check(size != -1, "Couldn't read command line from /proc");
   fclose(fp);
   return contents;
-  
- error:
+
+error:
   if (fp) fclose(fp);
   if (contents) free(contents);
   return NULL;
@@ -190,8 +190,8 @@ get_create_time(unsigned int pid)
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process stat file");
   size = getline(&contents, &size, fp); /* size argument unused */
-  
- error:
+
+error:
   if (fp) fclose(fp);
   if (contents) free(contents);
   return -1;
@@ -204,7 +204,7 @@ get_ids(unsigned int pid, const char *field)
   FILE *fp = NULL;
   char *tmp;
   char procfile[50];
-  char line[400];  
+  char line[400];
   unsigned int* retval = NULL;
 
   sprintf(procfile,"/proc/%d/status", pid);
@@ -229,7 +229,7 @@ get_ids(unsigned int pid, const char *field)
   fclose(fp);
 
   return retval;
- error:
+error:
   if (fp) fclose(fp);
   return NULL;
 }
@@ -244,7 +244,7 @@ get_username(unsigned int ruid)
   username = strdup(ret->pw_name);
   check(username, "Couldn't allocate memory for name");
   return username;
- error:
+error:
   return NULL;
 }
 
@@ -271,7 +271,7 @@ get_terminal(unsigned int pid)
   }
   tmp[ret] = '\0';
   return tmp;
- error:
+error:
   if (fp) fclose(fp);
   if (tmp) free(tmp);
   return NULL;
@@ -280,11 +280,11 @@ get_terminal(unsigned int pid)
 
 /* Public functions */
 int
-disk_usage(char path[], DiskUsage *ret) 
+disk_usage(char path[], DiskUsage *ret)
 {
   struct statvfs s;
   int r;
-  r = statvfs(path, &s); 
+  r = statvfs(path, &s);
   check(r == 0, "Error in calling statvfs for %s", path);
   ret->free = s.f_bavail * s.f_frsize;
   ret->total = s.f_blocks * s.f_frsize;
@@ -292,7 +292,7 @@ disk_usage(char path[], DiskUsage *ret)
   ret->percent = percentage(ret->used, ret->total);
 
   return 0;
- error:
+error:
   return -1;
 }
 
@@ -314,12 +314,12 @@ disk_partitions()
   file = setmntent(MOUNTED, "r");
   check(file, "Couldn't open %s", MOUNTED);
 
-  while ((entry = getmntent(file))) { 
-    d->device  = strdup(entry->mnt_fsname); 
-    d->mountpoint = strdup(entry->mnt_dir); 
-    d->fstype = strdup(entry->mnt_type);    
+  while ((entry = getmntent(file))) {
+    d->device  = strdup(entry->mnt_fsname);
+    d->mountpoint = strdup(entry->mnt_dir);
+    d->fstype = strdup(entry->mnt_type);
     d->opts = strdup(entry->mnt_opts);
-    
+
     ret->nitems ++;
     d++;
 
@@ -336,8 +336,8 @@ disk_partitions()
   endmntent(file);
   return ret;
 
- error:
-  if (file) 
+error:
+  if (file)
     endmntent(file);
   free_disk_partition_info(ret);
   return NULL;
@@ -362,7 +362,7 @@ DiskIOCounterInfo *
 disk_io_counters()
 {
   const int sector_size = 512;
-  
+
   FILE *fp = fopen("/proc/partitions", "r");
   check(fp, "Couldn't open /proc/partitions");
 
@@ -391,7 +391,7 @@ disk_io_counters()
     }
   }
   fclose(fp);
-  
+
   nmemb = nparts;
   counters = (DiskIOCounters *)calloc(nparts, sizeof(DiskIOCounters));
   check_mem(counters);
@@ -428,7 +428,7 @@ disk_io_counters()
 
       tmp = strtok(NULL, " \n"); /* time spent writing */
       ci->writetime = strtoul(tmp, NULL, 10);
-      
+
       ci++; /* TBD: Realloc here if necessary */
       ret->nitems++;
     }
@@ -442,7 +442,7 @@ disk_io_counters()
 
   return ret;
 
- error:
+error:
   if (fp) fclose(fp);
   if (line) free(line);
   if (partitions) {
@@ -482,7 +482,7 @@ net_io_counters()
   check_mem(ret);
   fp = fopen("/proc/net/dev", "r");
   check(fp, "Couldn't open /proc/net/dev");
-  
+
   while (fgets(line, 150, fp) != NULL) {
     if (i++ < 2) continue;
 
@@ -503,7 +503,7 @@ net_io_counters()
     tmp = strtok(NULL, " \n"); /* Drops in 3 */
     nc->dropin = strtoul(tmp, NULL, 10);
 
-    for (i = 0; i < 4; i++)  
+    for (i = 0; i < 4; i++)
       tmp = strtok(NULL, " \n"); /* Skip  4, 5, 6 and 7*/
 
     tmp = strtok(NULL, " \n"); /* Bytes sent 8*/
@@ -517,7 +517,7 @@ net_io_counters()
 
     tmp = strtok(NULL, " \n"); /* Drops out 10*/
     nc->dropout = strtoul(tmp, NULL, 10);
-    
+
     nc++;
   }
   fclose(fp);
@@ -526,7 +526,7 @@ net_io_counters()
   ret->nitems = ninterfaces;
   return ret;
 
- error:
+error:
   /* TBD: ret not freed here */
   if (fp) fclose(fp);
   if (line) free(line);
@@ -557,12 +557,12 @@ get_users ()
   struct utmp *ut;
   check_mem(ret);
   check_mem(users);
-  
+
   ret->nitems = 0;
   ret->users = users;
-  
+
   while (NULL != (ut = getutent())) {
-    if (ut->ut_type != USER_PROCESS) 
+    if (ut->ut_type != USER_PROCESS)
       continue;
     u->username = strdup(ut->ut_user);
     check_mem(u->username);
@@ -574,14 +574,14 @@ get_users ()
     check_mem(u->hostname);
 
     u->tstamp = ut->ut_tv.tv_sec;
-    
+
     ret->nitems++;
     u++;
-    
+
     if (ret->nitems == nusers) { /* More users than we've allocated space for. */
       nusers *= 2;
       users = realloc(users, sizeof(Users) * nusers);
-      check_mem(users);                                 
+      check_mem(users);
       ret->users = users;
       u = ret->users + ret->nitems; /* Move the cursor to the correct
                                        value in case the realloc moved
@@ -591,13 +591,13 @@ get_users ()
   endutent();
   return ret;
 
- error:
+error:
   free_users_info(ret);
   return NULL;
 
 }
 
-void 
+void
 free_users_info(UsersInfo * ui)
 {
   Users *u = ui->users;
@@ -632,9 +632,9 @@ get_boot_time()
   check(ret != -1, "Couldn't find 'btime' line in /proc/stat");
   fclose(fp);
   free(line);
-  
+
   return ret;
-  
+
 error:
   if (fp) fclose(fp);
   if (line) free(line);
@@ -642,8 +642,8 @@ error:
   return -1;
 }
 
-int 
-virtual_memory(VmemInfo *ret) 
+int
+virtual_memory(VmemInfo *ret)
 {
   struct sysinfo info;
   FILE *fp = NULL;
@@ -655,7 +655,7 @@ virtual_memory(VmemInfo *ret)
   totalram  = info.totalram  * info.mem_unit;
   freeram   = info.freeram  * info.mem_unit;
   bufferram = info.bufferram  * info.mem_unit;
-  
+
   fp = fopen("/proc/meminfo", "r");
   check(fp, "Couldn't open /proc/meminfo");
   while (fgets(line, 40, fp) != NULL) {
@@ -690,7 +690,7 @@ virtual_memory(VmemInfo *ret)
   ret->cached = cached;
 
   return 0;
- error:
+error:
   if(fp) fclose(fp);
   if (line) free(line);
   return -1;
@@ -711,7 +711,7 @@ cpu_count(int logical)
 
 
 Process *
-get_process(unsigned pid) 
+get_process(unsigned pid)
 {
   Process *retval = calloc(1, sizeof(Process));
   unsigned int *uids = NULL;
@@ -749,8 +749,8 @@ get_process(unsigned pid)
 }
 
 
-void 
-free_process(Process *p) 
+void
+free_process(Process *p)
 {
   free(p->name);
   free(p->exe);
