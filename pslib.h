@@ -96,6 +96,7 @@ typedef struct {
 int disk_usage(char [], DiskUsage *);
 
 DiskPartitionInfo *disk_partitions();
+DiskPartitionInfo *disk_partitions_phys();
 void free_disk_partition_info(DiskPartitionInfo *);
 
 DiskIOCounterInfo *disk_io_counters();
@@ -117,4 +118,8 @@ Process *get_process(unsigned int);
 void free_process(Process *);
 
 #endif
+
+
+// disk_io_counters_per_disk
+// net_io_counters_per_nic
 
