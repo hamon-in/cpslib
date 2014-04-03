@@ -67,6 +67,30 @@ test_diskiocounters()
 }
 
 void
+test_diskiocounter()
+{
+  DiskIOCounters *d = disk_io_counter();
+  if (! d) {
+    printf("Aborting");
+    return;
+  }
+
+  printf(" Disk IO Counter: ");
+  printf("%s: rbytes=%ld,wbytes=%ld,reads=%ld,writes=%ld,rtime=%ld,wtime=%ld\n",
+         d->name,
+         d->readbytes,
+         d->writebytes,
+         d->reads,
+         d->writes,
+         d->readtime,
+         d->writetime);
+  printf("\n");
+
+  free(d->name);
+  free(d);
+}
+
+void
 test_netiocounters()
 {
   NetIOCounterInfo *n;
@@ -90,6 +114,29 @@ test_netiocounters()
   }
   free_net_iocounter_info(n);
   printf("\n");
+}
+
+void
+test_netiocounter() {
+  NetIOCounters *d = net_io_counter();
+  if (! d) {
+    printf("Aborting");
+    return;
+  }
+
+  printf(" Total NetIOCounter: ");
+  printf("(bytes_sent=%ld bytes_rec=%ld packets_sen=%ld packets_rec=%ld erri=%ld errou=%ld dropi=%ld dropou=%ld) \n\n", 
+	 d->bytes_sent,
+	 d->bytes_recv,
+	 d->packets_sent,
+	 d->packets_recv,
+	 d->errin,
+	 d->errout,
+	 d->dropin,
+	 d->dropout);
+
+  free(d->name);
+  free(d);
 }
 
 void
@@ -194,7 +241,9 @@ main()
   test_diskusage();
   test_diskpartitioninfo();
   test_diskiocounters();
+  test_diskiocounter();
   test_netiocounters();
+  test_netiocounter();
   test_getusers();
   test_boottime();
   test_virtualmeminfo();

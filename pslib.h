@@ -99,9 +99,11 @@ DiskPartitionInfo *disk_partitions();
 void free_disk_partition_info(DiskPartitionInfo *);
 
 DiskIOCounterInfo *disk_io_counters();
+DiskIOCounters *disk_io_counter();
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
 NetIOCounterInfo *net_io_counters();
+NetIOCounters *net_io_counter();
 void free_net_iocounter_info(NetIOCounterInfo *);
 
 UsersInfo *get_users();
