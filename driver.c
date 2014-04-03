@@ -27,13 +27,13 @@ test_diskpartitioninfo()
   }
   printf("Partitions : %d\n", dp->nitems);
   for(i = 0; i < dp->nitems; i++)
-    printf("%s %s %s %s\n", 
+    printf("%s %s %s %s\n",
            dp->partitions[i].device,
            dp->partitions[i].mountpoint,
            dp->partitions[i].fstype,
            dp->partitions[i].opts);
-    
-  free_disk_partition_info(dp);  
+
+  free_disk_partition_info(dp);
   printf("\n");
 }
 
@@ -76,7 +76,7 @@ test_netiocounters()
   dp = n->iocounters;
   printf("Interfaces: %d\n", n->nitems);
   for (i=0; i < n->nitems; i++) {
-    printf("%s: bytes_sent=%ld bytes_rec=%ld packets_sen=%ld packets_rec=%ld erri=%ld errou=%ld dropi=%ld dropou=%ld \n", 
+    printf("%s: bytes_sent=%ld bytes_rec=%ld packets_sen=%ld packets_rec=%ld erri=%ld errou=%ld dropi=%ld dropou=%ld \n",
            dp->name,
            dp->bytes_sent,
            dp->bytes_recv,
@@ -93,7 +93,7 @@ test_netiocounters()
 }
 
 void
-test_getusers() 
+test_getusers()
 {
   UsersInfo *r;
   int i;
@@ -218,7 +218,7 @@ test_cpu_times_percent()
 
 void
 test_cpu_times_percent_per_cpu() {
-  CpuTimes *r = NULL; 
+  CpuTimes *r = NULL;
 
   int count = cpu_times_percent_per_cpu(&r);
   if(count < 0) {
@@ -345,5 +345,3 @@ main()
   test_process();
   return 0;
 }
-
-

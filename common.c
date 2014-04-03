@@ -5,6 +5,8 @@
 
 #include "common.h"
 
+
+
 float
 percentage(unsigned long int n, unsigned long int d)
 {
@@ -15,7 +17,7 @@ percentage(unsigned long int n, unsigned long int d)
 
 
 int
-str_comp(const void *key, const void *memb) 
+str_comp(const void *key, const void *memb)
 {
   const char **a = (const char **)key;
   const char **b = (const char **)memb;
@@ -23,17 +25,17 @@ str_comp(const void *key, const void *memb)
 }
 
 int
-int_comp(const void *key, const void *memb) 
+int_comp(const void *key, const void *memb)
 {
   const int a = *(int *)key;
   const int b = *(int *)memb;
-  if (a == b) 
+  if (a == b)
     return 0;
   else
     return -1;
 }
 
-  
+
 char *
 grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
 {
@@ -59,10 +61,10 @@ grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
   return NULL;
  error:
   return NULL;
-}  
+}
 
-char * 
-squeeze(char *string, char *chars) 
+char *
+squeeze(char *string, char *chars)
 {
   char *src = string;
   char *target = string;
