@@ -37,6 +37,29 @@ test_diskpartitioninfo()
   printf("\n");
 }
 
+
+void
+test_diskpartitioninfo_phys() {
+  int i;
+  DiskPartitionInfo *dp;
+  printf(" Physical Disk partitions \n");
+  dp = disk_partitions_phys();
+  if (!dp) {
+    printf("Aborting\n");
+    return;
+  }
+  printf("Partitions : %d\n", dp->nitems);
+  for(i = 0; i < dp->nitems; i++)
+    printf("%s %s %s %s\n", 
+           dp->partitions[i].device,
+           dp->partitions[i].mountpoint,
+           dp->partitions[i].fstype,
+           dp->partitions[i].opts);
+
+  free_disk_partition_info(dp);
+  printf("\n");
+}
+
 void
 test_diskiocounters()
 {
@@ -329,6 +352,7 @@ main()
 {
   test_diskusage();
   test_diskpartitioninfo();
+  test_diskpartitioninfo_phys();
   test_diskiocounters();
   test_netiocounters();
   test_getusers();

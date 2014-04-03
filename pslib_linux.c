@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
@@ -385,6 +386,79 @@ disk_usage(char path[], DiskUsage *ret)
   return 0;
  error:
   return -1;
+}
+
+DiskPartitionInfo*
+disk_partitions_phys()
+{
+  FILE *fs = fopen("/proc/filesystems", "r");
+  check(fs, "Couldn't open /proc/filesystems");
+  char line[50];
+  int i, j;
+
+  int nparts = 5;
+  DiskPartition *partitions = calloc(nparts, sizeof(DiskPartition));
+  DiskPartitionInfo *ret = malloc(sizeof(DiskPartitionInfo));
+  DiskPartition *d = partitions;
+  check_mem(partitions);
+  check_mem(ret);
+
+  ret->nitems = 0;
+  ret->partitions = partitions;
+
+  int devs = 0;
+  char *phydevs[100];
+  while (fgets(line, 50, fs) != NULL) {
+    if (strncmp(line, "nodev", 5) != 0) {
+      phydevs[devs] = calloc(100, sizeof(char));
+      int start = 0, end = strlen(line)-1;
+      while (isspace(line[start])) start++;
+      while (isspace(line[end])) end--;
+      strncpy(phydevs[devs], line+start, (end+1)-start);
+
+      devs++;
+    }
+  }
+  fclose(fs);
+
+  DiskPartitionInfo *tmp = disk_partitions();
+  check(tmp, "disk_partitions failed");
+
+  for (i = 0;i < tmp->nitems; i++) {
+    DiskPartition *p = tmp->partitions + i;
+
+    bool nodev = true;
+    for(j = 0;j < devs; j++) {
+      if(strcmp(phydevs[j], p->fstype) == 0)
+	nodev = false;
+    }
+    if(strlen(p->device) == 0 || nodev) {
+      continue;
+    }
+
+    *d = *p;
+    d->device = strdup(p->device);
+    d->mountpoint = strdup(p->mountpoint);
+    d->fstype = strdup(p->fstype);
+    d->opts = strdup(p->opts);
+
+    ret->nitems ++;
+    d++;
+
+    if (ret->nitems == nparts) {
+      nparts *= 2;
+      partitions = realloc(partitions, sizeof(DiskPartition) * nparts);
+      check_mem(partitions);
+      ret->partitions = partitions;
+      d = ret->partitions + ret->nitems;
+    }
+  }
+  free_disk_partition_info(tmp);
+  return ret;
+
+error:
+    free_disk_partition_info(tmp);
+    return NULL;
 }
 
 DiskPartitionInfo *
