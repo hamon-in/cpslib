@@ -282,6 +282,7 @@ get_terminal(unsigned int pid)
 static int
 parse_proc_stat_line(char* line, CpuTimes *ret) {
   unsigned long values[10] = {};
+  double clock_ticks;
 
   char *pos = strtok(line, " ");
 
@@ -293,7 +294,8 @@ parse_proc_stat_line(char* line, CpuTimes *ret) {
   }
   if(i < 10) return -1;
 
-  double clock_ticks = sysconf(_SC_CLK_TCK);
+  clock_ticks = sysconf(_SC_CLK_TCK);
+  
   ret->user = values[0] / clock_ticks;
   ret->nice = values[1] / clock_ticks;
   ret->system = values[2] / clock_ticks;
