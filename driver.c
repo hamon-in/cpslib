@@ -175,7 +175,7 @@ test_virtualmeminfo()
 void
 test_swap()
 {
-  SwapMem r;
+  SwapMemInfo r;
   int t = swap_memory(&r);
   if (t == -1) {
     printf("Aborting\n");

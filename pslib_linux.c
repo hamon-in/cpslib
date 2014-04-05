@@ -855,7 +855,8 @@ virtual_memory(VmemInfo *ret)
   return -1;
 }
 
-int swap_memory(SwapMem *ret) {
+int 
+swap_memory(SwapMemInfo *ret) {
   struct sysinfo info;
   FILE *fp = NULL;
   char *line = NULL;

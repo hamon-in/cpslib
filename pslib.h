@@ -154,7 +154,7 @@ typedef struct {
   float percent;
   unsigned long sin;
   unsigned long sout;
-} SwapMem;
+} SwapMemInfo;
 
 typedef struct {
   double user;
@@ -204,7 +204,7 @@ void free_users_info(UsersInfo *);
 unsigned long int get_boot_time();
 
 int virtual_memory(VmemInfo *);
-int swap_memory(SwapMem *);
+int swap_memory(SwapMemInfo *);
 
 int cpu_times(CpuTimes *);
 int cpu_times_per_cpu(CpuTimes **);
