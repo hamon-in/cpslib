@@ -278,14 +278,6 @@ get_terminal(unsigned int pid)
   return NULL;
 }
 
-static long
-get_clock_ticks() {
-  static long ret;
-  if(ret == 0) {
-    ret = sysconf(_SC_CLK_TCK);
-  }
-  return ret;
-}
 
 static int
 parse_proc_stat_line(char* line, CpuTimes *ret) {
@@ -301,17 +293,17 @@ parse_proc_stat_line(char* line, CpuTimes *ret) {
   }
   if(i < 10) return -1;
 
-  double tick = (double)get_clock_ticks();
-  ret->user = values[0] / tick;
-  ret->nice = values[1] / tick;
-  ret->system = values[2] / tick;
-  ret->idle = values[3] / tick;
-  ret->iowait = values[4] / tick;
-  ret->irq = values[5] / tick;
-  ret->softirq = values[6] / tick;
-  ret->steal = values[7] / tick;
-  ret->guest = values[8] / tick;
-  ret->guest_nice = values[9] / tick;
+  double clock_ticks = sysconf(_SC_CLK_TCK);
+  ret->user = values[0] / clock_ticks;
+  ret->nice = values[1] / clock_ticks;
+  ret->system = values[2] / clock_ticks;
+  ret->idle = values[3] / clock_ticks;
+  ret->iowait = values[4] / clock_ticks;
+  ret->irq = values[5] / clock_ticks;
+  ret->softirq = values[6] / clock_ticks;
+  ret->steal = values[7] / clock_ticks;
+  ret->guest = values[8] / clock_ticks;
+  ret->guest_nice = values[9] / clock_ticks;
 
   return 0;
 }
