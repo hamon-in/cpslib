@@ -878,7 +878,7 @@ int swap_memory(SwapMem *ret) {
     if(strncmp(line, "pswpin", 6) == 0) {
       sin = strtoul(line+7, NULL, 10);
     }
-    if (strncmp(line, "pswpout", 7) == 0){
+    if (strncmp(line, "pswpout", 7) == 0) {
       sout = strtoul(line+8, NULL, 10);
     }
   }
