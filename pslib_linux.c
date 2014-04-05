@@ -905,7 +905,8 @@ error:
 }
 
 
-int cpu_times(CpuTimes *ret) {
+int 
+cpu_times(CpuTimes *ret) {
   FILE *fp = NULL;
   fp = fopen("/proc/stat", "r");
   check(fp, "Couldn't open /proc/stat");
