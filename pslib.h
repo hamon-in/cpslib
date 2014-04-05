@@ -206,7 +206,7 @@ unsigned long int get_boot_time();
 int virtual_memory(VmemInfo *);
 int swap_memory(SwapMemInfo *);
 
-int cpu_times(CpuTimes *);
+CpuTimes *cpu_times();
 int cpu_times_per_cpu(CpuTimes **);
 
 int cpu_times_percent(CpuTimes *);

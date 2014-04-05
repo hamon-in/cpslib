@@ -279,10 +279,12 @@ get_terminal(unsigned int pid)
 }
 
 
-static int
-parse_proc_stat_line(char* line, CpuTimes *ret) {
+CpuTimes *
+parse_cpu_times(char* line) {
+  CpuTimes *ret = NULL;
   unsigned long values[10] = {};
   double clock_ticks;
+  ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
 
   char *pos = strtok(line, " ");
 
@@ -308,6 +310,10 @@ parse_proc_stat_line(char* line, CpuTimes *ret) {
   ret->guest_nice = values[9] / clock_ticks;
 
   return 0;
+  return ret;
+ error:
+  if (ret) free(ret);
+  return NULL;
 }
 
 static double sum_cpu_time(CpuTimes *t) {
@@ -905,28 +911,17 @@ error:
 }
 
 
-int 
-cpu_times(CpuTimes *ret) {
+CpuTimes *
+cpu_times() {
   FILE *fp = NULL;
+  char *line = NULL;
+  CpuTimes *ret = NULL;
   fp = fopen("/proc/stat", "r");
   check(fp, "Couldn't open /proc/stat");
-
-  char *line = calloc(150, sizeof(char));
+  line = calloc(150, sizeof(char));
   check_mem(line);
   fgets(line, 140, fp);
 
-  int t = parse_proc_stat_line(line, ret);
-  check(t >= 0, "File /proc/stat is corrupted");
-
-  fclose(fp);
-  free(line);
-
-  return 0;
-error:
-  if(fp) fclose(fp);
-  if (line) free(line);
-  return -1;
-}
 
 int
 cpu_times_per_cpu(CpuTimes** ret) {
