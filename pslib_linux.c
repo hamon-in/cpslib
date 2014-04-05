@@ -858,6 +858,7 @@ virtual_memory(VmemInfo *ret)
 int swap_memory(SwapMem *ret) {
   struct sysinfo info;
   FILE *fp = NULL;
+  char *line = NULL;
 
   unsigned long totalswap, freeswap, usedswap;
   unsigned long sin = -1, sout = -1;
@@ -870,7 +871,7 @@ int swap_memory(SwapMem *ret) {
   fp = fopen("/proc/vmstat", "r");
   check(fp, "Couldn't open /proc/vmstat");
 
-  char *line = (char *)calloc(50, sizeof(char));
+  line = (char *)calloc(50, sizeof(char));
   check_mem(line);
 
   while (fgets(line, 40, fp) != NULL) {
