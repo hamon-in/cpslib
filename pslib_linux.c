@@ -338,12 +338,16 @@ DiskPartitionInfo*
 disk_partitions_phys()
 {
   FILE *fs = NULL;
-  char line[50];
-  int i, j;
+  char *line;
+  char *phydevs[100]; /*TBD Maximum of hundred physical devices */
+  int i, j, devs = 0;
   int nparts = 5;
   DiskPartition *partitions = NULL;
   DiskPartitionInfo *ret = NULL;
   DiskPartition *d = NULL;
+
+  line = (char *)calloc(60, sizeof(char));
+  check_mem(line);
 
   partitions = calloc(nparts, sizeof(DiskPartition));
   check_mem(partitions);
@@ -356,24 +360,30 @@ disk_partitions_phys()
   ret->nitems = 0;
   ret->partitions = partitions;
 
-  int devs = 0;
-  char *phydevs[100];
 
   fs = fopen("/proc/filesystems", "r");
   check(fs, "Couldn't open /proc/filesystems");
 
   while (fgets(line, 50, fs) != NULL) {
     if (strncmp(line, "nodev", 5) != 0) {
-      phydevs[devs] = calloc(100, sizeof(char));
-      int start = 0, end = strlen(line)-1;
-      while (isspace(line[start])) start++;
-      while (isspace(line[end])) end--;
-      strncpy(phydevs[devs], line+start, (end+1)-start);
-
+      line = squeeze(line, " \t\n");
+      phydevs[devs] = strdup(line);
       devs++;
+      check(devs < 100, "FIXME: Can't process more than 100 physical devices");
     }
   }
   fclose(fs);
+
+  partitions = calloc(nparts, sizeof(DiskPartition));
+  check_mem(partitions);
+
+  ret = malloc(sizeof(DiskPartitionInfo));
+  check_mem(ret);
+  
+  d = partitions;
+
+  ret->nitems = 0;
+  ret->partitions = partitions;
 
   DiskPartitionInfo *tmp = disk_partitions();
   check(tmp, "disk_partitions failed");
