@@ -337,23 +337,31 @@ disk_usage(char path[], DiskUsage *ret)
 DiskPartitionInfo*
 disk_partitions_phys()
 {
-  FILE *fs = fopen("/proc/filesystems", "r");
-  check(fs, "Couldn't open /proc/filesystems");
+  FILE *fs = NULL;
   char line[50];
   int i, j;
-
   int nparts = 5;
-  DiskPartition *partitions = calloc(nparts, sizeof(DiskPartition));
-  DiskPartitionInfo *ret = malloc(sizeof(DiskPartitionInfo));
-  DiskPartition *d = partitions;
+  DiskPartition *partitions = NULL;
+  DiskPartitionInfo *ret = NULL;
+  DiskPartition *d = NULL;
+
+  partitions = calloc(nparts, sizeof(DiskPartition));
   check_mem(partitions);
+
+  ret = malloc(sizeof(DiskPartitionInfo));
   check_mem(ret);
+  
+  d = partitions;
 
   ret->nitems = 0;
   ret->partitions = partitions;
 
   int devs = 0;
   char *phydevs[100];
+
+  fs = fopen("/proc/filesystems", "r");
+  check(fs, "Couldn't open /proc/filesystems");
+
   while (fgets(line, 50, fs) != NULL) {
     if (strncmp(line, "nodev", 5) != 0) {
       phydevs[devs] = calloc(100, sizeof(char));
@@ -407,9 +415,17 @@ disk_partitions_phys()
   free_disk_partition_info(tmp);
   return ret;
 
-error:
-    free_disk_partition_info(tmp);
-    return NULL;
+ error:
+  if(fs) fclose(fs);
+  if(tmp) free_disk_partition_info(tmp);
+  if(ret) free_disk_partition_info(ret);
+  if(partitions) {
+    free(partitions->device);
+    free(partitions->mountpoint);
+    free(partitions->fstype);
+    free(partitions->opts);
+  }
+  return NULL;
 }
 
 DiskPartitionInfo *
