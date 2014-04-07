@@ -70,6 +70,46 @@ physical_cpu_count()
   return -1;
 }
 
+char **
+get_physical_devices(size_t *ndevices)
+{
+  FILE *fs = NULL;
+  char *line = NULL;
+  char **retval = NULL;
+  int i;
+  *ndevices = 0;
+
+  line = (char *)calloc(60, sizeof(char));
+  check_mem(line);
+
+  retval = (char **)calloc(100, sizeof(char *));
+  check_mem(retval);
+  
+
+  fs = fopen("/proc/filesystems", "r");
+  check(fs, "Couldn't open /proc/filesystems");
+
+  while (fgets(line, 50, fs) != NULL) {
+    if (strncmp(line, "nodev", 5) != 0) {
+      line = squeeze(line, " \t\n");
+      retval[*ndevices] = strdup(line);
+      *ndevices += 1;
+      check(*ndevices < 100, "FIXME: Can't process more than 100 physical devices");
+    }
+  }
+  fclose(fs);
+  free(line);
+  return retval;
+ error:
+  if (fs) fclose(fs);
+  if (line) free(line);
+  if (*ndevices != 0) 
+    for (i = 0; i < *ndevices; i++) 
+      free(retval[i]);
+  return NULL;
+}
+
+
 static unsigned int
 get_ppid(unsigned pid)
 {
@@ -334,129 +374,36 @@ disk_usage(char path[], DiskUsage *ret)
   return -1;
 }
 
-DiskPartitionInfo*
-disk_partitions_phys()
-{
-  FILE *fs = NULL;
-  char *line;
-  char *phydevs[100]; /*TBD Maximum of hundred physical devices */
-  int i, j, devs = 0;
-  int nparts = 5;
-  DiskPartition *partitions = NULL;
-  DiskPartitionInfo *ret = NULL;
-  DiskPartition *d = NULL;
-
-  line = (char *)calloc(60, sizeof(char));
-  check_mem(line);
-
-  partitions = calloc(nparts, sizeof(DiskPartition));
-  check_mem(partitions);
-
-  ret = malloc(sizeof(DiskPartitionInfo));
-  check_mem(ret);
-  
-  d = partitions;
-
-  ret->nitems = 0;
-  ret->partitions = partitions;
-
-
-  fs = fopen("/proc/filesystems", "r");
-  check(fs, "Couldn't open /proc/filesystems");
-
-  while (fgets(line, 50, fs) != NULL) {
-    if (strncmp(line, "nodev", 5) != 0) {
-      line = squeeze(line, " \t\n");
-      phydevs[devs] = strdup(line);
-      devs++;
-      check(devs < 100, "FIXME: Can't process more than 100 physical devices");
-    }
-  }
-  fclose(fs);
-
-  partitions = calloc(nparts, sizeof(DiskPartition));
-  check_mem(partitions);
-
-  ret = malloc(sizeof(DiskPartitionInfo));
-  check_mem(ret);
-  
-  d = partitions;
-
-  ret->nitems = 0;
-  ret->partitions = partitions;
-
-  DiskPartitionInfo *tmp = disk_partitions();
-  check(tmp, "disk_partitions failed");
-
-  for (i = 0;i < tmp->nitems; i++) {
-    DiskPartition *p = tmp->partitions + i;
-
-    bool nodev = true;
-    for(j = 0;j < devs; j++) {
-      if(strcmp(phydevs[j], p->fstype) == 0)
-	nodev = false;
-    }
-    if(strlen(p->device) == 0 || nodev) {
-      continue;
-    }
-
-    *d = *p;
-    d->device = strdup(p->device);
-    d->mountpoint = strdup(p->mountpoint);
-    d->fstype = strdup(p->fstype);
-    d->opts = strdup(p->opts);
-
-    ret->nitems ++;
-    d++;
-
-    if (ret->nitems == nparts) {
-      nparts *= 2;
-      partitions = realloc(partitions, sizeof(DiskPartition) * nparts);
-      check_mem(partitions);
-      ret->partitions = partitions;
-      d = ret->partitions + ret->nitems;
-    }
-  }
-  
-  for(i = 0; i < devs; i++) {
-    free(phydevs[i]);
-  }
-    
-  free_disk_partition_info(tmp);
-  return ret;
-
- error:
-  if(fs) fclose(fs);
-  if(tmp) free_disk_partition_info(tmp);
-  if(ret) free_disk_partition_info(ret);
-  if(partitions) {
-    free(partitions->device);
-    free(partitions->mountpoint);
-    free(partitions->fstype);
-    free(partitions->opts);
-  }
-  return NULL;
-}
 
 DiskPartitionInfo *
-disk_partitions()
+disk_partitions(int physical)
 {
   FILE *file = NULL;
   struct mntent *entry;
   int nparts = 5;
+  char **phys_devices = NULL; 
+  size_t nphys_devices;
+  int i;
+
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
   DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
   DiskPartition *d = partitions;
   check_mem(partitions);
   check_mem(ret);
-
+  
   ret->nitems = 0;
   ret->partitions = partitions;
 
   file = setmntent(MOUNTED, "r");
   check(file, "Couldn't open %s", MOUNTED);
 
+  phys_devices = get_physical_devices(&nphys_devices);
+
   while ((entry = getmntent(file))) {
+    if (physical && ! lfind(&entry->mnt_type, phys_devices, &nphys_devices, sizeof(char *), str_comp)) {
+      /* Skip this partition since we only need physical partitions */
+      continue;
+    }
     d->device  = strdup(entry->mnt_fsname);
     d->mountpoint = strdup(entry->mnt_dir);
     d->fstype = strdup(entry->mnt_type);
@@ -476,6 +423,11 @@ disk_partitions()
     }
   }
   endmntent(file);
+
+  for (i = 0; i < nphys_devices; i++)
+    free(phys_devices[i]);
+  free(phys_devices);
+
   return ret;
 
  error:

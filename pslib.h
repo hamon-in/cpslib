@@ -188,8 +188,7 @@ typedef struct {
 
 int disk_usage(char [], DiskUsage *);
 
-DiskPartitionInfo *disk_partitions();
-DiskPartitionInfo *disk_partitions_phys();
+DiskPartitionInfo *disk_partitions(int);
 void free_disk_partition_info(DiskPartitionInfo *);
 
 DiskIOCounterInfo *disk_io_counters();

@@ -18,45 +18,40 @@ void
 test_diskpartitioninfo()
 {
   int i;
-  DiskPartitionInfo *dp;
-  printf(" Disk partitions \n");
-  dp = disk_partitions();
-  if (!dp) {
-    printf("Aborting\n");
-    return;
-  }
-  printf("Partitions : %d\n", dp->nitems);
-  for(i = 0; i < dp->nitems; i++)
-    printf("%s %s %s %s\n",
-           dp->partitions[i].device,
-           dp->partitions[i].mountpoint,
-           dp->partitions[i].fstype,
-           dp->partitions[i].opts);
-
-  free_disk_partition_info(dp);
-  printf("\n");
-}
-
-
-void
-test_diskpartitioninfo_phys() {
-  int i;
-  DiskPartitionInfo *dp;
+  DiskPartitionInfo *phys_dp, *all_dp;
   printf(" Physical Disk partitions \n");
-  dp = disk_partitions_phys();
-  if (!dp) {
+  phys_dp = disk_partitions(1);
+  if (!phys_dp) {
     printf("Aborting\n");
     return;
   }
-  printf("Partitions : %d\n", dp->nitems);
-  for(i = 0; i < dp->nitems; i++)
-    printf("%s %s %s %s\n", 
-           dp->partitions[i].device,
-           dp->partitions[i].mountpoint,
-           dp->partitions[i].fstype,
-           dp->partitions[i].opts);
+  printf("Partitions : %d\n", phys_dp->nitems);
+  for(i = 0; i < phys_dp->nitems; i++)
+    printf("%s %s %s %s\n",
+           phys_dp->partitions[i].device,
+           phys_dp->partitions[i].mountpoint,
+           phys_dp->partitions[i].fstype,
+           phys_dp->partitions[i].opts);
 
-  free_disk_partition_info(dp);
+  free_disk_partition_info(phys_dp);
+
+  printf("\n");
+
+  printf(" All Disk partitions \n");
+  all_dp = disk_partitions(0);
+  if (!all_dp) {
+    printf("Aborting\n");
+    return;
+  }
+  printf("Partitions : %d\n", all_dp->nitems);
+  for(i = 0; i < all_dp->nitems; i++)
+    printf("%s %s %s %s\n",
+           all_dp->partitions[i].device,
+           all_dp->partitions[i].mountpoint,
+           all_dp->partitions[i].fstype,
+           all_dp->partitions[i].opts);
+
+  free_disk_partition_info(all_dp);
   printf("\n");
 }
 
@@ -260,7 +255,6 @@ main()
 {
   test_diskusage();
   test_diskpartitioninfo();
-  test_diskpartitioninfo_phys();
   test_diskiocounters();
   test_netiocounters();
   test_getusers();
