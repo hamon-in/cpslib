@@ -10,7 +10,7 @@ test_diskusage()
   DiskUsage du;
   printf(" Disk usage \n");
   disk_usage("/", &du);
-  printf("total: %ld\nused: %ld\nfree: %ld\npercent: %f\n", du.total, du.used, du.free, du.percent);
+  printf("total: %lud\nused: %lud\nfree: %lud\npercent: %f\n", du.total, du.used, du.free, du.percent);
   printf("\n");
 }
 
@@ -259,6 +259,7 @@ test_cpu_times_percent_per_cpu() {
     printf("SoftIRQ: %.2lf, Steal: %.2lf, ", cur->softirq, cur->steal);
     printf("Guest: %.2lf, Guest nice: %.2lf)\n", cur->guest, cur->guest_nice);
   }
+  free(r);
 }
 
 void
