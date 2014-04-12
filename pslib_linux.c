@@ -453,6 +453,9 @@ disk_partitions_phys()
       d = ret->partitions + ret->nitems;
     }
   }
+  for(i = 0;i < devs; i++) {
+    free(phydevs[i]);
+  }
   free_disk_partition_info(tmp);
   return ret;
 
