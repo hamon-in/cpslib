@@ -840,29 +840,50 @@ error:
 }
 
 
-CpuTimes *
-cpu_times() {
+CpuTimesInfo *
+cpu_times(int percpu) {
   FILE *fp = NULL;
   char *line = NULL;
-  CpuTimes *ret = NULL;
+  CpuTimesInfo *ret = NULL;
+  CpuTimes *parsed = NULL;
   fp = fopen("/proc/stat", "r");
   check(fp, "Couldn't open /proc/stat");
   line = calloc(150, sizeof(char));
   check_mem(line);
-  fgets(line, 140, fp);
+  ret = calloc(1, sizeof(CpuTimesInfo));
+  check_mem(ret);
+  
+  if (! percpu) {
+    /* The cumulative time is the first line */
+    fgets(line, 140, fp);
+    
+    parsed = parse_cpu_times(line);
+    check(parsed, "Error while parsing /proc/stat line for cpu times");
+    ret->cputimes = parsed;
+    ret->nitems = 1;
 
-  ret = parse_cpu_times(line);
-  check(ret, "Error while parsing /proc/stat line for cpu times");
-
-  fclose(fp);
-  free(line);
-  return ret;
+    fclose(fp);
+    free(line);
+    return ret;
+  }
 error:
   if (fp) fclose(fp);
   if (line) free(line);
   if (ret) free(ret);
   return NULL;
 }
+
+void
+free_cputimes_info(CpuTimesInfo *cputimesinfo)
+{
+  CpuTimes *d = cputimesinfo->cputimes;
+  while (cputimesinfo->nitems--) {
+    free (d);
+    d++;
+  }
+  free(cputimesinfo);
+}
+
 
 int
 cpu_count(int logical)

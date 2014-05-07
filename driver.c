@@ -189,13 +189,14 @@ test_swap()
 void
 test_cpu_times()
 {
+  CpuTimesInfo *info;
   CpuTimes *r;
-  r = cpu_times();
-  if(! r) {
+  info = cpu_times(0);
+  if(! info) {
     printf("Aborting\n");
     return;
   }
-
+  r = info->cputimes;
   printf(" CPU times\n");
   printf("User: %.3lf\n", r->user);
   printf("System: %.3lf\n", r->system);
@@ -208,7 +209,7 @@ test_cpu_times()
   printf("Guest: %.3lf\n", r->guest);
   printf("Guest nice: %.3lf\n", r->guest_nice);
   printf("\n");
-  free(r);
+  free_cputimes_info(info);
 }
 
 
