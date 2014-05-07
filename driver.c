@@ -196,7 +196,7 @@ test_cpu_times()
     printf("Aborting\n");
     return;
   }
-  r = info->cputimes;
+  r = *(info->cputimes);
   printf(" CPU times\n");
   printf("User: %.3lf\n", r->user);
   printf("System: %.3lf\n", r->system);
@@ -208,6 +208,36 @@ test_cpu_times()
   printf("Steal: %.3lf\n", r->steal);
   printf("Guest: %.3lf\n", r->guest);
   printf("Guest nice: %.3lf\n", r->guest_nice);
+  printf("\n");
+  free_cputimes_info(info);
+}
+
+void
+test_cpu_times_percpu()
+{
+  CpuTimesInfo *info;
+  CpuTimes *r;
+  int i;
+  info = cpu_times(1);
+  if(! info) {
+    printf("Aborting\n");
+    return;
+  }
+  printf(" Individual CPU times\n");
+  for (i=0; i<info->nitems; i++) {
+    r = *(info->cputimes + i);
+    printf("CPU %d :: ", i+1);
+    printf(" Usr: %.3lf;", r->user);
+    printf(" Sys: %.3lf;", r->system);
+    printf(" Idle: %.3lf;", r->idle);
+    printf(" Nice: %.3lf;", r->nice);
+    printf(" IOWait: %.3lf;", r->iowait);
+    printf(" IRQ: %.3lf;", r->irq);
+    printf(" SoftIRQ: %.3lf;", r->softirq);
+    printf(" Steal: %.3lf;", r->steal);
+    printf(" Guest: %.3lf;", r->guest);
+    printf(" Guest nice: %.3lf\n", r->guest_nice);
+  }
   printf("\n");
   free_cputimes_info(info);
 }
@@ -263,6 +293,7 @@ main()
   test_virtualmeminfo();
   test_swap();
   test_cpu_times();
+  test_cpu_times_percpu();
   test_cpu_count();
   test_process();
   return 0;

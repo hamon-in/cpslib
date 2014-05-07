@@ -846,11 +846,13 @@ cpu_times(int percpu) {
   char *line = NULL;
   CpuTimesInfo *ret = NULL;
   CpuTimes *parsed = NULL;
+  CpuTimes **ct = NULL;
+  int cpus = 0;
   fp = fopen("/proc/stat", "r");
   check(fp, "Couldn't open /proc/stat");
-  line = calloc(150, sizeof(char));
+  line = (char *) calloc(150, sizeof(char));
   check_mem(line);
-  ret = calloc(1, sizeof(CpuTimesInfo));
+  ret = (CpuTimesInfo *)calloc(1, sizeof(CpuTimesInfo));
   check_mem(ret);
   
   if (! percpu) {
@@ -859,13 +861,33 @@ cpu_times(int percpu) {
     
     parsed = parse_cpu_times(line);
     check(parsed, "Error while parsing /proc/stat line for cpu times");
-    ret->cputimes = parsed;
+    ret->cputimes = (CpuTimes **)calloc(1, sizeof(CpuTimes *));
+    *(ret->cputimes) = parsed;
     ret->nitems = 1;
+  } else {
+    fgets(line, 140, fp); /* Drop the first line */
+    ret->cputimes = (CpuTimes **)calloc(20, sizeof(CpuTimes *));
+    check_mem(ret->cputimes);
+    ct = ret->cputimes;
 
-    fclose(fp);
-    free(line);
-    return ret;
+    while(1) {
+      fgets(line, 140, fp);
+      if(strncmp(line, "cpu", 3) != 0)
+        break;
+      cpus++;
+
+      parsed = parse_cpu_times(line);
+      check(parsed, "Error while parsing /proc/stat line for cpu times");
+      *ct = parsed;
+      ct++;
+      /* TBD: Reallocate if we have more than 20 CPUs */
+    }
+    ret->nitems = cpus;
   }
+  fclose(fp);
+  free(line);
+  return ret;
+  
 error:
   if (fp) fclose(fp);
   if (line) free(line);
@@ -876,11 +898,12 @@ error:
 void
 free_cputimes_info(CpuTimesInfo *cputimesinfo)
 {
-  CpuTimes *d = cputimesinfo->cputimes;
+  CpuTimes **d = cputimesinfo->cputimes;
   while (cputimesinfo->nitems--) {
-    free (d);
+    free (*d);
     d++;
   }
+  free (cputimesinfo->cputimes);
   free(cputimesinfo);
 }
 

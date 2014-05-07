@@ -171,7 +171,7 @@ typedef struct {
 
 typedef struct {
   int nitems;
-  CpuTimes *cputimes;
+  CpuTimes **cputimes;
 } CpuTimesInfo;
 
 typedef struct {
