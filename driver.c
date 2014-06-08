@@ -242,6 +242,26 @@ test_cpu_times_percpu()
   free_cputimes_info(info);
 }
 
+void
+test_cpu_times_percent()
+{
+  CpuTimesInfo *info;
+  double ret;
+  info = cpu_times(0);
+  if(! info) {
+    printf("Aborting\n");
+    return;
+  }
+  sleep(1);
+  ret = cpu_times_percent(0, info); /* Actual percentages since last call */
+  if (ret == -1) {
+    printf("Error while computing utilisation percentage\n");
+    return;
+  }
+  printf(" CPU utilisation percentage (1 second sample)\n%f %%\n", ret);
+  printf("\n");
+  free_cputimes_info(info);
+}
 
 void
 test_cpu_count()
@@ -294,6 +314,7 @@ main()
   test_swap();
   test_cpu_times();
   test_cpu_times_percpu();
+  test_cpu_times_percent();
   test_cpu_count();
   test_process();
   return 0;

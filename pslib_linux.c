@@ -20,6 +20,43 @@
 /* TBD : Generic function to get field from a line in a file that starts with something */
 
 /* Internal functions */
+
+static double 
+sum_cpu_time(CpuTimes *t) {
+  double ret = 0.0;
+  ret += t->user;
+  ret += t->system;
+  ret += t->idle;
+  ret += t->nice;
+  ret += t->iowait;
+  ret += t->irq;
+  ret += t->softirq;
+  ret += t->steal;
+  ret += t->guest;
+  ret += t->guest_nice;
+  return ret;
+}
+
+
+double
+calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2)
+{
+  double t1_all = sum_cpu_time(t1);
+  double t2_all = sum_cpu_time(t2);
+  double t1_busy = t1_all - t1->idle;
+  double t2_busy = t2_all - t2->idle;
+  double busy_delta, all_delta, busy_percentage;
+
+  /* This exists in psutils. We'll put it in if we actually find it */
+  /* if (t2_busy < t1_busy)  */
+  /*   return 0.0; /\* Indicates a precision problem *\/ */
+
+  busy_delta = t2_busy - t1_busy;
+  all_delta = t2_all - t1_all;
+  busy_percentage = (busy_delta / all_delta) * 100;
+  return busy_percentage;
+}
+
 static int
 logical_cpu_count()
 {
@@ -906,6 +943,23 @@ free_cputimes_info(CpuTimesInfo *cputimesinfo)
   free (cputimesinfo->cputimes);
   free(cputimesinfo);
 }
+
+double
+cpu_times_percent(int percpu, CpuTimesInfo *prev_times) {
+  CpuTimesInfo *current = NULL;
+  double ret;
+  check(prev_times, "Need a reference points. prev_times can't be NULL");
+
+  current = cpu_times(percpu);
+  check(current, "Couldn't obtain CPU times");
+  ret = calculate_cpu_util_percentage(*prev_times->cputimes, *current->cputimes);
+  free_cputimes_info(current);
+  return ret;
+ error:
+  if (current) free_cputimes_info(current);
+  return -1;
+}
+
 
 
 int
