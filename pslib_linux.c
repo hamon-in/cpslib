@@ -206,7 +206,7 @@ get_exe(unsigned pid)
   struct stat buf;
 
   sprintf(procfile,"/proc/%d/exe", pid);
-  tmp = calloc(bufsize, sizeof(char));
+  tmp = (char *)calloc(bufsize, sizeof(char));
   check_mem(tmp);
   ret = readlink(procfile, tmp, bufsize - 1);
   if (ret == -1 && errno == ENOENT) {
@@ -336,7 +336,7 @@ get_terminal(unsigned int pid)
   unsigned int bufsize = 1024;
 
   sprintf(procfile,"/proc/%d/fd/0", pid);
-  tmp = calloc(bufsize, sizeof(char));
+  tmp = (char *)calloc(bufsize, sizeof(char));
   check_mem(tmp);
   ret = readlink(procfile, tmp, bufsize - 1);
   check(ret != -1, "Couldn't expand symbolic link");
@@ -978,7 +978,7 @@ cpu_count(int logical)
 Process *
 get_process(unsigned pid)
 {
-  Process *retval = calloc(1, sizeof(Process));
+  Process *retval = (Process *)calloc(1, sizeof(Process));
   unsigned int *uids = NULL;
   unsigned int *gids = NULL;
   retval->pid = pid;
