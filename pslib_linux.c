@@ -948,7 +948,7 @@ double
 cpu_times_percent(int percpu, CpuTimesInfo *prev_times) {
   CpuTimesInfo *current = NULL;
   double ret;
-  check(prev_times, "Need a reference points. prev_times can't be NULL");
+  check(prev_times, "Need a reference point. prev_times can't be NULL");
 
   current = cpu_times(percpu);
   check(current, "Couldn't obtain CPU times");
