@@ -189,14 +189,12 @@ test_swap()
 void
 test_cpu_times()
 {
-  CpuTimesInfo *info;
   CpuTimes *r;
-  info = cpu_times(0);
-  if(! info) {
+  r = cpu_times(0);
+  if(! r) {
     printf("Aborting\n");
     return;
   }
-  r = *(info->cputimes);
   printf(" CPU times\n");
   printf("User: %.3lf\n", r->user);
   printf("System: %.3lf\n", r->system);
@@ -209,59 +207,38 @@ test_cpu_times()
   printf("Guest: %.3lf\n", r->guest);
   printf("Guest nice: %.3lf\n", r->guest_nice);
   printf("\n");
-  free_cputimes_info(info);
+  free(r);
 }
 
 void
 test_cpu_times_percpu()
 {
-  CpuTimesInfo *info;
-  CpuTimes *r;
-  int i;
-  info = cpu_times(1);
-  if(! info) {
+  CpuTimes *r, *c;
+  int i, ncpus = cpu_count(1);
+  c = r = cpu_times(1);
+  if(! r) {
     printf("Aborting\n");
     return;
   }
   printf(" Individual CPU times\n");
-  for (i=0; i<info->nitems; i++) {
-    r = *(info->cputimes + i);
+  for (i=0; i<ncpus; i++) {
     printf("CPU %d :: ", i+1);
-    printf(" Usr: %.3lf;", r->user);
-    printf(" Sys: %.3lf;", r->system);
-    printf(" Idle: %.3lf;", r->idle);
-    printf(" Nice: %.3lf;", r->nice);
-    printf(" IOWait: %.3lf;", r->iowait);
-    printf(" IRQ: %.3lf;", r->irq);
-    printf(" SoftIRQ: %.3lf;", r->softirq);
-    printf(" Steal: %.3lf;", r->steal);
-    printf(" Guest: %.3lf;", r->guest);
-    printf(" Guest nice: %.3lf\n", r->guest_nice);
+    printf(" Usr: %.3lf;", c->user);
+    printf(" Sys: %.3lf;", c->system);
+    printf(" Idle: %.3lf;", c->idle);
+    printf(" Nice: %.3lf;", c->nice);
+    printf(" IOWait: %.3lf;", c->iowait);
+    printf(" IRQ: %.3lf;", c->irq);
+    printf(" SoftIRQ: %.3lf;", c->softirq);
+    printf(" Steal: %.3lf;", c->steal);
+    printf(" Guest: %.3lf;", c->guest);
+    printf(" Guest nice: %.3lf\n", c->guest_nice);
+    c++;
   }
   printf("\n");
-  free_cputimes_info(info);
+  free(r);
 }
 
-void
-test_cpu_times_percent()
-{
-  CpuTimesInfo *info;
-  double ret;
-  info = cpu_times(0);
-  if(! info) {
-    printf("Aborting\n");
-    return;
-  }
-  sleep(1);
-  ret = cpu_times_percent(0, info); /* Actual percentages since last call */
-  if (ret == -1) {
-    printf("Error while computing utilisation percentage\n");
-    return;
-  }
-  printf(" CPU utilisation percentage (1 second sample)\n%f %%\n", ret);
-  printf("\n");
-  free_cputimes_info(info);
-}
 
 void
 test_cpu_count()
@@ -314,7 +291,6 @@ main()
   test_swap();
   test_cpu_times();
   test_cpu_times_percpu();
-  test_cpu_times_percent();
   test_cpu_count();
   test_process();
   return 0;

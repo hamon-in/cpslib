@@ -356,17 +356,14 @@ get_terminal(unsigned int pid)
 }
 
 
-CpuTimes *
-parse_cpu_times(char* line) {
-  CpuTimes *ret = NULL;
+int
+parse_cpu_times(char* line, CpuTimes *ret) {
   unsigned long values[10] = {};
   double clock_ticks;
-  ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
-
+  int i;
   char *pos = strtok(line, " ");
 
   pos = strtok(NULL, " "); // skip cpu
-  int i;
   for(i = 0; i < 10 && pos != NULL; i++) {
     values[i] = strtoul(pos, NULL, 10);
     pos = strtok(NULL, " ");
@@ -386,10 +383,9 @@ parse_cpu_times(char* line) {
   ret->guest      = values[8] / clock_ticks;
   ret->guest_nice = values[9] / clock_ticks;
 
-  return ret;
+  return 0;
  error:
-  if (ret) free(ret);
-  return NULL;
+  return -1;
 }
 
 
@@ -877,87 +873,49 @@ error:
 }
 
 
-CpuTimesInfo *
+CpuTimes *
 cpu_times(int percpu) {
   FILE *fp = NULL;
   char *line = NULL;
-  CpuTimesInfo *ret = NULL;
-  CpuTimes *parsed = NULL;
-  CpuTimes **ct = NULL;
-  int cpus = 0;
+  CpuTimes *ret = NULL;
+  int i = 0;
   fp = fopen("/proc/stat", "r");
   check(fp, "Couldn't open /proc/stat");
   line = (char *) calloc(150, sizeof(char));
   check_mem(line);
-  ret = (CpuTimesInfo *)calloc(1, sizeof(CpuTimesInfo));
-  check_mem(ret);
   
   if (! percpu) {
     /* The cumulative time is the first line */
     fgets(line, 140, fp);
-    
-    parsed = parse_cpu_times(line);
-    check(parsed, "Error while parsing /proc/stat line for cpu times");
-    ret->cputimes = (CpuTimes **)calloc(1, sizeof(CpuTimes *));
-    *(ret->cputimes) = parsed;
-    ret->nitems = 1;
+    ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
+    check(parse_cpu_times(line, ret) == 0,
+          "Error while parsing /proc/stat line for cpu times");
+    fclose(fp);
+    free(line);
+    return ret;
   } else {
     fgets(line, 140, fp); /* Drop the first line */
-    ret->cputimes = (CpuTimes **)calloc(20, sizeof(CpuTimes *));
-    check_mem(ret->cputimes);
-    ct = ret->cputimes;
+    ret = (CpuTimes *)calloc(20, sizeof(CpuTimes));
+    check_mem(ret);
 
     while(1) {
       fgets(line, 140, fp);
       if(strncmp(line, "cpu", 3) != 0)
         break;
-      cpus++;
-
-      parsed = parse_cpu_times(line);
-      check(parsed, "Error while parsing /proc/stat line for cpu times");
-      *ct = parsed;
-      ct++;
+      check (parse_cpu_times(line, ret+i) == 0, 
+             "Error while parsing /proc/stat line for cpu times");
+      i++;
       /* TBD: Reallocate if we have more than 20 CPUs */
     }
-    ret->nitems = cpus;
   }
   fclose(fp);
   free(line);
   return ret;
-  
 error:
   if (fp) fclose(fp);
   if (line) free(line);
   if (ret) free(ret);
   return NULL;
-}
-
-void
-free_cputimes_info(CpuTimesInfo *cputimesinfo)
-{
-  CpuTimes **d = cputimesinfo->cputimes;
-  while (cputimesinfo->nitems--) {
-    free (*d);
-    d++;
-  }
-  free (cputimesinfo->cputimes);
-  free(cputimesinfo);
-}
-
-double
-cpu_times_percent(int percpu, CpuTimesInfo *prev_times) {
-  CpuTimesInfo *current = NULL;
-  double ret;
-  check(prev_times, "Need a reference point. prev_times can't be NULL");
-
-  current = cpu_times(percpu);
-  check(current, "Couldn't obtain CPU times");
-  ret = calculate_cpu_util_percentage(*prev_times->cputimes, *current->cputimes);
-  free_cputimes_info(current);
-  return ret;
- error:
-  if (current) free_cputimes_info(current);
-  return -1;
 }
 
 

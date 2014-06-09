@@ -170,11 +170,6 @@ typedef struct {
 } CpuTimes;
 
 typedef struct {
-  int nitems;
-  CpuTimes **cputimes;
-} CpuTimesInfo;
-
-typedef struct {
   unsigned int pid;
   unsigned int ppid;
   char *name;
@@ -210,11 +205,10 @@ unsigned long int get_boot_time();
 int virtual_memory(VmemInfo *);
 int swap_memory(SwapMemInfo *);
 
-CpuTimesInfo *cpu_times(int);
+CpuTimes *cpu_times(int);
 int cpu_times_per_cpu(CpuTimes **);
 
-double cpu_times_percent(int, CpuTimesInfo *);
-void free_cputimes_info(CpuTimesInfo *);
+double *cpu_times_percent(int, CpuTimes *, int);
 int cpu_times_percent_per_cpu(CpuTimes **);
 
 double cpu_percent();
