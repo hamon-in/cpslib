@@ -208,7 +208,7 @@ int swap_memory(SwapMemInfo *);
 CpuTimes *cpu_times(int);
 int cpu_times_per_cpu(CpuTimes **);
 
-double *cpu_times_percent(int, CpuTimes *, int);
+double *cpu_times_percent(int, CpuTimes *);
 int cpu_times_percent_per_cpu(CpuTimes **);
 
 double cpu_percent();

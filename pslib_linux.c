@@ -918,6 +918,26 @@ error:
   return NULL;
 }
 
+double *
+cpu_times_percent(int percpu, CpuTimes *prev_times) {
+  CpuTimes *current = NULL;
+  int i, ncpus = percpu ? cpu_count(1) : 1;
+  double *ret;
+  check(prev_times, "Need a reference point. prev_times can't be NULL");
+  current = cpu_times(percpu);
+  check(current, "Couldn't obtain CPU times");
+  ret = (double *)calloc(ncpus, sizeof(double));
+  check_mem(ret);
+  for (i=0; i<ncpus; i++) {
+    *(ret+i) = calculate_cpu_util_percentage(prev_times+i, current+i);
+  }
+  free(current);
+  return ret;
+ error:
+  if (current) free(current);
+  return NULL;
+}
+
 
 
 int
