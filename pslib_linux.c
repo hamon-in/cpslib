@@ -37,6 +37,23 @@ sum_cpu_time(CpuTimes *t) {
   return ret;
 }
 
+static double
+calc_cpu_busy_diff(CpuTimes *t1, CpuTimes *t2) {
+  double t1_all = sum_cpu_time(t1);
+  double t1_busy = t1_all - t1->idle;
+
+  double t2_all = sum_cpu_time(t2);
+  double t2_busy = t2_all - t2->idle;
+  
+
+  if(t2_busy <= t1_busy)
+    return 0.0;
+
+  double busy_delta = t2_busy - t1_busy;
+  double all_delta = t2_all - t1_all;
+  double busy_perc = (busy_delta / all_delta) * 100;
+  return busy_perc;
+}
 
 double
 calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2)
@@ -938,6 +955,20 @@ cpu_times_percent(int percpu, CpuTimes *prev_times) {
   return NULL;
 }
 
+double 
+cpu_percent(int percpu, CpuTimes *prev_times) {
+  CpuTimes *current = NULL;
+  double percentage;
+  check(prev_times, "Need a reference point. prev_times can't be NULL");
+  current = cpu_times(percpu);
+  check(current, "Couldn't obtain CPU times");
+  percentage = calc_cpu_busy_diff(prev_times, current);
+  free(current);
+  return percentage;
+ error:
+  if (current) free(current);
+  return -1;
+}
 
 
 int
