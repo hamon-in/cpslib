@@ -239,6 +239,8 @@ test_cpu_times_percpu()
   free(r);
 }
 
+  
+
 void
 test_cpu_times_percent()
 {
@@ -287,23 +289,55 @@ test_cpu_times_percent_percpu()
   free(ret);
 }
 
+
 void 
-test_cpu_percent()
+test_cpu_util_percent()
 {
   CpuTimes *info;
+  double *utilisation;
   info = cpu_times(0);
+
   if(! info) {
     printf("Aborting\n");
     return;
   }
 
   usleep(100000);
-  double percent = cpu_percent(0, info);
-  printf(" CPU percent\n");
-  printf("Cpu utilisation percentage : %f\n", percent);
+  utilisation = cpu_util_percent(0, info);
+  printf(" CPU utilisation percentage (0.1 second sample)\n");
+  printf("%f\n", *utilisation);
   printf("\n");
+
+  free(utilisation);
   free(info);
 }
+
+void 
+test_cpu_util_percent_percpu()
+{
+  CpuTimes *info;
+  double *percentages;
+  int i, ncpus = cpu_count(1);
+  info = cpu_times(1);
+
+  if(! info) {
+    printf("Aborting\n");
+    return;
+  }
+
+  usleep(100000);
+  percentages = cpu_util_percent(1, info);
+  printf(" CPU utilisation percentage per CPU (0.1 second sample)\n");
+  for (i=0; i<ncpus; i++) {
+    printf("Cpu #%d : %f\n", i, percentages[i]);
+  }
+
+  printf("\n");
+
+  free(percentages);
+  free(info);
+}
+
 
 void
 test_cpu_count()
@@ -354,11 +388,17 @@ main()
   test_boottime();
   test_virtualmeminfo();
   test_swap();
+
   test_cpu_times();
   test_cpu_times_percpu();
+
+  test_cpu_util_percent();
+  test_cpu_util_percent_percpu();
+
   test_cpu_times_percent();
   test_cpu_times_percent_percpu();
-  test_cpu_percent();
+
+
   test_cpu_count();
   test_process();
   return 0;
