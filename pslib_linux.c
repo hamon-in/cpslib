@@ -38,6 +38,32 @@ sum_cpu_time(CpuTimes *t) {
 }
 
 
+static CpuTimes *
+calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2)
+{
+  CpuTimes *ret;
+  double all_delta = sum_cpu_time(t2) - sum_cpu_time(t1);
+  ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
+  check_mem(ret);
+
+  ret->user       = 100 * (t2->user - t1->user) / all_delta;
+  ret->system     = 100 * (t2->system - t1->system) / all_delta;
+  ret->idle       = 100 * (t2->idle - t1->idle) / all_delta;
+  ret->nice       = 100 * (t2->nice - t1->nice) / all_delta;
+  ret->iowait     = 100 * (t2->iowait - t1->iowait) / all_delta;
+  ret->irq        = 100 * (t2->irq - t1->irq) / all_delta;
+  ret->softirq    = 100 * (t2->softirq - t1->softirq) / all_delta;
+  ret->steal      = 100 * (t2->steal - t1->steal) / all_delta;
+  ret->guest      = 100 * (t2->guest - t1->guest) / all_delta;
+  ret->guest_nice = 100 * (t2->guest_nice - t1->guest_nice) / all_delta;
+  return ret;
+
+ error:
+  if (ret) free(ret);
+  return NULL;
+    
+}
+
 static double
 calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2)
 {
@@ -918,18 +944,21 @@ error:
   return NULL;
 }
 
-double *
+CpuTimes *
 cpu_times_percent(int percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
+  CpuTimes *t;
   int i, ncpus = percpu ? cpu_count(1) : 1;
-  double *ret;
+  CpuTimes *ret;
   check(prev_times, "Need a reference point. prev_times can't be NULL");
   current = cpu_times(percpu);
   check(current, "Couldn't obtain CPU times");
-  ret = (double *)calloc(ncpus, sizeof(double));
+  ret = (CpuTimes *)calloc(ncpus, sizeof(CpuTimes));
   check_mem(ret);
   for (i=0; i<ncpus; i++) {
-    *(ret+i) = calculate_cpu_util_percentage(prev_times+i, current+i);
+    t = calculate_cpu_times_percentage(prev_times+i, current+i);
+    *(ret+i) = *t;
+    free(t);
   }
   free(current);
   return ret;
