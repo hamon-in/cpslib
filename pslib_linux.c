@@ -208,7 +208,7 @@ get_procname(unsigned pid)
   sprintf(procfile,"/proc/%d/stat", pid);
   fp = fopen(procfile,"r");
   check(fp, "Couldn't open process status file");
-  fgets(line, 300, fp);
+  check(fgets(line, 300, fp), "Couldn't read from process status file");
   fclose(fp);
 
   tmp = strtok(line, " ");
@@ -912,7 +912,7 @@ cpu_times(int percpu) {
   
   if (! percpu) {
     /* The cumulative time is the first line */
-    fgets(line, 140, fp);
+    check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
     ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
     check(parse_cpu_times(line, ret) == 0,
           "Error while parsing /proc/stat line for cpu times");
@@ -920,12 +920,12 @@ cpu_times(int percpu) {
     free(line);
     return ret;
   } else {
-    fgets(line, 140, fp); /* Drop the first line */
+    check(fgets(line, 140, fp), "Couldn't read from /proc/stat"); /* Drop the first line */
     ret = (CpuTimes *)calloc(20, sizeof(CpuTimes));
     check_mem(ret);
 
-    while(1) {
-      fgets(line, 140, fp);
+    while(1) { /* Drop the first line, read others */
+      check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
       if(strncmp(line, "cpu", 3) != 0)
         break;
       check (parse_cpu_times(line, ret+i) == 0, 
