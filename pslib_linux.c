@@ -924,7 +924,7 @@ cpu_times(int percpu) {
     ret = (CpuTimes *)calloc(20, sizeof(CpuTimes));
     check_mem(ret);
 
-    while(1) { /* Drop the first line, read others */
+    while(1) { /* Dropped the first line, read the rest */
       check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
       if(strncmp(line, "cpu", 3) != 0)
         break;
