@@ -4,7 +4,7 @@
 float percentage(unsigned long int, unsigned long int);
 int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
-char *grep_awk(FILE *, char *, int, char *);
+//char *grep_awk(FILE *, char *, int, char *);
 char *squeeze(char *, char *);
 
 #include <stdio.h>
