@@ -28,5 +28,22 @@ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([getmntent memset strdup strncasecmp strndup strtol strtoul strtoull sysinfo])
 
+# Determine the host system
+AC_CANONICAL_SYSTEM
+
+case $host in
+  *-linux* ) os="linux"
+    ;;
+  *-darwin* ) os="darwin"
+    ;;
+  * ) os="Unsupported"
+    AC_MSG_ERROR([Your platform is currently not supported])
+    ;;
+esac
+
+# OS info for Automake
+AM_CONDITIONAL(OS_LINUX, test "x$os" = xlinux)
+AM_CONDITIONAL(OS_DARWIN, test "x$os" = xdarwin)
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
