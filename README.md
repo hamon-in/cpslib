@@ -29,6 +29,6 @@ documentation will be done separately.
 
 ## Platforms supported
  * Linux - In progress
- * MacOS - Planned
+ * OS X - In progress
  * *BSD - Planned
  * Windows - Planned
