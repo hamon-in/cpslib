@@ -12,31 +12,13 @@
 static int
 logical_cpu_count()
 {
-  int ncpu;
-  size_t len;
-
-  len = sizeof(ncpu);
-
-  check(sysctlbyname("hw.logicalcpu", &ncpu, &len, NULL, 0) != -1, "sysctl failed");
-  return ncpu;
-
-error:
-  return -1; /* TBD: replacement for Python's None */
+  return cpu_count(1);
 }
 
 static int
 physical_cpu_count()
 {
-  int ncpu;
-  size_t len;
-
-  len = sizeof(ncpu);
-
-  check(sysctlbyname("hw.physicalcpu", &ncpu, &len, NULL, 0) != -1, "sysctl failed");
-  return ncpu;
-
-error:
-  return -1; /* TBD: replacement for Python's None */
+  return cpu_count(0);
 }
 
 
@@ -63,12 +45,17 @@ error:
 int
 cpu_count(int logical)
 {
-  /* TBD: consider keeping logic in this function, just the MIB names differ */
-  long ret = -1;
+  int ncpu;
+  size_t len = sizeof(ncpu);
+
   if (logical) {
-    return logical_cpu_count();
+    check(sysctlbyname("hw.logicalcpu", &ncpu, &len, NULL, 0) != -1, "sysctl failed");
   } else {
-    return physical_cpu_count();
+    check(sysctlbyname("hw.physicalcpu", &ncpu, &len, NULL, 0) != -1, "sysctl failed");
   }
-  return ret;
+
+  return ncpu;
+
+error:
+  return -1;
 }

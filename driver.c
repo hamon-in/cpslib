@@ -25,7 +25,7 @@ test_cpu_count()
     printf("Aborting\n");
     return;
   }
-  printf("Logical : %d\nPhysical : %d\n", logical ,physical);
+  printf("Logical : %d\nPhysical : %d\n", logical, physical);
   printf("\n");
 }
 
