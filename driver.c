@@ -13,6 +13,23 @@ test_boottime()
   printf("%ld\n\n", t);
 }
 
+void
+test_cpu_count()
+{
+  int logical;
+  int physical;
+  logical = cpu_count(1);
+  physical = cpu_count(0);
+  printf(" CPU count \n");
+  if (logical == -1 || physical == -1) {
+    printf("Aborting\n");
+    return;
+  }
+  printf("Logical : %d\nPhysical : %d\n", logical ,physical);
+  printf("\n");
+}
+
+
 int
 main()
 {
@@ -34,7 +51,7 @@ main()
 //  test_cpu_times_percent();
 //  test_cpu_times_percent_percpu();
 //
-//  test_cpu_count();
+ test_cpu_count();
 //  test_process();
   return 0;
 }
