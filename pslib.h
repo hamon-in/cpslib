@@ -24,7 +24,7 @@ enum ioprio_class {
   IOPRIO_CLASS_IDLE
 };
 
-enum rlimit {
+/*enum rlimit {
   RLIMIT_INFINITY,
   RLIMIT_AS,
   RLIMIT_CORE,
@@ -42,7 +42,7 @@ enum rlimit {
   RLIMIT_RTTIME,
   RLIMIT_SIGPENDING,
   RLIMIT_STACK
-};
+};*/
 
 enum con_status {
   ESTABLISHED,

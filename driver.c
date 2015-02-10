@@ -29,6 +29,30 @@ test_cpu_count()
   printf("\n");
 }
 
+void
+test_getusers()
+{
+  UsersInfo *r;
+  int i;
+  printf(" Logged in users \n");
+  r = get_users();
+  if (! r) {
+    printf("Failed \n");
+    return;
+  }
+  printf("Total: %d\n", r->nitems);
+  printf("Name\tTerminal Host\tStarted\n");
+  for (i = 0; i < r->nitems; i++) {
+    printf("%s\t%s\t %s\t%.1f\n",
+        r->users[i].username,
+        r->users[i].tty,
+        r->users[i].hostname,
+        r->users[i].tstamp);
+  }
+  free_users_info(r);
+  printf("\n");
+}
+
 
 int
 main()
@@ -37,7 +61,7 @@ main()
 //  test_diskpartitioninfo();
 //  test_diskiocounters();
 //  test_netiocounters();
-//  test_getusers();
+  test_getusers();
   test_boottime();
 //  test_virtualmeminfo();
 //  test_swap();

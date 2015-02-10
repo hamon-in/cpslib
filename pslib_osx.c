@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <utmpx.h>
 
 #include "pslib.h"
 #include "common.h"
@@ -58,4 +60,72 @@ cpu_count(int logical)
 
 error:
   return -1;
+}
+
+
+UsersInfo *
+get_users ()
+{
+  int nusers = 100;
+
+  UsersInfo *ret = (UsersInfo *)calloc(1, sizeof(UsersInfo));
+  check_mem(ret);
+  Users *users = (Users *)calloc(nusers, sizeof(Users));
+  check_mem(users);
+  Users *u = users;
+
+  struct utmpx *utx;
+
+  ret->nitems = 0;
+  ret->users = users;
+
+  while (NULL != (utx = getutxent())) {
+    if (utx->ut_type != USER_PROCESS)
+      continue;
+
+    u->username = strdup(utx->ut_user);
+    check_mem(u->username);
+
+    u->tty = strdup(utx->ut_line);
+    check_mem(u->username);
+
+    u->hostname = strdup(utx->ut_host);
+    check_mem(u->hostname);
+
+    u->tstamp = utx->ut_tv.tv_sec;
+
+    ret->nitems++;
+    u++;
+
+    if (ret->nitems == nusers) { /* More users than we've allocated space for. */
+      nusers *= 2;
+      users = realloc(users, sizeof(Users) * nusers);
+      check_mem(users);
+      ret->users = users;
+      u = ret->users + ret->nitems; /* Move the cursor to the correct
+                                       value in case the realloc moved
+                                       the memory */
+    }
+  }
+  endutxent();
+  return ret;
+
+ error:
+  free_users_info(ret);
+  return NULL;
+
+}
+
+void
+free_users_info(UsersInfo * ui)
+{
+  Users *u = ui->users;
+  while (ui->nitems--) {
+    free(u->username);
+    free(u->tty);
+    free(u->hostname);
+    u++;
+  }
+  free(ui->users);
+  free(ui);
 }
