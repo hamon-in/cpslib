@@ -122,8 +122,9 @@ test_getusers()
     return;
   }
   printf("Total: %d\n", r->nitems);
+  printf("Name\tTerminal Host\tStarted\n");
   for (i = 0; i < r->nitems; i++) {
-    printf("%s  %s   %s   %f\n",
+    printf("%s\t%s\t %s\t%.1f\n",
            r->users[i].username,
            r->users[i].tty,
            r->users[i].hostname,
