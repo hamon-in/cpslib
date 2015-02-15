@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([cpslib], [0.1], [noufal@nibrahim.net.in])
-AM_INIT_AUTOMAKE([-Wall -Werror])
+AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([pslib_linux.c])
 AC_CONFIG_HEADERS([config.h])
 
