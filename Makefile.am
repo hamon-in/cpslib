@@ -9,4 +9,5 @@ endif
 bin_PROGRAMS = driver
 driver_SOURCES = common.c driver.c $(platformsrc)
 
+AM_CFLAGS = -Wall -Werror
 AUTOMAKE_OPTIONS = foreign
