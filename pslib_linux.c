@@ -105,9 +105,9 @@ physical_cpu_count()
   long int *cid = ids;
   long int id;
   int nprocs = 0;
+  char *line = (char *)calloc(100, sizeof(char));
   fp = fopen("/proc/cpuinfo", "r");
   check(fp, "Couldn't open '/proc/cpuinfo'");
-  char *line = (char *)calloc(100, sizeof(char));
   check_mem(line);
 
   while (fgets(line, 90, fp) != NULL) {
@@ -516,14 +516,15 @@ disk_io_counters()
 {
   const int sector_size = 512;
 
+  char *line = (char *)calloc(150, sizeof(char));
+  char **partitions = (char **)calloc(30, sizeof(char *));
+
   FILE *fp = fopen("/proc/partitions", "r");
   check(fp, "Couldn't open /proc/partitions");
 
   char *tmp;
   int i = 0, nparts = 0;
   size_t nmemb;
-  char *line = (char *)calloc(150, sizeof(char));
-  char **partitions = (char **)calloc(30, sizeof(char *));
   DiskIOCounters *counters = NULL;
   DiskIOCounters *ci = NULL;
   DiskIOCounterInfo *ret = (DiskIOCounterInfo *)calloc(1, sizeof(DiskIOCounterInfo));
