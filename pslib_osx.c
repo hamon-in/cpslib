@@ -11,18 +11,6 @@
 
 /* Internal functions */
 
-static int
-logical_cpu_count()
-{
-  return cpu_count(1);
-}
-
-static int
-physical_cpu_count()
-{
-  return cpu_count(0);
-}
-
 
 /* Public functions */
 

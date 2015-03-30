@@ -44,10 +44,10 @@ test_getusers()
   printf("Name\tTerminal Host\tStarted\n");
   for (i = 0; i < r->nitems; i++) {
     printf("%s\t%s\t %s\t%.1f\n",
-        r->users[i].username,
-        r->users[i].tty,
-        r->users[i].hostname,
-        r->users[i].tstamp);
+           r->users[i].username,
+           r->users[i].tty,
+           r->users[i].hostname,
+           r->users[i].tstamp);
   }
   free_users_info(r);
   printf("\n");
