@@ -519,15 +519,16 @@ disk_io_counters()
   char *line = (char *)calloc(150, sizeof(char));
   char **partitions = (char **)calloc(30, sizeof(char *));
 
-  FILE *fp = fopen("/proc/partitions", "r");
-  check(fp, "Couldn't open /proc/partitions");
-
   char *tmp;
   int i = 0, nparts = 0;
   size_t nmemb;
   DiskIOCounters *counters = NULL;
   DiskIOCounters *ci = NULL;
   DiskIOCounterInfo *ret = (DiskIOCounterInfo *)calloc(1, sizeof(DiskIOCounterInfo));
+
+  FILE *fp = fopen("/proc/partitions", "r");
+  check(fp, "Couldn't open /proc/partitions");
+
   check_mem(line);
   check_mem(partitions);
   check_mem(ret);
