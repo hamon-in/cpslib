@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <utmpx.h>
+#include <mach/mach.h>
 
 #include "pslib.h"
 #include "common.h"
@@ -50,6 +51,36 @@ error:
   return -1;
 }
 
+
+CpuTimes *
+cpu_times(int percpu) {
+  CpuTimes *ret = NULL;
+
+  if (!percpu) {
+    ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
+
+    mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
+    kern_return_t kerror;
+    host_cpu_load_info_data_t r_load;
+
+    mach_port_t host_port = mach_host_self();
+    kerror = host_statistics(host_port, HOST_CPU_LOAD_INFO,
+        (host_info_t)&r_load, &count);
+    check (kerror == KERN_SUCCESS, "Error in host_statistics(): %s",
+          mach_error_string(kerror));
+    mach_port_deallocate(mach_task_self(), host_port);
+
+    ret->user   = (double)r_load.cpu_ticks[CPU_STATE_USER] / CLK_TCK;
+    ret->nice   = (double)r_load.cpu_ticks[CPU_STATE_NICE] / CLK_TCK;
+    ret->system = (double)r_load.cpu_ticks[CPU_STATE_SYSTEM] / CLK_TCK;
+    ret->idle   = (double)r_load.cpu_ticks[CPU_STATE_IDLE] / CLK_TCK;
+
+    return ret;
+  }
+error:
+  if (ret) free(ret);
+  return NULL;
+}
 
 UsersInfo *
 get_users ()
