@@ -11,7 +11,7 @@
 /* TBD : Generic function to get field from a line in a file that starts with something */
 
 /* Internal functions */
-
+CpuTimes* per_cpu_times();
 
 /* Public functions */
 
@@ -32,7 +32,6 @@ error:
   return -1;
 }
 
-
 int
 cpu_count(int logical)
 {
@@ -50,7 +49,6 @@ cpu_count(int logical)
 error:
   return -1;
 }
-
 
 CpuTimes *
 cpu_times(int percpu) {
@@ -76,9 +74,60 @@ cpu_times(int percpu) {
     ret->idle   = (double)r_load.cpu_ticks[CPU_STATE_IDLE] / CLK_TCK;
 
     return ret;
+  } else {
+    return per_cpu_times();
   }
+
 error:
   if (ret) free(ret);
+  return NULL;
+}
+
+CpuTimes *
+per_cpu_times() {
+  CpuTimes *ret = NULL;
+
+  natural_t cpu_count;
+  processor_info_array_t info_array;
+  mach_msg_type_number_t info_count;
+  kern_return_t kerror;
+  processor_cpu_load_info_data_t *cpu_load_info = NULL;
+  int i, sysret;
+
+  mach_port_t host_port = mach_host_self();
+  kerror = host_processor_info(host_port, PROCESSOR_CPU_LOAD_INFO,
+      &cpu_count, &info_array, &info_count);
+  check (kerror == KERN_SUCCESS, "Error in host_processor_info(): %s",
+      mach_error_string(kerror));
+  mach_port_deallocate(mach_task_self(), host_port);
+
+  cpu_load_info = (processor_cpu_load_info_data_t *) info_array;
+
+  ret = (CpuTimes *)calloc(cpu_count, sizeof(CpuTimes));
+  check_mem(ret);
+
+  for (i = 0; i < cpu_count; i++) {
+    (ret+i)->user   = (double)cpu_load_info[i].cpu_ticks[CPU_STATE_USER] / CLK_TCK;
+    (ret+i)->nice   = (double)cpu_load_info[i].cpu_ticks[CPU_STATE_NICE] / CLK_TCK;
+    (ret+i)->system = (double)cpu_load_info[i].cpu_ticks[CPU_STATE_SYSTEM] / CLK_TCK;
+    (ret+i)->idle   = (double)cpu_load_info[i].cpu_ticks[CPU_STATE_IDLE] / CLK_TCK;
+  }
+
+  sysret = vm_deallocate(mach_task_self(), (vm_address_t)info_array,
+      info_count * sizeof(int));
+  if (sysret != KERN_SUCCESS)
+    log_warn("vm_deallocate() failed");
+
+  return ret;
+
+error:
+  if (ret) free(ret);
+  if (cpu_load_info != NULL) {
+    sysret = vm_deallocate(mach_task_self(), (vm_address_t)info_array,
+        info_count * sizeof(int));
+  if (sysret != KERN_SUCCESS)
+    log_warn("vm_deallocate() failed");
+  }
   return NULL;
 }
 

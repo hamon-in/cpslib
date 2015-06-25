@@ -50,6 +50,30 @@ test_cpu_times()
 }
 
 void
+test_cpu_times_percpu()
+{
+  CpuTimes *r, *c;
+  int i, ncpus = cpu_count(1);
+  c = r = cpu_times(1);
+  if(!r) {
+    printf("Aborting\n");
+    return;
+  }
+  printf(" Individual CPU times\n");
+  for (i=0; i<ncpus; i++) {
+    printf("CPU %d :: ", i+1);
+    printf(" Usr: %.3lf;", c->user);
+    printf(" Nice: %.3lf;", c->nice);
+    printf(" Sys: %.3lf;", c->system);
+    printf(" Idle: %.3lf;", c->idle);
+    printf("\n");
+    c++;
+  }
+  printf("\n");
+  free(r);
+}
+
+void
 test_getusers()
 {
   UsersInfo *r;
@@ -87,7 +111,7 @@ main()
 //  test_swap();
 //
   test_cpu_times();
-//  test_cpu_times_percpu();
+  test_cpu_times_percpu();
 //
 //  test_cpu_util_percent();
 //  test_cpu_util_percent_percpu();
