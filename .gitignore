@@ -18,3 +18,7 @@ notes.org
 /install-sh
 /missing
 /stamp-h1
+
+# Valgrind related
+.valgrindrc
+c.supp
