@@ -723,7 +723,7 @@ get_users ()
     check_mem(u->username);
 
     u->tty = strdup(ut->ut_line);
-    check_mem(u->username);
+    check_mem(u->tty);
 
     u->hostname = strdup(ut->ut_host);
     check_mem(u->hostname);
