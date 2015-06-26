@@ -155,7 +155,7 @@ get_users ()
     check_mem(u->username);
 
     u->tty = strdup(utx->ut_line);
-    check_mem(u->username);
+    check_mem(u->tty);
 
     u->hostname = strdup(utx->ut_host);
     check_mem(u->hostname);
