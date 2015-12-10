@@ -21,7 +21,7 @@
 
 /* Internal functions */
 
-static double 
+static double
 sum_cpu_time(CpuTimes *t) {
   double ret = 0.0;
   ret += t->user;
@@ -61,7 +61,7 @@ calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2)
  error:
   if (ret) free(ret);
   return NULL;
-    
+
 }
 
 static double
@@ -134,7 +134,7 @@ physical_cpu_count()
 }
 
 char **
-get_physical_devices(size_t *ndevices)
+get_physical_devices(int *ndevices)
 {
   FILE *fs = NULL;
   char *line = NULL;
@@ -147,7 +147,7 @@ get_physical_devices(size_t *ndevices)
 
   retval = (char **)calloc(100, sizeof(char *));
   check_mem(retval);
-  
+
 
   fs = fopen("/proc/filesystems", "r");
   check(fs, "Couldn't open /proc/filesystems");
@@ -166,8 +166,8 @@ get_physical_devices(size_t *ndevices)
  error:
   if (fs) fclose(fs);
   if (line) free(line);
-  if (*ndevices != 0) 
-    for (i = 0; i < *ndevices; i++) 
+  if (*ndevices != 0)
+    for (i = 0; i < *ndevices; i++)
       free(retval[i]);
   return NULL;
 }
@@ -397,7 +397,7 @@ parse_cpu_times(char* line, CpuTimes *ret) {
   check(i == 10, "Couldn't properly parse cpu times")
 
   clock_ticks = sysconf(_SC_CLK_TCK);
-  
+
   ret->user       = values[0] / clock_ticks;
   ret->nice       = values[1] / clock_ticks;
   ret->system     = values[2] / clock_ticks;
@@ -440,8 +440,8 @@ disk_partitions(int physical)
   FILE *file = NULL;
   struct mntent *entry;
   int nparts = 5;
-  char **phys_devices = NULL; 
-  size_t nphys_devices;
+  char **phys_devices = NULL;
+  int nphys_devices;
   int i;
 
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
@@ -449,7 +449,7 @@ disk_partitions(int physical)
   DiskPartition *d = partitions;
   check_mem(partitions);
   check_mem(ret);
-  
+
   ret->nitems = 0;
   ret->partitions = partitions;
 
@@ -459,7 +459,9 @@ disk_partitions(int physical)
   phys_devices = get_physical_devices(&nphys_devices);
 
   while ((entry = getmntent(file))) {
-    if (physical && ! lfind(&entry->mnt_type, phys_devices, &nphys_devices, sizeof(char *), str_comp)) {
+    if (physical && ! lfind(&entry->mnt_type, phys_devices,
+                            (size_t *)&nphys_devices, sizeof(char *),
+                            str_comp)) {
       /* Skip this partition since we only need physical partitions */
       continue;
     }
@@ -851,7 +853,7 @@ virtual_memory(VmemInfo *ret)
   return -1;
 }
 
-int 
+int
 swap_memory(SwapMemInfo *ret) {
   struct sysinfo info;
   FILE *fp = NULL;
@@ -911,7 +913,7 @@ cpu_times(int percpu) {
   check(fp, "Couldn't open /proc/stat");
   line = (char *) calloc(150, sizeof(char));
   check_mem(line);
-  
+
   if (! percpu) {
     /* The cumulative time is the first line */
     check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
@@ -930,7 +932,7 @@ cpu_times(int percpu) {
       check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
       if(strncmp(line, "cpu", 3) != 0)
         break;
-      check (parse_cpu_times(line, ret+i) == 0, 
+      check (parse_cpu_times(line, ret+i) == 0,
              "Error while parsing /proc/stat line for cpu times");
       i++;
       /* TBD: Reallocate if we have more than 20 CPUs */
@@ -969,7 +971,7 @@ cpu_times_percent(int percpu, CpuTimes *prev_times) {
   return NULL;
 }
 
-double * 
+double *
 cpu_util_percent(int percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
   int i, ncpus = percpu ? cpu_count(1) : 1;
