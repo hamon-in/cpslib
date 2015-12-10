@@ -177,7 +177,7 @@ static unsigned int
 get_ppid(unsigned pid)
 {
   FILE *fp = NULL;
-  unsigned int ppid = -1;
+  int ppid = -1;
   char *tmp;
   char procfile[50];
 
@@ -185,7 +185,7 @@ get_ppid(unsigned pid)
   fp = fopen(procfile,"r");
   check(fp, "Couldn't open process status file");
   tmp = grep_awk(fp, "PPid", 1, ":");
-  ppid = tmp ? strtoul(tmp, NULL, 10) : -1;
+  ppid = tmp ? (int)strtoul(tmp, NULL, 10) : -1;
 
   check(ppid != -1, "Couldnt' find PPid in process status file");
   fclose(fp);
@@ -266,13 +266,14 @@ get_cmdline(unsigned int pid)
   FILE *fp = NULL;
   char procfile[50];
   char *contents = NULL;
-  size_t size = 0;
+  size_t len = 0;
+  ssize_t read;
 
   sprintf(procfile,"/proc/%d/cmdline", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process cmdline file");
-  size = getline(&contents, &size, fp); /*size argument unused since *contents is NULL */
-  check(size != -1, "Couldn't read command line from /proc");
+  read = getline(&contents, &len, fp);
+  check(read != -1, "Couldn't read command line from /proc");
   fclose(fp);
   return contents;
 
@@ -442,7 +443,7 @@ disk_partitions(int physical)
   int nparts = 5;
   char **phys_devices = NULL;
   size_t nphys_devices;
-  int i;
+  unsigned int i;
 
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
   DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
@@ -474,7 +475,8 @@ disk_partitions(int physical)
 
     if (ret->nitems == nparts) {
       nparts *= 2;
-      partitions = (DiskPartition *)realloc(partitions, sizeof(DiskPartition) * nparts);
+      partitions = (DiskPartition *)realloc(partitions,
+                                            sizeof(DiskPartition) * nparts);
       check_mem(partitions);
       ret->partitions = partitions;
       d = ret->partitions + ret->nitems; /* Move the cursor to the correct
@@ -773,7 +775,7 @@ get_boot_time()
   FILE *fp = fopen("/proc/stat", "r");
   char *line = (char *)calloc(200, sizeof(char));
   char *tmp = NULL;
-  unsigned long ret = -1;
+  long ret = -1;
   check(fp, "Couldn't open /proc/stat");
   check_mem(line);
 
@@ -804,7 +806,7 @@ virtual_memory(VmemInfo *ret)
   struct sysinfo info;
   FILE *fp = NULL;
   unsigned long long totalram, freeram, bufferram;
-  unsigned long long cached = -1, active = -1, inactive = -1;
+  long long cached = -1, active = -1, inactive = -1;
   char *line = (char *)calloc(50, sizeof(char));
   check_mem(line);
   check(sysinfo(&info) == 0, "sysinfo failed");
@@ -859,7 +861,7 @@ swap_memory(SwapMemInfo *ret) {
   char *line = NULL;
 
   unsigned long totalswap, freeswap, usedswap;
-  unsigned long sin = -1, sout = -1;
+  long sin = -1, sout = -1;
   check(sysinfo(&info) == 0, "sysinfo failed");
 
   totalswap = info.totalswap;
