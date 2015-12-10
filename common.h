@@ -8,7 +8,7 @@
 float percentage(unsigned long int, unsigned long int);
 int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
-char *grep_awk(FILE *, char *, int, const char *);
+char *grep_awk(FILE *, const char *, int, const char *);
 char *squeeze(char *, const char *);
 
 #ifdef NDEBUG

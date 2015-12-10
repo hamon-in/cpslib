@@ -185,9 +185,9 @@ get_ppid(unsigned pid)
   fp = fopen(procfile,"r");
   check(fp, "Couldn't open process status file");
   tmp = grep_awk(fp, "PPid", 1, ":");
-  ppid = tmp?strtoul(tmp, NULL, 10):-1;
+  ppid = tmp ? strtoul(tmp, NULL, 10) : -1;
 
-  check(ppid != -1, "Couldnt' find Ppid in process status file");
+  check(ppid != -1, "Couldnt' find PPid in process status file");
   fclose(fp);
   free(tmp);
 
@@ -248,7 +248,7 @@ get_exe(unsigned pid)
   while(ret == bufsize -1 ) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
-    tmp = realloc(tmp, bufsize);
+    tmp = (char *)realloc(tmp, bufsize);
     ret = readlink(procfile, tmp, bufsize - 1);
     check(ret != -1, "Couldn't expand symbolic link");
   }
@@ -369,7 +369,7 @@ get_terminal(unsigned int pid)
   while(ret == bufsize -1 ) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
-    tmp = realloc(tmp, bufsize);
+    tmp = (char *)realloc(tmp, bufsize);
     ret = readlink(procfile, tmp, bufsize - 1);
     check(ret != -1, "Couldn't expand symbolic link");
   }
@@ -475,7 +475,7 @@ disk_partitions(int physical)
 
     if (ret->nitems == nparts) {
       nparts *= 2;
-      partitions = realloc(partitions, sizeof(DiskPartition) * nparts);
+      partitions = (DiskPartition *)realloc(partitions, sizeof(DiskPartition) * nparts);
       check_mem(partitions);
       ret->partitions = partitions;
       d = ret->partitions + ret->nitems; /* Move the cursor to the correct
@@ -737,7 +737,7 @@ get_users ()
 
     if (ret->nitems == nusers) { /* More users than we've allocated space for. */
       nusers *= 2;
-      users = realloc(users, sizeof(Users) * nusers);
+      users = (Users *)realloc(users, sizeof(Users) * nusers);
       check_mem(users);
       ret->users = users;
       u = ret->users + ret->nitems; /* Move the cursor to the correct
