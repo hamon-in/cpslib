@@ -9,5 +9,5 @@ endif
 bin_PROGRAMS = driver
 driver_SOURCES = common.c driver.c $(platformsrc)
 
-AM_CFLAGS = -Wall -Werror
+AM_CFLAGS = -Wall -Werror -Wunused -Wextra -std=gnu11
 AUTOMAKE_OPTIONS = foreign

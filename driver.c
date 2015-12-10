@@ -139,10 +139,6 @@ test_boottime()
 {
   unsigned long t = get_boot_time();
   printf(" Boot time \n");
-  if (t == -1) {
-    printf("Aborting\n");
-    return;
-  }
   printf("%ld\n\n", t);
 }
 
