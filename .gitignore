@@ -4,6 +4,8 @@ driver
 nul
 notes.org
 .ruby-version
+*swp
+tags
 
 # For autotools build system
 .deps/
