@@ -134,12 +134,12 @@ physical_cpu_count()
 }
 
 char **
-get_physical_devices(int *ndevices)
+get_physical_devices(size_t *ndevices)
 {
   FILE *fs = NULL;
   char *line = NULL;
   char **retval = NULL;
-  int i;
+  unsigned int i;
   *ndevices = 0;
 
   line = (char *)calloc(60, sizeof(char));
@@ -441,7 +441,7 @@ disk_partitions(int physical)
   struct mntent *entry;
   int nparts = 5;
   char **phys_devices = NULL;
-  int nphys_devices;
+  size_t nphys_devices;
   int i;
 
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
@@ -459,9 +459,8 @@ disk_partitions(int physical)
   phys_devices = get_physical_devices(&nphys_devices);
 
   while ((entry = getmntent(file))) {
-    if (physical && ! lfind(&entry->mnt_type, phys_devices,
-                            (size_t *)&nphys_devices, sizeof(char *),
-                            str_comp)) {
+    if (physical && ! lfind(&entry->mnt_type, phys_devices, &nphys_devices,
+                            sizeof(char *), str_comp)) {
       /* Skip this partition since we only need physical partitions */
       continue;
     }

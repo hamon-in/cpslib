@@ -38,9 +38,9 @@ int_comp(const void *key, const void *memb)
 char *
 grep_awk(FILE *fp, const char *fstr, int nfield, const char *delim)
 {
-  char *line = (char *)calloc(500, sizeof(char));
   char *ret = NULL;
   int i;
+  char *line = (char *)calloc(500, sizeof(char));
   check_mem(line);
   while (fgets(line, 400, fp) != NULL) {
     if (strncasecmp(line, fstr, strlen(fstr)) == 0){
