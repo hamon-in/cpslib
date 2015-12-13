@@ -92,7 +92,7 @@ per_cpu_times() {
   mach_msg_type_number_t info_count;
   kern_return_t kerror;
   processor_cpu_load_info_data_t *cpu_load_info = NULL;
-  int i, sysret;
+  int sysret;
 
   mach_port_t host_port = mach_host_self();
   kerror = host_processor_info(host_port, PROCESSOR_CPU_LOAD_INFO,
@@ -106,7 +106,7 @@ per_cpu_times() {
   ret = (CpuTimes *)calloc(cpu_count, sizeof(CpuTimes));
   check_mem(ret);
 
-  for (i = 0; i < cpu_count; i++) {
+  for (unsigned int i = 0; i < cpu_count; i++) {
     (ret+i)->user   = (double)cpu_load_info[i].cpu_ticks[CPU_STATE_USER] / CLK_TCK;
     (ret+i)->nice   = (double)cpu_load_info[i].cpu_ticks[CPU_STATE_NICE] / CLK_TCK;
     (ret+i)->system = (double)cpu_load_info[i].cpu_ticks[CPU_STATE_SYSTEM] / CLK_TCK;

@@ -1,15 +1,15 @@
 #ifndef __common_h
 #define __common_h
 
-float percentage(unsigned long int, unsigned long int);
-int str_comp(const void *, const void *);
-int int_comp(const void *, const void *);
-//char *grep_awk(FILE *, char *, int, char *);
-char *squeeze(char *, char *);
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+
+float percentage(unsigned long int, unsigned long int);
+int str_comp(const void *, const void *);
+int int_comp(const void *, const void *);
+//char *grep_awk(FILE *, const char *, int, const char *);
+char *squeeze(char *, const char *);
 
 #ifdef NDEBUG
 #define debug(M, ...)
