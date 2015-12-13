@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <math.h>
 
 #include "common.h"
@@ -37,12 +36,12 @@ int_comp(const void *key, const void *memb)
 
 
 char *
-grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
+grep_awk(FILE *fp, const char *fstr, int nfield, const char *delim)
 {
-  char *line = (char *)calloc(500, sizeof(char));
-  check_mem(line);
   char *ret = NULL;
   int i;
+  char *line = (char *)calloc(500, sizeof(char));
+  check_mem(line);
   while (fgets(line, 400, fp) != NULL) {
     if (strncasecmp(line, fstr, strlen(fstr)) == 0){
       ret = strtok(line, delim);
@@ -64,7 +63,7 @@ grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
 }
 
 char *
-squeeze(char *string, char *chars)
+squeeze(char *string, const char *chars)
 {
   char *src = string;
   char *target = string;
