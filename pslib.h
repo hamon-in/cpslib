@@ -170,8 +170,8 @@ typedef struct {
 } CpuTimes;
 
 typedef struct {
-  unsigned int pid;
-  unsigned int ppid;
+  pid_t pid;
+  pid_t ppid;
   char *name;
   char *exe;
   char *cmdline;
@@ -213,7 +213,7 @@ double *cpu_util_percent(int percpu, CpuTimes *prev_times);
 
 int cpu_count(int);
 
-Process *get_process(unsigned int);
+Process *get_process(pid_t);
 void free_process(Process *);
 
 #endif

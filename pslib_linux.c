@@ -173,11 +173,11 @@ get_physical_devices(size_t *ndevices)
 }
 
 
-static unsigned int
-get_ppid(unsigned pid)
+static pid_t
+get_ppid(pid_t pid)
 {
   FILE *fp = NULL;
-  int ppid = -1;
+  pid_t ppid = -1;
   char *tmp;
   char procfile[50];
 
@@ -198,7 +198,7 @@ get_ppid(unsigned pid)
 }
 
 static char *
-get_procname(unsigned pid)
+get_procname(pid_t pid)
 {
   FILE *fp = NULL;
   char *tmp;
@@ -222,7 +222,7 @@ get_procname(unsigned pid)
 }
 
 static char *
-get_exe(unsigned pid)
+get_exe(pid_t pid)
 {
   FILE *fp = NULL;
   char *tmp = NULL;
@@ -261,7 +261,7 @@ get_exe(unsigned pid)
 }
 
 static char *
-get_cmdline(unsigned int pid)
+get_cmdline(pid_t pid)
 {
   FILE *fp = NULL;
   char procfile[50];
@@ -284,7 +284,7 @@ get_cmdline(unsigned int pid)
 }
 
 static unsigned long
-get_create_time(unsigned int pid)
+get_create_time(pid_t pid)
 {
   FILE *fp = NULL;
   char procfile[50];
@@ -303,7 +303,7 @@ get_create_time(unsigned int pid)
 }
 
 static unsigned int *
-get_ids(unsigned int pid, const char *field)
+get_ids(pid_t pid, const char *field)
 /* field parameter is used to determine which line to parse (Uid or Gid) */
 {
   FILE *fp = NULL;
@@ -354,7 +354,7 @@ get_username(unsigned int ruid)
 }
 
 static char *
-get_terminal(unsigned int pid)
+get_terminal(pid_t pid)
 {
   FILE *fp = NULL;
   char *tmp = NULL;
@@ -1007,7 +1007,7 @@ cpu_count(int logical)
 
 
 Process *
-get_process(unsigned pid)
+get_process(pid_t pid)
 {
   Process *retval = (Process *)calloc(1, sizeof(Process));
   unsigned int *uids = NULL;
