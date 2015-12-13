@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <limits.h>
 #include <mntent.h>
 #include <pwd.h>
 #include <search.h>
@@ -185,7 +186,7 @@ get_ppid(pid_t pid)
   fp = fopen(procfile,"r");
   check(fp, "Couldn't open process status file");
   tmp = grep_awk(fp, "PPid", 1, ":");
-  ppid = tmp ? (int)strtoul(tmp, NULL, 10) : -1;
+  ppid = tmp ? atoi(tmp) : -1;
 
   check(ppid != -1, "Couldnt' find PPid in process status file");
   fclose(fp);
@@ -245,7 +246,7 @@ get_exe(pid_t pid)
     }
   }
   check(ret != -1, "Couldn't expand symbolic link");
-  while(ret == bufsize -1 ) {
+  while(ret == bufsize - 1 ) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
     tmp = (char *)realloc(tmp, bufsize);
@@ -289,12 +290,16 @@ get_create_time(pid_t pid)
   FILE *fp = NULL;
   char procfile[50];
   char *contents = NULL;
-  size_t size = 0;
+  size_t len = 0;
+  ssize_t read;
 
   sprintf(procfile,"/proc/%d/stat", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process stat file");
-  size = getline(&contents, &size, fp); /* size argument unused */
+  read = getline(&contents, &len, fp);
+  check(read != -1, "Couldn't read process stat from /proc");
+  // fclose(fp);
+  /* TODO: missing return here */
 
  error:
   if (fp) fclose(fp);
@@ -367,7 +372,7 @@ get_terminal(pid_t pid)
   check_mem(tmp);
   ret = readlink(procfile, tmp, bufsize - 1);
   check(ret != -1, "Couldn't expand symbolic link");
-  while(ret == bufsize -1 ) {
+  while(ret == bufsize - 1 ) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
     tmp = (char *)realloc(tmp, bufsize);
@@ -772,10 +777,10 @@ free_users_info(UsersInfo * ui)
 unsigned long int
 get_boot_time()
 {
+  char *tmp = NULL;
+  unsigned long ret = -1;
   FILE *fp = fopen("/proc/stat", "r");
   char *line = (char *)calloc(200, sizeof(char));
-  char *tmp = NULL;
-  long ret = -1;
   check(fp, "Couldn't open /proc/stat");
   check_mem(line);
 
@@ -787,7 +792,10 @@ get_boot_time()
       break;
     }
   }
-  check(ret != -1, "Couldn't find 'btime' line in /proc/stat");
+  if ((errno == ERANGE && ret == ULONG_MAX) || (errno != 0 && ret == 0)) {
+    check(false, "Couldn't find 'btime' line in /proc/stat");
+  }
+
   fclose(fp);
   free(line);
 
@@ -806,7 +814,7 @@ virtual_memory(VmemInfo *ret)
   struct sysinfo info;
   FILE *fp = NULL;
   unsigned long long totalram, freeram, bufferram;
-  long long cached = -1, active = -1, inactive = -1;
+  unsigned long long cached = ULLONG_MAX, active = ULLONG_MAX, inactive = ULLONG_MAX;
   char *line = (char *)calloc(50, sizeof(char));
   check_mem(line);
   check(sysinfo(&info) == 0, "sysinfo failed");
@@ -830,7 +838,7 @@ virtual_memory(VmemInfo *ret)
       inactive = strtoull(strtok(NULL, " "), NULL, 10);
     }
   }
-  if (cached == -1 || active == -1 || inactive == -1) {
+  if (cached == ULLONG_MAX || active == ULLONG_MAX || inactive == ULLONG_MAX) {
     log_warn("Couldn't determine 'cached', 'active' and 'inactive' memory stats. Setting them to 0");
     cached = active = inactive = 0;
   }
@@ -861,7 +869,7 @@ swap_memory(SwapMemInfo *ret) {
   char *line = NULL;
 
   unsigned long totalswap, freeswap, usedswap;
-  long sin = -1, sout = -1;
+  unsigned long sin = ULONG_MAX, sout = ULONG_MAX;
   check(sysinfo(&info) == 0, "sysinfo failed");
 
   totalswap = info.totalswap;
@@ -882,7 +890,7 @@ swap_memory(SwapMemInfo *ret) {
       sout = strtoul(line+8, NULL, 10);
     }
   }
-  if (sin == -1 || sout == -1) {
+  if (sin == ULONG_MAX || sout == ULONG_MAX) {
     log_warn("Couldn't determine 'sin' and 'sout' swap stats. Setting them to 0");
     sout = sin = 0;
   }
