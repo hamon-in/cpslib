@@ -774,7 +774,7 @@ free_users_info(UsersInfo * ui)
   free(ui);
 }
 
-unsigned long int
+long int
 get_boot_time()
 {
   char *tmp = NULL;

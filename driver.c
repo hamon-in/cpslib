@@ -137,8 +137,12 @@ test_getusers()
 void
 test_boottime()
 {
-  unsigned long t = get_boot_time();
-  printf(" Boot time \n");
+  long t = get_boot_time();
+  printf(" -- boot_time \n");
+  if (t == -1) {
+    printf("Aborting\n");
+    return;
+  }
   printf("%ld\n\n", t);
 }
 
