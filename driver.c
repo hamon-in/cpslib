@@ -8,7 +8,7 @@ void
 test_diskusage()
 {
   DiskUsage du;
-  printf(" Disk usage \n");
+  printf(" -- disk_usage \n");
   disk_usage("/", &du);
   printf("total: %lud\nused: %lud\nfree: %lud\npercent: %f\n", du.total, du.used, du.free, du.percent);
   printf("\n");
@@ -19,7 +19,7 @@ test_diskpartitioninfo()
 {
   int i;
   DiskPartitionInfo *phys_dp, *all_dp;
-  printf(" Physical Disk partitions \n");
+  printf(" -- disk_partitions \n");
   phys_dp = disk_partitions(1);
   if (!phys_dp) {
     printf("Aborting\n");
@@ -37,7 +37,7 @@ test_diskpartitioninfo()
 
   printf("\n");
 
-  printf(" All Disk partitions \n");
+  printf(" -- disk_partitions \n");
   all_dp = disk_partitions(0);
   if (!all_dp) {
     printf("Aborting\n");
@@ -66,7 +66,7 @@ test_diskiocounters()
     return;
   }
 
-  printf(" Disk IO Counters \n");
+  printf(" -- disk_io_counters \n");
   dp = d->iocounters;
   int i;
   for (i = 0 ; i < d->nitems; i ++) {
@@ -115,7 +115,7 @@ test_getusers()
 {
   UsersInfo *r;
   int i;
-  printf(" Logged in users \n");
+  printf(" -- users\n");
   r = get_users();
   if (! r) {
     printf("Failed \n");
@@ -151,7 +151,7 @@ test_virtualmeminfo()
     printf("Aborting\n");
     return;
   }
-  printf(" Virtual memory\n");
+  printf(" -- virtual_memory\n");
   printf("Total: %lu\n", r.total);
   printf("Available: %lu\n", r.available);
   printf("Percent: %f\n", r.percent);
@@ -173,7 +173,7 @@ test_swap()
     printf("Aborting\n");
     return;
   }
-  printf(" Swap Memory\n");
+  printf(" -- swap_memory\n");
   printf("Total: %lu\n", r.total);
   printf("Used: %lu\n", r.used);
   printf("Free: %lu\n", r.free);
@@ -192,7 +192,7 @@ test_cpu_times()
     printf("Aborting\n");
     return;
   }
-  printf(" CPU times\n");
+  printf(" -- cpu_times\n");
   printf("User: %.3lf;", r->user);
   printf(" System: %.3lf;", r->system);
   printf(" Idle: %.3lf;", r->idle);
@@ -218,7 +218,7 @@ test_cpu_times_percpu()
     printf("Aborting\n");
     return;
   }
-  printf(" Individual CPU times\n");
+  printf(" -- cpu_times\n");
   for (i=0; i<ncpus; i++) {
     printf("CPU %d :: ", i+1);
     printf(" Usr: %.3lf;", c->user);
@@ -255,7 +255,8 @@ test_cpu_times_percent()
     printf("Error while computing utilisation percentage\n");
     return;
   }
-  printf(" CPU times as percentage of total (0.1 second sample)\n");
+  printf(" -- cpu_times_percent\n");
+  printf("CPU times as percentage of total (0.1 second sample)\n");
   printf("Usr: %.3lf;", ret->user);
   printf(" Sys: %.3lf;", ret->system);
   printf(" Idle: %.3lf;", ret->idle);
@@ -288,7 +289,8 @@ test_cpu_times_percent_percpu()
     return;
   }
 
-  printf(" CPU times as percentage of total per CPU (0.1 second sample)\n");
+  printf(" -- cpu_times_percent\n");
+  printf("CPU times as percentage of total per CPU (0.1 second sample)\n");
   for (i=0; i<ncpus; i++) {
     printf("CPU %d :: ", i+1);
     printf("Usr: %.3lf;", info->user);
@@ -324,7 +326,7 @@ test_cpu_util_percent()
 
   usleep(100000);
   utilisation = cpu_util_percent(0, info);
-  printf(" CPU utilisation percentage (0.1 second sample)\n");
+  printf(" -- cpu_util_percent\n");
   printf("%f\n", *utilisation);
   printf("\n");
 
@@ -347,7 +349,7 @@ test_cpu_util_percent_percpu()
 
   usleep(100000);
   percentages = cpu_util_percent(1, info);
-  printf(" CPU utilisation percentage per CPU (0.1 second sample)\n");
+  printf(" -- cpu_util_percent\n");
   for (i=0; i<ncpus; i++) {
     printf("Cpu #%d : %f\n", i, percentages[i]);
   }
@@ -366,7 +368,7 @@ test_cpu_count()
   int physical;
   logical = cpu_count(1);
   physical = cpu_count(0);
-  printf(" CPU count \n");
+  printf(" -- cpu_count \n");
   if (logical == -1 || physical == -1) {
     printf("Aborting\n");
     return;
@@ -379,7 +381,7 @@ void test_process()
 {
   pid_t pid = getpid();
   Process *process = get_process(pid);
-  printf(" Process information \n");
+  printf(" -- process \n");
   printf("pid %d\n",process->pid);
   printf("ppid %d\n",process->ppid);
   printf("name %s\n",process->name);
