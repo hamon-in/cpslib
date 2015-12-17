@@ -8,6 +8,9 @@ notes.org
 *.swp
 tags
 *.gch
+*.so
+bindings/python/build/
+bindings/python/pycpslib.egg-info/
 
 # For autotools build system
 .deps/
