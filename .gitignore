@@ -11,6 +11,8 @@ tags
 *.so
 bindings/python/build/
 bindings/python/pycpslib.egg-info/
+__pycache__
+.cache
 
 # For autotools build system
 .deps/
