@@ -197,7 +197,7 @@ void free_disk_iocounter_info(DiskIOCounterInfo *);
 NetIOCounterInfo *net_io_counters(void); 
 void free_net_iocounter_info(NetIOCounterInfo *);
 
-UsersInfo *get_users(void); /* not tested */
+UsersInfo *get_users(void); 
 void free_users_info(UsersInfo *);
 
 long int get_boot_time(void); /* not tested */

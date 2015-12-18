@@ -79,6 +79,19 @@ typedef struct {
 
 NetIOCounterInfo *net_io_counters(void);
 
+typedef struct {
+  char *username;
+  char *tty;
+  char *hostname;
+  float tstamp;
+} Users;
+
+typedef struct {
+  int nitems;
+  Users *users;
+} UsersInfo;
+
+UsersInfo *get_users(void); 
 """)
 
 if __name__ == '__main__':
