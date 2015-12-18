@@ -33,6 +33,15 @@ typedef struct {
 } DiskPartitionInfo;
 
 DiskPartitionInfo *disk_partitions(int);
+
+typedef struct {
+  unsigned long total;
+  unsigned long used;
+  unsigned long free;
+  float percent;
+} DiskUsage;
+
+int disk_usage(char [], DiskUsage *);
 """)
 
 if __name__ == '__main__':

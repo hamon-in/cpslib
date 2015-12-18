@@ -32,3 +32,12 @@ def test_all_parition_attribs():
                     part.opts == opts]):
                 found = True
         assert found, """No match for Partition(mountpoint = '{}', device = '{}', fstype = '{}', opts = '{}')""".format(mountpoint, device, fstype, opts)
+
+def test_disk_usage():
+    for mountpoint in ["/", "/etc/", "/home", "/var"]:
+        cpslib_usage = ffi.new("DiskUsage *")
+        P.disk_usage(mountpoint, cpslib_usage)
+        psutil_usage = psutil.disk_usage(mountpoint)
+        assert psutil_usage.total == cpslib_usage.total
+        assert psutil_usage.used == cpslib_usage.used
+        assert psutil_usage.free == cpslib_usage.free
