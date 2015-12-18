@@ -186,34 +186,34 @@ typedef struct {
   char *terminal;
 } Process;
 
-int disk_usage(char [], DiskUsage *);
+int disk_usage(char [], DiskUsage *); 
 
-DiskPartitionInfo *disk_partitions(int);
+DiskPartitionInfo *disk_partitions(int); 
 void free_disk_partition_info(DiskPartitionInfo *);
 
-DiskIOCounterInfo *disk_io_counters(void);
+DiskIOCounterInfo *disk_io_counters(void); /* not tested */
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
-NetIOCounterInfo *net_io_counters(void);
+NetIOCounterInfo *net_io_counters(void); /* not tested */
 void free_net_iocounter_info(NetIOCounterInfo *);
 
-UsersInfo *get_users(void);
+UsersInfo *get_users(void); /* not tested */
 void free_users_info(UsersInfo *);
 
-long int get_boot_time(void);
+long int get_boot_time(void); /* not tested */
 
-int virtual_memory(VmemInfo *);
+int virtual_memory(VmemInfo *); /* not tested */
 int swap_memory(SwapMemInfo *);
 
-CpuTimes *cpu_times(int);
+CpuTimes *cpu_times(int); /* not tested */
 
-CpuTimes *cpu_times_percent(int, CpuTimes *);
+CpuTimes *cpu_times_percent(int, CpuTimes *); /* not tested */
 
-double *cpu_util_percent(int percpu, CpuTimes *prev_times);
+double *cpu_util_percent(int percpu, CpuTimes *prev_times); /* not tested */
 
-int cpu_count(int);
+int cpu_count(int); /* not tested */
 
-Process *get_process(pid_t);
+Process *get_process(pid_t); /* not tested */
 void free_process(Process *);
 
 #endif
