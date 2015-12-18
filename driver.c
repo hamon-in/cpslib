@@ -10,7 +10,11 @@ test_diskusage()
   DiskUsage du;
   printf(" -- disk_usage \n");
   disk_usage("/", &du);
-  printf("total: %lud\nused: %lud\nfree: %lud\npercent: %f\n", du.total, du.used, du.free, du.percent);
+  printf("/\ntotal: %lu\nused: %lud\nfree: %lud\npercent: %f\n\n", du.total, du.used, du.free, du.percent);
+  disk_usage("/etc", &du);
+  printf("/etc\ntotal: %lu\nused: %lud\nfree: %lud\npercent: %f\n\n", du.total, du.used, du.free, du.percent);
+  disk_usage("/home", &du);
+  printf("/home\ntotal: %lu\nused: %lud\nfree: %lud\npercent: %f\n\n", du.total, du.used, du.free, du.percent);
   printf("\n");
 }
 
