@@ -24,7 +24,27 @@ that can be cut and pasted into actual programs that people
 use. Running `driver` should give display all the information that
 cpslib is able to gather about the system.
 
+# Add test cases
 
+The `bindings/python` directory has the `pycpslib_build.py` script
+which can be used to create `cffi` based bindings for the
+library.
+
+1. Change this script as necessary when your new function has
+   been added and then run `python setup.py develop` to install a dev
+   version of the bindings into your virtualenv
+1. Build a shared library using the instructions
+   [here](https://github.com/nibrahim/cpslib/issues/20) and then set
+   your `LD_LIBRARY_PATH` so that this can get picked up.
+1. Add a test to the `tests` directory in a new file or existing file
+   as appropriate.
+1. Install requirements to run tests. They're mentioned in
+   `tests/requirements.txt` so `pip install -r tests/requirements.txt`
+   should do it.
+1. Run the tests using `py.test tests` and they should all work fine.
+
+This process of running will be automated but it's that's not done yet.
+   
 # Commits
 
 Please make sure that the the commits you make on every branch are
