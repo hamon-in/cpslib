@@ -35,9 +35,29 @@ def test_all_parition_attribs():
 
 def test_disk_usage():
     for mountpoint in ["/", "/etc/", "/home", "/var"]:
-        cpslib_usage = ffi.new("DiskUsage *")
-        P.disk_usage(mountpoint, cpslib_usage)
+        pslib_usage = ffi.new("DiskUsage *")
+        P.disk_usage(mountpoint, pslib_usage)
         psutil_usage = psutil.disk_usage(mountpoint)
-        assert psutil_usage.total == cpslib_usage.total
-        assert psutil_usage.used == cpslib_usage.used
-        assert psutil_usage.free == cpslib_usage.free
+        assert psutil_usage.total == pslib_usage.total
+        assert psutil_usage.used == pslib_usage.used
+        assert psutil_usage.free == pslib_usage.free
+
+def test_disk_io_counters():
+    psutil_counters = psutil.disk_io_counters(True)
+    pslib_counter_info = P.disk_io_counters()
+
+    for p in range(pslib_counter_info.nitems):
+        name = ffi.string(pslib_counter_info.iocounters[p].name)
+        readbytes = pslib_counter_info.iocounters[p].readbytes
+        writebytes = pslib_counter_info.iocounters[p].writebytes
+        reads = pslib_counter_info.iocounters[p].reads
+        writes = pslib_counter_info.iocounters[p].writes
+        readtime = pslib_counter_info.iocounters[p].readtime
+        writetime = pslib_counter_info.iocounters[p].writetime
+        
+        assert psutil_counters[name].read_bytes == readbytes
+        assert psutil_counters[name].read_count == reads
+        assert psutil_counters[name].read_time == readtime
+        assert psutil_counters[name].write_bytes == writebytes
+        assert psutil_counters[name].write_count == writes
+        assert psutil_counters[name].write_time == writetime

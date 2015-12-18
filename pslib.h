@@ -186,12 +186,12 @@ typedef struct {
   char *terminal;
 } Process;
 
-int disk_usage(char [], DiskUsage *); 
+int disk_usage(char [], DiskUsage *);
 
-DiskPartitionInfo *disk_partitions(int); 
+DiskPartitionInfo *disk_partitions(int);
 void free_disk_partition_info(DiskPartitionInfo *);
 
-DiskIOCounterInfo *disk_io_counters(void); /* not tested */
+DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
 NetIOCounterInfo *net_io_counters(void); /* not tested */

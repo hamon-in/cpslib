@@ -42,6 +42,24 @@ typedef struct {
 } DiskUsage;
 
 int disk_usage(char [], DiskUsage *);
+
+typedef struct {
+  char *name;
+  unsigned long readbytes;
+  unsigned long writebytes;
+  unsigned long reads;
+  unsigned long writes;
+  unsigned long readtime;
+  unsigned long writetime;
+} DiskIOCounters;
+
+typedef struct {
+  int nitems;
+  DiskIOCounters *iocounters;
+} DiskIOCounterInfo;
+
+DiskIOCounterInfo *disk_io_counters(void); /* not tested */
+
 """)
 
 if __name__ == '__main__':
