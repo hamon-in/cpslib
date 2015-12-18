@@ -194,7 +194,7 @@ void free_disk_partition_info(DiskPartitionInfo *);
 DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
-NetIOCounterInfo *net_io_counters(void); /* not tested */
+NetIOCounterInfo *net_io_counters(void); 
 void free_net_iocounter_info(NetIOCounterInfo *);
 
 UsersInfo *get_users(void); /* not tested */

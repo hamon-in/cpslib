@@ -58,7 +58,26 @@ typedef struct {
   DiskIOCounters *iocounters;
 } DiskIOCounterInfo;
 
-DiskIOCounterInfo *disk_io_counters(void); /* not tested */
+DiskIOCounterInfo *disk_io_counters(void);
+
+typedef struct {
+  char * name;
+  unsigned long bytes_sent;
+  unsigned long bytes_recv;
+  unsigned long packets_sent;
+  unsigned long packets_recv;
+  unsigned long errin;
+  unsigned long errout;
+  unsigned long dropin;
+  unsigned long dropout;
+} NetIOCounters;
+
+typedef struct {
+  int nitems;
+  NetIOCounters *iocounters;
+} NetIOCounterInfo;
+
+NetIOCounterInfo *net_io_counters(void);
 
 """)
 
