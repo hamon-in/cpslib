@@ -92,6 +92,8 @@ typedef struct {
 } UsersInfo;
 
 UsersInfo *get_users(void); 
+
+long int get_boot_time(void); 
 """)
 
 if __name__ == '__main__':

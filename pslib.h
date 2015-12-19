@@ -200,7 +200,7 @@ void free_net_iocounter_info(NetIOCounterInfo *);
 UsersInfo *get_users(void); 
 void free_users_info(UsersInfo *);
 
-long int get_boot_time(void); /* not tested */
+long int get_boot_time(void);
 
 int virtual_memory(VmemInfo *); /* not tested */
 int swap_memory(SwapMemInfo *);
