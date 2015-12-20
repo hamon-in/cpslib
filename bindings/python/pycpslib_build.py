@@ -94,6 +94,20 @@ typedef struct {
 UsersInfo *get_users(void); 
 
 long int get_boot_time(void); 
+
+typedef struct {
+  unsigned long total;
+  unsigned long available;
+  float percent;
+  unsigned long used;
+  unsigned long free;
+  unsigned long active;
+  unsigned long inactive;
+  unsigned long buffers;
+  unsigned long cached;
+} VmemInfo;
+
+int virtual_memory(VmemInfo *); 
 """)
 
 if __name__ == '__main__':
