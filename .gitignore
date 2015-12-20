@@ -13,6 +13,7 @@ bindings/python/build/
 bindings/python/pycpslib.egg-info/
 __pycache__
 .cache
+*.pyc
 
 # For autotools build system
 .deps/
