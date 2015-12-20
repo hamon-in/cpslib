@@ -827,15 +827,13 @@ virtual_memory(VmemInfo *ret)
   while (fgets(line, 40, fp) != NULL) {
     if (strncmp(line, "Cached:", 7) == 0){
       strtok(line, ":"); /* Drop "Cached:" */
-      cached = strtoull(strtok(NULL, " "), NULL, 10);
-    }
-    if (strncmp(line, "Active:", 7) == 0){
-      strtok(line, ":"); /* Drop "Active:" */
-      active = strtoull(strtok(NULL, " "), NULL, 10);
-    }
-    if (strncmp(line, "Inactive:", 7) == 0){
+      cached = strtoull(strtok(NULL, " "), NULL, 10) * 1024;
+    } else if (strncmp(line, "Inactive:", 9) == 0) {
       strtok(line, ":"); /* Drop "Inactive:" */
-      inactive = strtoull(strtok(NULL, " "), NULL, 10);
+      inactive = strtoull(strtok(NULL, " "), NULL, 10) * 1024;
+    } else if (strncmp(line, "Active:", 7) == 0) {
+      strtok(line, ":"); /* Drop "Active:" */
+      active = strtoull(strtok(NULL, " "), NULL, 10) * 1024;
     }
   }
   if (cached == ULLONG_MAX || active == ULLONG_MAX || inactive == ULLONG_MAX) {
