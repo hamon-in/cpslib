@@ -203,7 +203,7 @@ void free_users_info(UsersInfo *);
 long int get_boot_time(void);
 
 int virtual_memory(VmemInfo *); 
-int swap_memory(SwapMemInfo *); /* not tested */
+int swap_memory(SwapMemInfo *);
 
 CpuTimes *cpu_times(int); /* not tested */
 

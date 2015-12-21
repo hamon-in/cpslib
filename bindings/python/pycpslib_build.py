@@ -108,6 +108,17 @@ typedef struct {
 } VmemInfo;
 
 int virtual_memory(VmemInfo *); 
+
+typedef struct {
+  unsigned long total;
+  unsigned long used;
+  unsigned long free;
+  float percent;
+  unsigned long sin;
+  unsigned long sout;
+} SwapMemInfo;
+
+int swap_memory(SwapMemInfo *);
 """)
 
 if __name__ == '__main__':

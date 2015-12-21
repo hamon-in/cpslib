@@ -16,3 +16,15 @@ def test_virtual_memory(almost_equal):
     assert almost_equal(pslib_vmem.buffers, psutil_vmem.buffers)
     assert almost_equal(pslib_vmem.cached, psutil_vmem.cached)
     assert almost_equal(pslib_vmem.percent, psutil_vmem.percent)
+
+def test_swap(almost_equal):
+    pslib_swap = ffi.new("SwapMemInfo *")
+    P.swap_memory(pslib_swap)
+    psutil_vmem = psutil.swap_memory()
+
+    assert almost_equal(pslib_swap.total, psutil_vmem.total)
+    assert almost_equal(pslib_swap.used, psutil_vmem.used)
+    assert almost_equal(pslib_swap.free, psutil_vmem.free)
+    assert almost_equal(pslib_swap.percent, psutil_vmem.percent)
+    assert almost_equal(pslib_swap.sin, psutil_vmem.sin)
+    assert almost_equal(pslib_swap.sout, psutil_vmem.sout)
