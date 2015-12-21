@@ -205,7 +205,7 @@ long int get_boot_time(void);
 int virtual_memory(VmemInfo *); 
 int swap_memory(SwapMemInfo *);
 
-CpuTimes *cpu_times(int); /* not tested */
+CpuTimes *cpu_times(int);
 
 CpuTimes *cpu_times_percent(int, CpuTimes *); /* not tested */
 

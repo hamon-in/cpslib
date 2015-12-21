@@ -119,6 +119,21 @@ typedef struct {
 } SwapMemInfo;
 
 int swap_memory(SwapMemInfo *);
+
+typedef struct {
+  double user;
+  double system;
+  double idle;
+  double nice;
+  double iowait;
+  double irq;
+  double softirq;
+  double steal;
+  double guest;
+  double guest_nice;
+} CpuTimes;
+
+CpuTimes *cpu_times(int);
 """)
 
 if __name__ == '__main__':
