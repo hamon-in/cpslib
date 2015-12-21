@@ -882,10 +882,10 @@ swap_memory(SwapMemInfo *ret) {
 
   while (fgets(line, 40, fp) != NULL) {
     if(strncmp(line, "pswpin", 6) == 0) {
-      sin = strtoul(line+7, NULL, 10);
+      sin = strtoul(line+7, NULL, 10) * 4 * 1024;
     }
     if (strncmp(line, "pswpout", 7) == 0) {
-      sout = strtoul(line+8, NULL, 10);
+      sout = strtoul(line+8, NULL, 10) * 4 * 1024;
     }
   }
   if (sin == ULONG_MAX || sout == ULONG_MAX) {
