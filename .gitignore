@@ -1,13 +1,17 @@
 a.out
 *.o
+*.so
+*.dylib
 driver
 nul
 notes.org
 .ruby-version
+*.swp
+tags
+*.gch
 
 # For autotools build system
 .deps/
-/Makefile
 /Makefile.in
 /aclocal.m4
 /autom4te.cache/
