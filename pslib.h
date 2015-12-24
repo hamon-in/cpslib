@@ -1,7 +1,6 @@
 #ifndef __pslib_linux_h
 #define __pslib_linux_h
 
-
 enum proc_status {
   STATUS_RUNNING,
   STATUS_SLEEPING,
@@ -71,7 +70,6 @@ enum proc_priority {
   REALTIME_PRIORITY_CLASS
 };
 
-
 typedef struct {
   unsigned long total;
   unsigned long used;
@@ -107,7 +105,7 @@ typedef struct {
 } DiskIOCounterInfo;
 
 typedef struct {
-  char * name;
+  char *name;
   unsigned long bytes_sent;
   unsigned long bytes_recv;
   unsigned long packets_sent;
@@ -186,7 +184,7 @@ typedef struct {
   char *terminal;
 } Process;
 
-int disk_usage(char [], DiskUsage *);
+int disk_usage(char[], DiskUsage *);
 
 DiskPartitionInfo *disk_partitions(int);
 void free_disk_partition_info(DiskPartitionInfo *);
@@ -200,7 +198,7 @@ void free_net_iocounter_info(NetIOCounterInfo *);
 UsersInfo *get_users();
 void free_users_info(UsersInfo *);
 
-unsigned long int get_boot_time();
+float get_boot_time();
 
 int virtual_memory(VmemInfo *);
 int swap_memory(SwapMemInfo *);

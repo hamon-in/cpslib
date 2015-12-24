@@ -1,6 +1,6 @@
 CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11
 LDFLAGS = -dynamiclib
-RM = rm -f
+RM = rm -rf
 TARGET_LIB = libpslib.dylib
 EXEC = driver
 
@@ -21,4 +21,4 @@ $(EXEC): $(EXEC).c $(TARGET_LIB)
 
 .PHONY: clean
 clean:
-	${RM} ${TARGET_LIB} ${OBJS} $(EXEC)
+	${RM} ${TARGET_LIB} ${OBJS} $(EXEC) *dSYM
