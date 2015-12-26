@@ -17,6 +17,7 @@ __pycache__
 *.gcno
 *.gcda
 *.gcov
+scratch
 
 # For autotools build system
 .deps/
