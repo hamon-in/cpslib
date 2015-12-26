@@ -140,6 +140,25 @@ CpuTimes *cpu_times_percent(int, CpuTimes *);
 
 double *cpu_util_percent(int percpu, CpuTimes *prev_times); 
 
+typedef struct {
+  int pid;
+  int ppid;
+  char *name;
+  char *exe;
+  char *cmdline;
+  unsigned long create_time;
+  unsigned int uid;
+  unsigned int euid;
+  unsigned int suid;
+  unsigned int gid;
+  unsigned int egid;
+  unsigned int sgid;
+  char *username;
+  char *terminal;
+} Process;
+
+Process *get_process(int);
+
 void gcov_flush(void);
 """)
 
