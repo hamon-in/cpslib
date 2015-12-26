@@ -42,3 +42,18 @@ def almost_equal():
         return False
 
     return almost_equal
+
+@pytest.fixture
+def compare_cpu_times(almost_equal):
+    def compare(t1, t2):
+        return all([almost_equal(t1.user, t2.user),
+                    almost_equal(t1.system, t2.system),
+                    almost_equal(t1.idle, t2.idle),
+                    almost_equal(t1.nice, t2.nice),
+                    almost_equal(t1.iowait, t2.iowait),
+                    almost_equal(t1.irq, t2.irq),
+                    almost_equal(t1.softirq, t2.softirq),
+                    almost_equal(t1.steal, t2.steal),
+                    almost_equal(t1.guest, t2.guest),
+                    almost_equal(t1.guest_nice, t2.guest_nice)])
+    return compare
