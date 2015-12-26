@@ -138,6 +138,8 @@ int cpu_count(int);
 
 CpuTimes *cpu_times_percent(int, CpuTimes *);
 
+double *cpu_util_percent(int percpu, CpuTimes *prev_times); 
+
 void gcov_flush(void);
 """)
 

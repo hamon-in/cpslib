@@ -209,7 +209,7 @@ CpuTimes *cpu_times(int);
 
 CpuTimes *cpu_times_percent(int, CpuTimes *);
 
-double *cpu_util_percent(int percpu, CpuTimes *prev_times); /* not tested */
+double *cpu_util_percent(int percpu, CpuTimes *prev_times); 
 
 int cpu_count(int);
 
