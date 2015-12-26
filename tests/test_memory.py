@@ -2,7 +2,7 @@ import psutil
 from pycpslib import lib as P 
 from pycpslib import ffi
 
-def test_virtual_memory(almost_equal):
+def test_virtual_memory(almost_equal, flush):
     pslib_vmem = ffi.new("VmemInfo *")
     P.virtual_memory(pslib_vmem)
     psutil_vmem = psutil.virtual_memory()
@@ -17,7 +17,7 @@ def test_virtual_memory(almost_equal):
     assert almost_equal(pslib_vmem.cached, psutil_vmem.cached)
     assert almost_equal(pslib_vmem.percent, psutil_vmem.percent)
 
-def test_swap(almost_equal):
+def test_swap(almost_equal, flush):
     pslib_swap = ffi.new("SwapMemInfo *")
     P.swap_memory(pslib_swap)
     psutil_vmem = psutil.swap_memory()

@@ -2,7 +2,7 @@ import psutil
 from pycpslib import lib as P 
 from pycpslib import ffi
 
-def test_number_of_partitions():
+def test_number_of_partitions(flush):
     expected_all_partitions = psutil.disk_partitions(True)  # All partitions
     expected_phy_partitions = psutil.disk_partitions(False) # Physical only
  
@@ -13,7 +13,7 @@ def test_number_of_partitions():
     assert actual_phy_partitions.nitems == len(expected_phy_partitions)
 
 
-def test_all_parition_attribs():
+def test_all_parition_attribs(flush):
     "Verifies device, mountpoint, fstype and opts for all partitions"
     psutil_partitions = psutil.disk_partitions(True)  
     pslib_partitions = P.disk_partitions(0)
@@ -33,7 +33,7 @@ def test_all_parition_attribs():
                 found = True
         assert found, """No match for Partition(mountpoint = '{}', device = '{}', fstype = '{}', opts = '{}')""".format(mountpoint, device, fstype, opts)
 
-def test_disk_usage():
+def test_disk_usage(flush):
     for mountpoint in ["/", "/etc/", "/home", "/var"]:
         pslib_usage = ffi.new("DiskUsage *")
         P.disk_usage(mountpoint, pslib_usage)
@@ -42,7 +42,7 @@ def test_disk_usage():
         assert psutil_usage.used == pslib_usage.used
         assert psutil_usage.free == pslib_usage.free
 
-def test_disk_io_counters():
+def test_disk_io_counters(flush):
     psutil_counters = psutil.disk_io_counters(True)
     pslib_counter_info = P.disk_io_counters()
 

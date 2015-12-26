@@ -2,13 +2,13 @@ import psutil
 from pycpslib import lib as P 
 from pycpslib import ffi
 
-def test_boot_time():
+def test_boot_time(flush):
     pslib_boot_time = P.get_boot_time()
     psutil_boot_time = psutil.boot_time()
     
     assert pslib_boot_time == psutil_boot_time
 
-def test_cpu_times(almost_equal):
+def test_cpu_times(almost_equal, flush):
     pslib_accumulated_cputimes = P.cpu_times(0) 
     psutil_accumulated_cputimes = psutil.cpu_times(False)
     

@@ -1,5 +1,14 @@
 import pytest
 
+from pycpslib import lib as P 
+
+@pytest.fixture
+def flush(request):
+    "Flushes gcov data onto disk after test is executed."
+    def gcov_flush():
+        P.gcov_flush()
+    request.addfinalizer(gcov_flush)
+
 @pytest.fixture
 def almost_equal():
     # This function is taken from the unittest.case module.
