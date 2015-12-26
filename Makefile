@@ -23,3 +23,6 @@ $(EXEC): $(EXEC).c $(TARGET_LIB)
 .PHONY: clean
 clean:
 	${RM} ${TARGET_LIB} ${OBJS} $(EXEC)
+
+check-syntax:
+	gcc -Wall -o /dev/null -S ${CHK_SOURCES}
