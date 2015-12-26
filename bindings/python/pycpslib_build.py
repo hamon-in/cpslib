@@ -136,6 +136,8 @@ typedef struct {
 CpuTimes *cpu_times(int);
 int cpu_count(int);
 
+CpuTimes *cpu_times_percent(int, CpuTimes *);
+
 void gcov_flush(void);
 """)
 
