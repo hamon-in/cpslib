@@ -14,7 +14,7 @@ ffi.set_source("pycpslib",
                #include <unistd.h>
                #include "pslib.h"
                """,
-               libraries = ["pslib"],
+               libraries = ["pslib", "gcov"],
                library_dirs = [project_root],
                include_dirs = [project_root])
 
@@ -134,6 +134,8 @@ typedef struct {
 } CpuTimes;
 
 CpuTimes *cpu_times(int);
+
+void gcov_flush(void);
 """)
 
 if __name__ == '__main__':

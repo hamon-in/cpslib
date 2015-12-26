@@ -18,6 +18,8 @@
 #include "pslib.h"
 #include "common.h"
 
+void __gcov_flush(void);
+
 /* TBD : Generic function to get field from a line in a file that starts with something */
 
 /* Internal functions */
@@ -1060,4 +1062,16 @@ free_process(Process *p)
   free(p->username);
   free(p->terminal);
   free(p);
+}
+
+/*
+  The following function is an ugly workaround to ensure that coverage
+  data can be manually flushed to disk during py.test invocations. If
+  this is not done, we cannot measure the coverage information. More details 
+  in http://... link_to_bug...
+
+ */
+void 
+gcov_flush(void) {
+  __gcov_flush();
 }
