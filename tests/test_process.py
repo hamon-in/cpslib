@@ -12,7 +12,7 @@ def test_process(flush):
     assert psu.ppid() == psl.ppid
     assert psu.name() == ffi.string(psl.name)
     assert psu.exe() == ffi.string(psl.exe)
-    # assert psu.cmdline() == ffi.string(psl.cmdline)
+    assert " ".join(psu.cmdline()) == ffi.string(psl.cmdline)
     # assert psu.create_time() == psl.create_time
     uids = psu.uids()
     assert uids.real == psl.uid

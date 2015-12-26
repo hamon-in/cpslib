@@ -22,6 +22,29 @@ void __gcov_flush(void);
 
 /* TBD : Generic function to get field from a line in a file that starts with something */
 
+static int
+clean_cmdline(char *ip, int len) 
+/* Replaces all '\0' with ' ' in the string ip (bounded by length len).
+   and then adds a '\0' at the end. This is used to parse the cmdline file
+   inside proc where parts of the command line are separated using '\0'.
+   
+   Returns number of replacements
+*/
+{
+  int i = 0;
+  int replacements = 0;
+  for (i=0; i<len; i++) {
+    if (ip[i] == '\0') {
+      ip[i] = ' ';
+      replacements++;
+    }
+  }
+  ip[--i] = '\0';
+  return replacements;
+}
+
+
+
 /* Internal functions */
 
 static double
@@ -268,18 +291,24 @@ get_cmdline(pid_t pid)
 {
   FILE *fp = NULL;
   char procfile[50];
-  char *contents = NULL;
-  size_t len = 0;
+  char *contents;
+  int bufsize = 500;
   ssize_t read;
 
+  contents = (char *)calloc(bufsize, sizeof(char));
   sprintf(procfile,"/proc/%d/cmdline", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process cmdline file");
-  read = getline(&contents, &len, fp);
-  check(read != -1, "Couldn't read command line from /proc");
+  read = fread(contents, sizeof(char), bufsize, fp);
+  clean_cmdline(contents, read);
   fclose(fp);
-  return contents;
-
+  if (read == bufsize) {
+    log_warn("TBD: Long command line. Returning only partial string");
+    return contents;
+  }
+  if (read <= bufsize) {
+    return contents;
+  } 
  error:
   if (fp) fclose(fp);
   if (contents) free(contents);
@@ -1017,6 +1046,7 @@ cpu_count(int logical)
 Process *
 get_process(pid_t pid)
 {
+  /* TBD: Add test for invalid pid. Right now, we get a lot of errors and some structure.*/
   Process *retval = (Process *)calloc(1, sizeof(Process));
   unsigned int *uids = NULL;
   unsigned int *gids = NULL;
