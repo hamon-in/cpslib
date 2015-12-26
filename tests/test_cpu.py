@@ -40,3 +40,6 @@ def test_cpu_times_individual(almost_equal, flush):
         assert almost_equal(pslib_measure.guest, psutil_measure.guest)
         assert almost_equal(pslib_measure.guest_nice, psutil_measure.guest_nice)
         
+def test_cpu_count(almost_equal, flush):
+    assert P.cpu_count(1) == psutil.cpu_count(True), "Mismatch in number of logical CPUs"
+    assert P.cpu_count(0) == psutil.cpu_count(False), "Mismatch in number of physical CPUs"

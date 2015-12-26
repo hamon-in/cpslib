@@ -134,6 +134,7 @@ typedef struct {
 } CpuTimes;
 
 CpuTimes *cpu_times(int);
+int cpu_count(int);
 
 void gcov_flush(void);
 """)

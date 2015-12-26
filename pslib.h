@@ -211,7 +211,7 @@ CpuTimes *cpu_times_percent(int, CpuTimes *); /* not tested */
 
 double *cpu_util_percent(int percpu, CpuTimes *prev_times); /* not tested */
 
-int cpu_count(int); /* not tested */
+int cpu_count(int);
 
 Process *get_process(pid_t); /* not tested */
 void free_process(Process *);
