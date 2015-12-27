@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11 -fprofile-arcs -ftest-coverage -lgcov
+CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11 -fprofile-arcs -ftest-coverage
 LDFLAGS = -shared -fprofile-arcs -lgcov
 RM = rm -f
 TARGET_LIB = libpslib.so
