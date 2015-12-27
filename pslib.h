@@ -175,7 +175,7 @@ typedef struct {
   char *name;
   char *exe;
   char *cmdline;
-  unsigned long create_time;
+  double create_time;
   unsigned int uid;
   unsigned int euid;
   unsigned int suid;

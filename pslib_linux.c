@@ -20,8 +20,6 @@
 
 void __gcov_flush(void);
 
-/* TBD : Generic function to get field from a line in a file that starts with something */
-
 static int
 clean_cmdline(char *ip, int len) 
 /* Replaces all '\0' with ' ' in the string ip (bounded by length len).
@@ -315,26 +313,27 @@ get_cmdline(pid_t pid)
   return NULL;
 }
 
-static unsigned long
+static double
 get_create_time(pid_t pid)
 {
   FILE *fp = NULL;
   char procfile[50];
-  char *contents = NULL;
-  size_t len = 0;
-  ssize_t read;
+  char s_pid[10];
+  double ct_jiffies;
+  double ct_seconds;
+  double clock_ticks = sysconf(_SC_CLK_TCK);
+  long boot_time = get_boot_time();
 
+  sprintf(s_pid, "%d", pid);
   sprintf(procfile,"/proc/%d/stat", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process stat file");
-  read = getline(&contents, &len, fp);
-  check(read != -1, "Couldn't read process stat from /proc");
-  // fclose(fp);
-  /* TODO: missing return here */
-
+  ct_jiffies = atof(grep_awk(fp, s_pid, 21, " "));
+  fclose(fp);
+  ct_seconds = boot_time + (ct_jiffies / clock_ticks);
+  return ct_seconds;
  error:
   if (fp) fclose(fp);
-  if (contents) free(contents);
   return -1;
 }
 
