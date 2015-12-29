@@ -25,7 +25,7 @@ covclean:
 	${RM} *.gcno *.gcda *.gcov
 
 .PHONY: clean
-clean:
+clean: covclean
 	${RM} ${TARGET_LIB} ${OBJS} $(EXEC)
 
 check-syntax:
