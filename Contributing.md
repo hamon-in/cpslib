@@ -28,14 +28,16 @@ cpslib is able to gather about the system.
 
 The `bindings/python` directory has the `pycpslib_build.py` script
 which can be used to create `cffi` based bindings for the
-library.
+library. Steps for Linux platform:
 
-1. Change this script as necessary when your new function has
+1. Execute `make shared` from the project root to build pslib dynamic
+   library `libpslib.so`, then export your `LD_LIBRARY_PATH` to include
+   project root (`export LD_LIBRARY_PATH=$(pwd):$LD_LIBRARY_PATH`) so
+   that the shared library can get picked up.
+1. Navigate to `bindings/python` and change the build script as
+   necessary when your new function has
    been added and then run `python setup.py develop` to install a dev
    version of the bindings into your virtualenv
-1. Build a shared library using the instructions
-   [here](https://github.com/nibrahim/cpslib/issues/20) and then set
-   your `LD_LIBRARY_PATH` so that this can get picked up.
 1. Add a test to the `tests` directory in a new file or existing file
    as appropriate.
 1. Install requirements to run tests. They're mentioned in
