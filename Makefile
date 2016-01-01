@@ -1,5 +1,5 @@
-CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11
-LDFLAGS = -dynamiclib
+CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11 -fprofile-arcs -ftest-coverage
+LDFLAGS = -dynamiclib -fprofile-arcs
 RM = rm -rf
 TARGET_LIB = libpslib.dylib
 EXEC = driver
@@ -19,6 +19,13 @@ $(TARGET_LIB): $(OBJS)
 $(EXEC): $(EXEC).c $(TARGET_LIB)
 	$(CC) -o $@ $< -L. -lpslib -Wl,-rpath .
 
+.PHONY: covclean
+covclean:
+	${RM} *.gcno *.gcda *.gcov
+
 .PHONY: clean
-clean:
+clean: covclean
 	${RM} ${TARGET_LIB} ${OBJS} $(EXEC) *dSYM
+
+check-syntax:
+	gcc -Wall -o /dev/null -S ${CHK_SOURCES}

@@ -168,12 +168,12 @@ typedef struct {
 } CpuTimes;
 
 typedef struct {
-  unsigned int pid;
-  unsigned int ppid;
+  pid_t pid;
+  pid_t ppid;
   char *name;
   char *exe;
   char *cmdline;
-  unsigned long create_time;
+  double create_time;
   unsigned int uid;
   unsigned int euid;
   unsigned int suid;
@@ -189,16 +189,16 @@ int disk_usage(char[], DiskUsage *);
 DiskPartitionInfo *disk_partitions(int);
 void free_disk_partition_info(DiskPartitionInfo *);
 
-DiskIOCounterInfo *disk_io_counters();
+DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
-NetIOCounterInfo *net_io_counters();
+NetIOCounterInfo *net_io_counters(void);
 void free_net_iocounter_info(NetIOCounterInfo *);
 
-UsersInfo *get_users();
+UsersInfo *get_users(void);
 void free_users_info(UsersInfo *);
 
-float get_boot_time();
+float get_boot_time(void);
 
 int virtual_memory(VmemInfo *);
 int swap_memory(SwapMemInfo *);
@@ -211,7 +211,7 @@ double *cpu_util_percent(int percpu, CpuTimes *prev_times);
 
 int cpu_count(int);
 
-Process *get_process(unsigned int);
+Process *get_process(pid_t);
 void free_process(Process *);
 
 #endif

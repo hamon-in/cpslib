@@ -1,14 +1,24 @@
-a.out
-*.o
-*.so
 *.dylib
-driver
-nul
-notes.org
-.ruby-version
-*.swp
-tags
+*.eggs
+*.gcda
 *.gch
+*.gcno
+*.gcov
+*.o
+*.pyc
+*.so
+*.swp
+.cache
+.ruby-version
+__pycache__
+a.out
+bindings/python/build/
+bindings/python/pycpslib.egg-info/
+driver
+notes.org
+nul
+scratch
+tags
 
 # For autotools build system
 .deps/

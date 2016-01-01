@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <limits.h>
 #include <mntent.h>
 #include <pwd.h>
 #include <search.h>
@@ -17,11 +18,34 @@
 #include "pslib.h"
 #include "common.h"
 
-/* TBD : Generic function to get field from a line in a file that starts with something */
+void __gcov_flush(void);
+
+static int
+clean_cmdline(char *ip, int len) 
+/* Replaces all '\0' with ' ' in the string ip (bounded by length len).
+   and then adds a '\0' at the end. This is used to parse the cmdline file
+   inside proc where parts of the command line are separated using '\0'.
+   
+   Returns number of replacements
+*/
+{
+  int i = 0;
+  int replacements = 0;
+  for (i=0; i<len; i++) {
+    if (ip[i] == '\0') {
+      ip[i] = ' ';
+      replacements++;
+    }
+  }
+  ip[--i] = '\0';
+  return replacements;
+}
+
+
 
 /* Internal functions */
 
-static double 
+static double
 sum_cpu_time(CpuTimes *t) {
   double ret = 0.0;
   ret += t->user;
@@ -61,7 +85,7 @@ calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2)
  error:
   if (ret) free(ret);
   return NULL;
-    
+
 }
 
 static double
@@ -139,7 +163,7 @@ get_physical_devices(size_t *ndevices)
   FILE *fs = NULL;
   char *line = NULL;
   char **retval = NULL;
-  int i;
+  unsigned int i;
   *ndevices = 0;
 
   line = (char *)calloc(60, sizeof(char));
@@ -147,7 +171,7 @@ get_physical_devices(size_t *ndevices)
 
   retval = (char **)calloc(100, sizeof(char *));
   check_mem(retval);
-  
+
 
   fs = fopen("/proc/filesystems", "r");
   check(fs, "Couldn't open /proc/filesystems");
@@ -166,18 +190,18 @@ get_physical_devices(size_t *ndevices)
  error:
   if (fs) fclose(fs);
   if (line) free(line);
-  if (*ndevices != 0) 
-    for (i = 0; i < *ndevices; i++) 
+  if (*ndevices != 0)
+    for (i = 0; i < *ndevices; i++)
       free(retval[i]);
   return NULL;
 }
 
 
-static unsigned int
-get_ppid(unsigned pid)
+static pid_t
+get_ppid(pid_t pid)
 {
   FILE *fp = NULL;
-  unsigned int ppid = -1;
+  pid_t ppid = -1;
   char *tmp;
   char procfile[50];
 
@@ -185,9 +209,9 @@ get_ppid(unsigned pid)
   fp = fopen(procfile,"r");
   check(fp, "Couldn't open process status file");
   tmp = grep_awk(fp, "PPid", 1, ":");
-  ppid = tmp?strtoul(tmp, NULL, 10):-1;
+  ppid = tmp ? atoi(tmp) : -1;
 
-  check(ppid != -1, "Couldnt' find Ppid in process status file");
+  check(ppid != -1, "Couldnt' find PPid in process status file");
   fclose(fp);
   free(tmp);
 
@@ -198,7 +222,7 @@ get_ppid(unsigned pid)
 }
 
 static char *
-get_procname(unsigned pid)
+get_procname(pid_t pid)
 {
   FILE *fp = NULL;
   char *tmp;
@@ -222,7 +246,7 @@ get_procname(unsigned pid)
 }
 
 static char *
-get_exe(unsigned pid)
+get_exe(pid_t pid)
 {
   FILE *fp = NULL;
   char *tmp = NULL;
@@ -245,10 +269,10 @@ get_exe(unsigned pid)
     }
   }
   check(ret != -1, "Couldn't expand symbolic link");
-  while(ret == bufsize -1 ) {
+  while(ret == bufsize - 1 ) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
-    tmp = realloc(tmp, bufsize);
+    tmp = (char *)realloc(tmp, bufsize);
     ret = readlink(procfile, tmp, bufsize - 1);
     check(ret != -1, "Couldn't expand symbolic link");
   }
@@ -261,48 +285,60 @@ get_exe(unsigned pid)
 }
 
 static char *
-get_cmdline(unsigned int pid)
+get_cmdline(pid_t pid)
 {
   FILE *fp = NULL;
   char procfile[50];
-  char *contents = NULL;
-  size_t size = 0;
+  char *contents;
+  int bufsize = 500;
+  ssize_t read;
 
+  contents = (char *)calloc(bufsize, sizeof(char));
   sprintf(procfile,"/proc/%d/cmdline", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process cmdline file");
-  size = getline(&contents, &size, fp); /*size argument unused since *contents is NULL */
-  check(size != -1, "Couldn't read command line from /proc");
+  read = fread(contents, sizeof(char), bufsize, fp);
+  clean_cmdline(contents, read);
   fclose(fp);
-  return contents;
-
+  if (read == bufsize) {
+    log_warn("TBD: Long command line. Returning only partial string");
+    return contents;
+  }
+  if (read <= bufsize) {
+    return contents;
+  } 
  error:
   if (fp) fclose(fp);
   if (contents) free(contents);
   return NULL;
 }
 
-static unsigned long
-get_create_time(unsigned int pid)
+static double
+get_create_time(pid_t pid)
 {
   FILE *fp = NULL;
   char procfile[50];
-  char *contents = NULL;
-  size_t size = 0;
+  char s_pid[10];
+  double ct_jiffies;
+  double ct_seconds;
+  double clock_ticks = sysconf(_SC_CLK_TCK);
+  long boot_time = get_boot_time();
 
+  sprintf(s_pid, "%d", pid);
   sprintf(procfile,"/proc/%d/stat", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process stat file");
-  size = getline(&contents, &size, fp); /* size argument unused */
-
+  ct_jiffies = atof(grep_awk(fp, s_pid, 21, " "));
+  fclose(fp);
+  ct_seconds = boot_time + (ct_jiffies / clock_ticks);
+  return ct_seconds;
  error:
   if (fp) fclose(fp);
-  if (contents) free(contents);
   return -1;
 }
 
 static unsigned int *
-get_ids(unsigned int pid, const char *field)
+get_ids(pid_t pid, const char *field)
 /* field parameter is used to determine which line to parse (Uid or Gid) */
 {
   FILE *fp = NULL;
@@ -353,7 +389,7 @@ get_username(unsigned int ruid)
 }
 
 static char *
-get_terminal(unsigned int pid)
+get_terminal(pid_t pid)
 {
   FILE *fp = NULL;
   char *tmp = NULL;
@@ -366,10 +402,10 @@ get_terminal(unsigned int pid)
   check_mem(tmp);
   ret = readlink(procfile, tmp, bufsize - 1);
   check(ret != -1, "Couldn't expand symbolic link");
-  while(ret == bufsize -1 ) {
+  while(ret == bufsize - 1 ) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
-    tmp = realloc(tmp, bufsize);
+    tmp = (char *)realloc(tmp, bufsize);
     ret = readlink(procfile, tmp, bufsize - 1);
     check(ret != -1, "Couldn't expand symbolic link");
   }
@@ -397,7 +433,7 @@ parse_cpu_times(char* line, CpuTimes *ret) {
   check(i == 10, "Couldn't properly parse cpu times")
 
   clock_ticks = sysconf(_SC_CLK_TCK);
-  
+
   ret->user       = values[0] / clock_ticks;
   ret->nice       = values[1] / clock_ticks;
   ret->system     = values[2] / clock_ticks;
@@ -440,16 +476,16 @@ disk_partitions(int physical)
   FILE *file = NULL;
   struct mntent *entry;
   int nparts = 5;
-  char **phys_devices = NULL; 
+  char **phys_devices = NULL;
   size_t nphys_devices;
-  int i;
+  unsigned int i;
 
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
   DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
   DiskPartition *d = partitions;
   check_mem(partitions);
   check_mem(ret);
-  
+
   ret->nitems = 0;
   ret->partitions = partitions;
 
@@ -459,7 +495,8 @@ disk_partitions(int physical)
   phys_devices = get_physical_devices(&nphys_devices);
 
   while ((entry = getmntent(file))) {
-    if (physical && ! lfind(&entry->mnt_type, phys_devices, &nphys_devices, sizeof(char *), str_comp)) {
+    if (physical && ! lfind(&entry->mnt_type, phys_devices, &nphys_devices,
+                            sizeof(char *), str_comp)) {
       /* Skip this partition since we only need physical partitions */
       continue;
     }
@@ -473,7 +510,8 @@ disk_partitions(int physical)
 
     if (ret->nitems == nparts) {
       nparts *= 2;
-      partitions = realloc(partitions, sizeof(DiskPartition) * nparts);
+      partitions = (DiskPartition *)realloc(partitions,
+                                            sizeof(DiskPartition) * nparts);
       check_mem(partitions);
       ret->partitions = partitions;
       d = ret->partitions + ret->nitems; /* Move the cursor to the correct
@@ -723,7 +761,7 @@ get_users ()
     check_mem(u->username);
 
     u->tty = strdup(ut->ut_line);
-    check_mem(u->username);
+    check_mem(u->tty);
 
     u->hostname = strdup(ut->ut_host);
     check_mem(u->hostname);
@@ -735,7 +773,7 @@ get_users ()
 
     if (ret->nitems == nusers) { /* More users than we've allocated space for. */
       nusers *= 2;
-      users = realloc(users, sizeof(Users) * nusers);
+      users = (Users *)realloc(users, sizeof(Users) * nusers);
       check_mem(users);
       ret->users = users;
       u = ret->users + ret->nitems; /* Move the cursor to the correct
@@ -766,13 +804,13 @@ free_users_info(UsersInfo * ui)
   free(ui);
 }
 
-unsigned long int
+long int
 get_boot_time()
 {
-  FILE *fp = fopen("/proc/stat", "r");
-  char *line = (char *)calloc(200, sizeof(char));
   char *tmp = NULL;
   unsigned long ret = -1;
+  FILE *fp = fopen("/proc/stat", "r");
+  char *line = (char *)calloc(200, sizeof(char));
   check(fp, "Couldn't open /proc/stat");
   check_mem(line);
 
@@ -784,7 +822,10 @@ get_boot_time()
       break;
     }
   }
-  check(ret != -1, "Couldn't find 'btime' line in /proc/stat");
+  if ((errno == ERANGE && ret == ULONG_MAX) || (errno != 0 && ret == 0)) {
+    check(false, "Couldn't find 'btime' line in /proc/stat");
+  }
+
   fclose(fp);
   free(line);
 
@@ -803,7 +844,7 @@ virtual_memory(VmemInfo *ret)
   struct sysinfo info;
   FILE *fp = NULL;
   unsigned long long totalram, freeram, bufferram;
-  unsigned long long cached = -1, active = -1, inactive = -1;
+  unsigned long long cached = ULLONG_MAX, active = ULLONG_MAX, inactive = ULLONG_MAX;
   char *line = (char *)calloc(50, sizeof(char));
   check_mem(line);
   check(sysinfo(&info) == 0, "sysinfo failed");
@@ -816,18 +857,16 @@ virtual_memory(VmemInfo *ret)
   while (fgets(line, 40, fp) != NULL) {
     if (strncmp(line, "Cached:", 7) == 0){
       strtok(line, ":"); /* Drop "Cached:" */
-      cached = strtoull(strtok(NULL, " "), NULL, 10);
-    }
-    if (strncmp(line, "Active:", 7) == 0){
-      strtok(line, ":"); /* Drop "Active:" */
-      active = strtoull(strtok(NULL, " "), NULL, 10);
-    }
-    if (strncmp(line, "Inactive:", 7) == 0){
+      cached = strtoull(strtok(NULL, " "), NULL, 10) * 1024;
+    } else if (strncmp(line, "Inactive:", 9) == 0) {
       strtok(line, ":"); /* Drop "Inactive:" */
-      inactive = strtoull(strtok(NULL, " "), NULL, 10);
+      inactive = strtoull(strtok(NULL, " "), NULL, 10) * 1024;
+    } else if (strncmp(line, "Active:", 7) == 0) {
+      strtok(line, ":"); /* Drop "Active:" */
+      active = strtoull(strtok(NULL, " "), NULL, 10) * 1024;
     }
   }
-  if (cached == -1 || active == -1 || inactive == -1) {
+  if (cached == ULLONG_MAX || active == ULLONG_MAX || inactive == ULLONG_MAX) {
     log_warn("Couldn't determine 'cached', 'active' and 'inactive' memory stats. Setting them to 0");
     cached = active = inactive = 0;
   }
@@ -851,14 +890,14 @@ virtual_memory(VmemInfo *ret)
   return -1;
 }
 
-int 
+int
 swap_memory(SwapMemInfo *ret) {
   struct sysinfo info;
   FILE *fp = NULL;
   char *line = NULL;
 
   unsigned long totalswap, freeswap, usedswap;
-  unsigned long sin = -1, sout = -1;
+  unsigned long sin = ULONG_MAX, sout = ULONG_MAX;
   check(sysinfo(&info) == 0, "sysinfo failed");
 
   totalswap = info.totalswap;
@@ -873,13 +912,13 @@ swap_memory(SwapMemInfo *ret) {
 
   while (fgets(line, 40, fp) != NULL) {
     if(strncmp(line, "pswpin", 6) == 0) {
-      sin = strtoul(line+7, NULL, 10);
+      sin = strtoul(line+7, NULL, 10) * 4 * 1024;
     }
     if (strncmp(line, "pswpout", 7) == 0) {
-      sout = strtoul(line+8, NULL, 10);
+      sout = strtoul(line+8, NULL, 10) * 4 * 1024;
     }
   }
-  if (sin == -1 || sout == -1) {
+  if (sin == ULONG_MAX || sout == ULONG_MAX) {
     log_warn("Couldn't determine 'sin' and 'sout' swap stats. Setting them to 0");
     sout = sin = 0;
   }
@@ -911,7 +950,7 @@ cpu_times(int percpu) {
   check(fp, "Couldn't open /proc/stat");
   line = (char *) calloc(150, sizeof(char));
   check_mem(line);
-  
+
   if (! percpu) {
     /* The cumulative time is the first line */
     check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
@@ -930,7 +969,7 @@ cpu_times(int percpu) {
       check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
       if(strncmp(line, "cpu", 3) != 0)
         break;
-      check (parse_cpu_times(line, ret+i) == 0, 
+      check (parse_cpu_times(line, ret+i) == 0,
              "Error while parsing /proc/stat line for cpu times");
       i++;
       /* TBD: Reallocate if we have more than 20 CPUs */
@@ -969,7 +1008,7 @@ cpu_times_percent(int percpu, CpuTimes *prev_times) {
   return NULL;
 }
 
-double * 
+double *
 cpu_util_percent(int percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
   int i, ncpus = percpu ? cpu_count(1) : 1;
@@ -1004,8 +1043,9 @@ cpu_count(int logical)
 
 
 Process *
-get_process(unsigned pid)
+get_process(pid_t pid)
 {
+  /* TBD: Add test for invalid pid. Right now, we get a lot of errors and some structure.*/
   Process *retval = (Process *)calloc(1, sizeof(Process));
   unsigned int *uids = NULL;
   unsigned int *gids = NULL;
@@ -1051,4 +1091,16 @@ free_process(Process *p)
   free(p->username);
   free(p->terminal);
   free(p);
+}
+
+/*
+  The following function is an ugly workaround to ensure that coverage
+  data can be manually flushed to disk during py.test invocations. If
+  this is not done, we cannot measure the coverage information. More details 
+  in http://... link_to_bug...
+
+ */
+void 
+gcov_flush(void) {
+  __gcov_flush();
 }

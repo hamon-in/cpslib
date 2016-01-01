@@ -25,6 +25,10 @@ void test_getusers() {
 void test_boottime() {
   float t = get_boot_time();
   printf(" -- boot_time \n");
+  if (t == -1) {
+    printf("Aborting\n");
+    return;
+  }
   printf("%.1f\n\n", t);
 }
 
