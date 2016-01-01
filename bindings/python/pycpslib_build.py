@@ -14,7 +14,7 @@ ffi.set_source("pycpslib",
                #include <unistd.h>
                #include "pslib.h"
                """,
-               libraries = ["pslib", "gcov"],
+               libraries = ["pslib"],
                library_dirs = [project_root],
                include_dirs = [project_root])
 

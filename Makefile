@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11 -fprofile-arcs -ftest-coverage
-LDFLAGS = -shared -fprofile-arcs -lgcov
+LDFLAGS = -shared --coverage
 RM = rm -f
 TARGET_LIB = libpslib.so
 EXEC = driver
