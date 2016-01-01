@@ -1,4 +1,5 @@
-CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11 -fprofile-arcs -ftest-coverage
+CFLAGS  = -fPIC -Wall -Werror -Wunused -Wextra -O0 -g -std=gnu11
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS = -dynamiclib -fprofile-arcs
 RM = rm -rf
 TARGET_LIB = libpslib.dylib
