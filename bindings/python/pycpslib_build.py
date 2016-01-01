@@ -83,9 +83,9 @@ typedef struct {
   Users *users;
 } UsersInfo;
 
-UsersInfo *get_users(void); 
+UsersInfo *get_users(void);
 
-long int get_boot_time(void); 
+long int get_boot_time(void);
 
 typedef struct {
   unsigned long total;
@@ -126,7 +126,7 @@ int cpu_count(int);
 
 CpuTimes *cpu_times_percent(int, CpuTimes *);
 
-double *cpu_util_percent(int percpu, CpuTimes *prev_times); 
+double *cpu_util_percent(int percpu, CpuTimes *prev_times);
 
 typedef struct {
   int pid;
@@ -145,6 +145,7 @@ typedef struct {
   char *terminal;
 } Process;
 
+void gcov_flush(void);
 """)
 
 if __name__ == '__main__':

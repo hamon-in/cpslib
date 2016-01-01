@@ -28,11 +28,11 @@ cpslib is able to gather about the system.
 
 The `bindings/python` directory has the `pycpslib_build.py` script
 which can be used to create `cffi` based bindings for the
-library. Steps for Linux platform:
+library. Steps:
 
 1. Execute `make shared` from the project root to build pslib dynamic
-   library `libpslib.so`, then export your `LD_LIBRARY_PATH` to include
-   project root (`export LD_LIBRARY_PATH=$(pwd):$LD_LIBRARY_PATH`) so
+   library `libpslib.so` (`libpslib.dylib` for osx), then export your `LD_LIBRARY_PATH` (`DYLD_LIBRARY_PATH` for osx) to include
+   project root (`export LD_LIBRARY_PATH=$(pwd)`) so
    that the shared library can get picked up.
 1. Navigate to `bindings/python` and change the build script as
    necessary when your new function has
@@ -46,7 +46,7 @@ library. Steps for Linux platform:
 1. Run the tests using `py.test tests` and they should all work fine.
 
 This process of running will be automated but it's that's not done yet.
-   
+
 # Commits
 
 Please make sure that the the commits you make on every branch are

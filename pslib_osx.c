@@ -11,6 +11,8 @@
 /* TBD : Generic function to get field from a line in a file that starts with
  * something */
 
+void __gcov_flush(void);
+
 /* Internal functions */
 static CpuTimes *per_cpu_times() {
   CpuTimes *ret = NULL;
@@ -295,3 +297,11 @@ void free_users_info(UsersInfo *ui) {
   free(ui->users);
   free(ui);
 }
+
+/*
+  The following function is an ugly workaround to ensure that coverage
+  data can be manually flushed to disk during py.test invocations. If
+  this is not done, we cannot measure the coverage information. More details
+  in http://... link_to_bug...
+ */
+void gcov_flush(void) { __gcov_flush(); }

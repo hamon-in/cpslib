@@ -1,6 +1,6 @@
 CFLAGS  = -fPIC -Wall -Werror -Wunused -Wextra -O0 -g -std=gnu11
 CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS = -dynamiclib -fprofile-arcs
+LDFLAGS = -dynamiclib --coverage
 RM = rm -rf
 TARGET_LIB = libpslib.dylib
 EXEC = driver

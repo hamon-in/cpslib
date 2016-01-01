@@ -214,6 +214,9 @@ int cpu_count(int);
 Process *get_process(pid_t);
 void free_process(Process *);
 
+/* Required to avoid [-Wimplicit-function-declaration] for python bindings */
+void gcov_flush(void);
+
 #endif
 // disk_io_counters_per_disk
 // net_io_counters_per_nic

@@ -1,11 +1,13 @@
 import pytest
 
-from pycpslib import lib as P 
+from pycpslib import lib as P
 
 @pytest.fixture
 def flush(request):
     "Flushes gcov data onto disk after test is executed."
-    pass
+    def gcov_flush():
+        P.gcov_flush()
+    request.addfinalizer(gcov_flush)
 
 @pytest.fixture
 def almost_equal():
