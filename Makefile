@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O2 -g -std=gnu11 -fprofile-arcs -ftest-coverage
+CFLAGS = -fPIC -Wall -Werror -Wunused -Wextra -O0 -g -std=gnu11 -fprofile-arcs -ftest-coverage
 LDFLAGS = -shared --coverage
 RM = rm -f
 TARGET_LIB = libpslib.so
@@ -18,7 +18,7 @@ $(TARGET_LIB): $(OBJS)
 	$(CC) ${LDFLAGS} -o $@ $^
 
 $(EXEC): $(EXEC).c $(TARGET_LIB)
-	$(CC) -o $@ $< -L. -lpslib -Wl,-rpath .
+	$(CC) ${CFLAGS} -o $@ $< -L. -lpslib -Wl,-rpath .
 
 .PHONY: covclean
 covclean:
