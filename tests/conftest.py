@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 from pycpslib import lib as P 
 
@@ -45,7 +46,7 @@ def almost_equal():
 
 @pytest.fixture
 def compare_cpu_times(almost_equal):
-    def compare(t1, t2):
+    def compare_linux(t1, t2):
         return all([almost_equal(t1.user, t2.user),
                     almost_equal(t1.system, t2.system),
                     almost_equal(t1.idle, t2.idle),
@@ -56,4 +57,16 @@ def compare_cpu_times(almost_equal):
                     almost_equal(t1.steal, t2.steal),
                     almost_equal(t1.guest, t2.guest),
                     almost_equal(t1.guest_nice, t2.guest_nice)])
-    return compare
+
+    def compare_darwin(t1, t2):
+        return all([almost_equal(t1.user, t2.user),
+                    almost_equal(t1.system, t2.system),
+                    almost_equal(t1.idle, t2.idle),
+                    almost_equal(t1.nice, t2.nice)])
+
+    if sys.platform == 'darwin':
+        return compare_darwin
+    # TODO: add more cases as more platforms get implemented
+    # See https://github.com/nibrahim/cpslib/issues/9 as well.
+
+    return compare_linux
