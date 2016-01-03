@@ -13,7 +13,7 @@ def test_number_of_partitions(flush):
     assert actual_phy_partitions.nitems == len(expected_phy_partitions)
 
 
-def test_all_parition_attribs(flush):
+def test_all_partition_attribs(flush):
     "Verifies device, mountpoint, fstype and opts for all partitions"
     psutil_partitions = psutil.disk_partitions(True)
     pslib_partitions = P.disk_partitions(0)
