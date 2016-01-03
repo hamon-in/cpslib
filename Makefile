@@ -1,6 +1,7 @@
 CFLAGS  = -fPIC -Wall -Werror -Wunused -Wextra -O0 -g -std=gnu11
 CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS = -dynamiclib --coverage
+LDFLAGS  = -dynamiclib --coverage
+LDFLAGS += -framework CoreFoundation -framework IOKit
 RM = rm -rf
 TARGET_LIB = libpslib.dylib
 EXEC = driver
@@ -18,7 +19,7 @@ $(TARGET_LIB): $(OBJS)
 	$(CC) ${LDFLAGS} -o $@ $^
 
 $(EXEC): $(EXEC).c $(TARGET_LIB)
-	$(CC) -o $@ $< -L. -lpslib -Wl,-rpath .
+	$(CC) ${CFLAGS} -o $@ $< -L. -lpslib -Wl,-rpath .
 
 .PHONY: covclean
 covclean:

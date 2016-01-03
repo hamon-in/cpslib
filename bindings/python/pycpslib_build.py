@@ -32,12 +32,16 @@ typedef struct {
   DiskPartition *partitions;
 } DiskPartitionInfo;
 
+DiskPartitionInfo *disk_partitions(int);
+
 typedef struct {
   unsigned long total;
   unsigned long used;
   unsigned long free;
   float percent;
 } DiskUsage;
+
+int disk_usage(char [], DiskUsage *);
 
 typedef struct {
   char *name;
@@ -53,6 +57,8 @@ typedef struct {
   int nitems;
   DiskIOCounters *iocounters;
 } DiskIOCounterInfo;
+
+DiskIOCounterInfo *disk_io_counters(void);
 
 typedef struct {
   char * name;
@@ -70,6 +76,8 @@ typedef struct {
   int nitems;
   NetIOCounters *iocounters;
 } NetIOCounterInfo;
+
+NetIOCounterInfo *net_io_counters(void);
 
 typedef struct {
   char *username;
@@ -99,6 +107,8 @@ typedef struct {
   unsigned long cached;
 } VmemInfo;
 
+int virtual_memory(VmemInfo *);
+
 typedef struct {
   unsigned long total;
   unsigned long used;
@@ -107,6 +117,8 @@ typedef struct {
   unsigned long sin;
   unsigned long sout;
 } SwapMemInfo;
+
+int swap_memory(SwapMemInfo *);
 
 typedef struct {
   double user;
@@ -144,6 +156,8 @@ typedef struct {
   char *username;
   char *terminal;
 } Process;
+
+Process *get_process(int);
 
 void gcov_flush(void);
 """)
