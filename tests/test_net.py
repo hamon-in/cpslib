@@ -1,8 +1,12 @@
+import pytest
+import sys
+
 import psutil
 from pycpslib import lib as P
 from pycpslib import ffi
 
 
+@pytest.mark.skipif("sys.platform == 'darwin'")
 def test_net_io_counters(flush):
     psutil_counters = psutil.net_io_counters(True)
     pslib_counter_info = P.net_io_counters()

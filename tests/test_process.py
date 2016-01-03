@@ -1,9 +1,12 @@
 import os
+import pytest
+import sys
 
 import psutil
 from pycpslib import lib as P
 from pycpslib import ffi
 
+@pytest.mark.skipif("sys.platform == 'darwin'")
 def test_process(flush):
     cpid = os.getpid()
     psu = psutil.Process(cpid)
