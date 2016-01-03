@@ -3,6 +3,30 @@
 #include <unistd.h>
 #include "pslib.h"
 
+void test_diskiocounters() {
+  DiskIOCounterInfo *d;
+  DiskIOCounters *dp;
+  d = disk_io_counters();
+  if (!d) {
+    printf("Aborting");
+    return;
+  }
+
+  printf(" -- disk_io_counters \n");
+  dp = d->iocounters;
+  int i;
+  for (i = 0; i < d->nitems; i++) {
+    printf("%s: \tread_count=%ld, write_count=%ld, \n"
+           "\tread_bytes=%ld, write_bytes=%ld, \n"
+           "\tread_time=%ld, write_time=%ld\n",
+           dp->name, dp->reads, dp->writes, dp->readbytes, dp->writebytes,
+           dp->readtime, dp->writetime);
+    dp++;
+  }
+  free_disk_iocounter_info(d);
+  printf("\n");
+}
+
 void test_getusers() {
   UsersInfo *r;
   int i;
@@ -201,7 +225,7 @@ void test_cpu_count() {
 int main() {
   //  test_diskusage();
   //  test_diskpartitioninfo();
-  //  test_diskiocounters();
+  test_diskiocounters();
   //  test_netiocounters();
   test_getusers();
   test_boottime();

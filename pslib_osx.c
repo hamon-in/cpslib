@@ -5,15 +5,19 @@
 #include <utmpx.h>
 #include <mach/mach.h>
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOBSD.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/storage/IOBlockStorageDriver.h>
+#include <IOKit/storage/IOMedia.h>
+
 #include "pslib.h"
 #include "common.h"
-
-/* TBD : Generic function to get field from a line in a file that starts with
- * something */
 
 void __gcov_flush(void);
 
 /* Internal functions */
+
 static CpuTimes *per_cpu_times() {
   CpuTimes *ret = NULL;
 
@@ -123,6 +127,199 @@ static double calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2) {
 }
 
 /* Public functions */
+
+int disk_usage(char path[], DiskUsage *ret) {
+  path[0] = 0;
+  ret = NULL;
+  return 0;
+}
+
+DiskPartitionInfo *disk_partitions(int physical) {
+  physical = 0;
+  return NULL;
+}
+
+void free_disk_partition_info(DiskPartitionInfo *di) {
+  DiskPartition *d = di->partitions;
+  while (di->nitems--) {
+    free(d->device);
+    free(d->mountpoint);
+    free(d->fstype);
+    free(d->opts);
+    d++;
+  }
+  free(di->partitions);
+  free(di);
+}
+
+DiskIOCounterInfo *disk_io_counters() {
+  CFDictionaryRef parent_dict;
+  CFDictionaryRef props_dict;
+  CFDictionaryRef stats_dict;
+  io_registry_entry_t parent;
+  io_registry_entry_t disk;
+  io_iterator_t disk_list;
+
+  DiskIOCounters *counters = NULL;
+  DiskIOCounters *disk_info = NULL;
+  DiskIOCounterInfo *ret =
+      (DiskIOCounterInfo *)calloc(1, sizeof(DiskIOCounterInfo));
+  check_mem(ret);
+
+  // Get list of disks
+  if (IOServiceGetMatchingServices(kIOMasterPortDefault,
+                                   IOServiceMatching(kIOMediaClass),
+                                   &disk_list) != kIOReturnSuccess) {
+    log_err("unable to get the list of disks.");
+    goto error;
+  }
+
+  // We don't handle more than 30 partitions
+  // TODO: see if sizeof disk_list can be found
+  counters = (DiskIOCounters *)calloc(30, sizeof(DiskIOCounters));
+  check_mem(counters);
+
+  ret->iocounters = counters;
+
+  disk_info = counters;
+
+  // Iterate over disks
+  while ((disk = IOIteratorNext(disk_list)) != 0) {
+    parent_dict = NULL;
+    props_dict = NULL;
+    stats_dict = NULL;
+
+    if (IORegistryEntryGetParentEntry(disk, kIOServicePlane, &parent) !=
+        kIOReturnSuccess) {
+      log_err("unable to get the disk's parent.");
+      IOObjectRelease(disk);
+      goto error;
+    }
+
+    if (IOObjectConformsTo(parent, "IOBlockStorageDriver")) {
+      if (IORegistryEntryCreateCFProperties(
+              disk, (CFMutableDictionaryRef *)&parent_dict, kCFAllocatorDefault,
+              kNilOptions) != kIOReturnSuccess) {
+        log_err("unable to get the parent's properties.");
+        IOObjectRelease(disk);
+        IOObjectRelease(parent);
+        goto error;
+      }
+
+      if (IORegistryEntryCreateCFProperties(
+              parent, (CFMutableDictionaryRef *)&props_dict,
+              kCFAllocatorDefault, kNilOptions) != kIOReturnSuccess) {
+        log_err("unable to get the disk properties.");
+        CFRelease(props_dict);
+        IOObjectRelease(disk);
+        IOObjectRelease(parent);
+        goto error;
+      }
+
+      const int kMaxDiskNameSize = 64;
+      CFStringRef disk_name_ref =
+          (CFStringRef)CFDictionaryGetValue(parent_dict, CFSTR(kIOBSDNameKey));
+      char disk_name[kMaxDiskNameSize];
+
+      CFStringGetCString(disk_name_ref, disk_name, kMaxDiskNameSize,
+                         CFStringGetSystemEncoding());
+
+      stats_dict = (CFDictionaryRef)CFDictionaryGetValue(
+          props_dict, CFSTR(kIOBlockStorageDriverStatisticsKey));
+
+      check(stats_dict, "Unable to get disk stats.");
+
+      CFNumberRef number;
+      int64_t reads = 0;
+      int64_t writes = 0;
+      int64_t read_bytes = 0;
+      int64_t write_bytes = 0;
+      int64_t read_time = 0;
+      int64_t write_time = 0;
+
+      // Get disk reads/writes
+      if ((number = (CFNumberRef)CFDictionaryGetValue(
+               stats_dict, CFSTR(kIOBlockStorageDriverStatisticsReadsKey)))) {
+        CFNumberGetValue(number, kCFNumberSInt64Type, &reads);
+      }
+      if ((number = (CFNumberRef)CFDictionaryGetValue(
+               stats_dict, CFSTR(kIOBlockStorageDriverStatisticsWritesKey)))) {
+        CFNumberGetValue(number, kCFNumberSInt64Type, &writes);
+      }
+
+      // Get disk bytes read/written
+      if ((number = (CFNumberRef)CFDictionaryGetValue(
+               stats_dict,
+               CFSTR(kIOBlockStorageDriverStatisticsBytesReadKey)))) {
+        CFNumberGetValue(number, kCFNumberSInt64Type, &read_bytes);
+      }
+      if ((number = (CFNumberRef)CFDictionaryGetValue(
+               stats_dict,
+               CFSTR(kIOBlockStorageDriverStatisticsBytesWrittenKey)))) {
+        CFNumberGetValue(number, kCFNumberSInt64Type, &write_bytes);
+      }
+
+      // Get disk time spent reading/writing (nanoseconds)
+      if ((number = (CFNumberRef)CFDictionaryGetValue(
+               stats_dict,
+               CFSTR(kIOBlockStorageDriverStatisticsTotalReadTimeKey)))) {
+        CFNumberGetValue(number, kCFNumberSInt64Type, &read_time);
+      }
+      if ((number = (CFNumberRef)CFDictionaryGetValue(
+               stats_dict,
+               CFSTR(kIOBlockStorageDriverStatisticsTotalWriteTimeKey)))) {
+        CFNumberGetValue(number, kCFNumberSInt64Type, &write_time);
+      }
+
+      disk_info->name = strdup(disk_name);
+      disk_info->reads = reads;
+      disk_info->writes = writes;
+      disk_info->readbytes = read_bytes;
+      disk_info->writebytes = write_bytes;
+      // Read/Write time on OS X comes back in nanoseconds, conver to
+      // milliseconds as in psutil
+      disk_info->readtime = read_time / 1000 / 1000;
+      disk_info->writetime = write_time / 1000 / 1000;
+
+      disk_info++;
+      ret->nitems++;
+
+      CFRelease(parent_dict);
+      IOObjectRelease(parent);
+      CFRelease(props_dict);
+      IOObjectRelease(disk);
+    }
+  }
+
+  IOObjectRelease(disk_list);
+
+  return ret;
+
+error:
+  free_disk_iocounter_info(ret);
+  return NULL;
+}
+
+void free_disk_iocounter_info(DiskIOCounterInfo *di) {
+  DiskIOCounters *d = di->iocounters;
+  while (di->nitems--) {
+    free(d->name);
+    d++;
+  }
+  free(di->iocounters);
+  free(di);
+}
+
+NetIOCounterInfo *net_io_counters() { return NULL; }
+
+void free_net_iocounter_info(NetIOCounterInfo *d) {
+  int i;
+  for (i = 0; i < d->nitems; i++) {
+    free(d->iocounters[i].name);
+  }
+  free(d->iocounters);
+  free(d);
+}
 
 float get_boot_time() {
   /* read KERN_BOOTIME */
@@ -282,6 +479,30 @@ UsersInfo *get_users() {
 error:
   free_users_info(ret);
   return NULL;
+}
+
+Process *get_process(pid_t pid) {
+  pid = 0;
+  return NULL;
+}
+
+void free_process(Process *p) {
+  free(p->name);
+  free(p->exe);
+  free(p->cmdline);
+  free(p->username);
+  free(p->terminal);
+  free(p);
+}
+
+int swap_memory(SwapMemInfo *ret) {
+  ret = NULL;
+  return 0;
+}
+
+int virtual_memory(VmemInfo *ret) {
+  ret = NULL;
+  return 0;
 }
 
 /* Auxiliary public functions for garbage collection */
