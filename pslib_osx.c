@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/sysctl.h>
+#include <sys/types.h>
 #include <utmpx.h>
 #include <mach/mach.h>
 
@@ -145,7 +147,124 @@ error:
 }
 
 DiskPartitionInfo *disk_partitions(int physical) {
-  physical = 0;
+  int num;
+  int i;
+  long len;
+  uint64_t flags;
+  char opts[400];
+  struct statfs *fs = NULL;
+  int nparts = 5;
+
+  DiskPartition *partitions =
+      (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
+  DiskPartitionInfo *ret =
+      (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
+  DiskPartition *d = partitions;
+  check_mem(partitions);
+  check_mem(ret);
+
+  ret->nitems = 0;
+  ret->partitions = partitions;
+
+  // get the number of mount points
+  num = getfsstat(NULL, 0, MNT_NOWAIT);
+  check(num != -1, "");
+
+  len = sizeof(*fs) * num;
+  fs = malloc(len);
+  check_mem(fs);
+
+  num = getfsstat(fs, len, MNT_NOWAIT);
+  check(num != -1, "");
+
+  for (i = 0; i < num; i++) {
+    opts[0] = 0;
+    flags = fs[i].f_flags;
+
+    // see sys/mount.h
+    if (flags & MNT_RDONLY)
+      strlcat(opts, "ro", sizeof(opts));
+    else
+      strlcat(opts, "rw", sizeof(opts));
+    if (flags & MNT_SYNCHRONOUS)
+      strlcat(opts, ",sync", sizeof(opts));
+    if (flags & MNT_NOEXEC)
+      strlcat(opts, ",noexec", sizeof(opts));
+    if (flags & MNT_NOSUID)
+      strlcat(opts, ",nosuid", sizeof(opts));
+    if (flags & MNT_UNION)
+      strlcat(opts, ",union", sizeof(opts));
+    if (flags & MNT_ASYNC)
+      strlcat(opts, ",async", sizeof(opts));
+    if (flags & MNT_EXPORTED)
+      strlcat(opts, ",exported", sizeof(opts));
+    if (flags & MNT_QUARANTINE)
+      strlcat(opts, ",quarantine", sizeof(opts));
+    if (flags & MNT_LOCAL)
+      strlcat(opts, ",local", sizeof(opts));
+    if (flags & MNT_QUOTA)
+      strlcat(opts, ",quota", sizeof(opts));
+    if (flags & MNT_ROOTFS)
+      strlcat(opts, ",rootfs", sizeof(opts));
+    if (flags & MNT_DOVOLFS)
+      strlcat(opts, ",dovolfs", sizeof(opts));
+    if (flags & MNT_DONTBROWSE)
+      strlcat(opts, ",dontbrowse", sizeof(opts));
+    if (flags & MNT_IGNORE_OWNERSHIP)
+      strlcat(opts, ",ignore-ownership", sizeof(opts));
+    if (flags & MNT_AUTOMOUNTED)
+      strlcat(opts, ",automounted", sizeof(opts));
+    if (flags & MNT_JOURNALED)
+      strlcat(opts, ",journaled", sizeof(opts));
+    if (flags & MNT_NOUSERXATTR)
+      strlcat(opts, ",nouserxattr", sizeof(opts));
+    if (flags & MNT_DEFWRITE)
+      strlcat(opts, ",defwrite", sizeof(opts));
+    if (flags & MNT_MULTILABEL)
+      strlcat(opts, ",multilabel", sizeof(opts));
+    if (flags & MNT_NOATIME)
+      strlcat(opts, ",noatime", sizeof(opts));
+    if (flags & MNT_UPDATE)
+      strlcat(opts, ",update", sizeof(opts));
+    if (flags & MNT_RELOAD)
+      strlcat(opts, ",reload", sizeof(opts));
+    if (flags & MNT_FORCE)
+      strlcat(opts, ",force", sizeof(opts));
+    if (flags & MNT_CMDFLAGS)
+      strlcat(opts, ",cmdflags", sizeof(opts));
+
+    struct stat tmp_buf;
+    if (physical && fs[i].f_mntfromname[0] != '/' &&
+        stat(fs[i].f_mntfromname, &tmp_buf) != 0) {
+      /* Skip this device since we only need physical devices */
+      continue;
+    }
+    d->device = strdup(fs[i].f_mntfromname);   // device
+    d->mountpoint = strdup(fs[i].f_mntonname); // mount point
+    d->fstype = strdup(fs[i].f_fstypename);    // fs type
+    d->opts = strdup(opts);                    // options
+
+    ret->nitems++;
+    d++;
+
+    if (ret->nitems == nparts) {
+      nparts *= 2;
+      partitions =
+          (DiskPartition *)realloc(partitions, sizeof(DiskPartition) * nparts);
+      check_mem(partitions);
+      ret->partitions = partitions;
+      d = ret->partitions + ret->nitems; /* Move the cursor to the correct
+                                            value in case the realloc moved
+                                            the memory */
+    }
+  }
+  free(fs);
+  return ret;
+
+error:
+  if (fs != NULL)
+    free(fs);
+  free_disk_partition_info(ret);
   return NULL;
 }
 

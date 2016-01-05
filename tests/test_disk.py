@@ -1,11 +1,7 @@
-import pytest
-import sys
-
 import psutil
 from pycpslib import lib as P
 from pycpslib import ffi
 
-@pytest.mark.skipif("sys.platform == 'darwin'")
 def test_number_of_partitions(flush):
     expected_all_partitions = psutil.disk_partitions(True)  # All partitions
     expected_phy_partitions = psutil.disk_partitions(False) # Physical only
@@ -16,7 +12,6 @@ def test_number_of_partitions(flush):
     assert actual_all_partitions.nitems == len(expected_all_partitions)
     assert actual_phy_partitions.nitems == len(expected_phy_partitions)
 
-@pytest.mark.skipif("sys.platform == 'darwin'")
 def test_all_partition_attribs(flush):
     "Verifies device, mountpoint, fstype and opts for all partitions"
     psutil_partitions = psutil.disk_partitions(True)
