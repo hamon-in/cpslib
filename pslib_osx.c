@@ -8,6 +8,11 @@
 #include <utmpx.h>
 #include <mach/mach.h>
 
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <net/if_dl.h>
+#include <net/route.h>
+
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOBSD.h>
 #include <IOKit/IOKitLib.h>
@@ -437,7 +442,82 @@ void free_disk_iocounter_info(DiskIOCounterInfo *di) {
   free(di);
 }
 
-NetIOCounterInfo *net_io_counters() { return NULL; }
+NetIOCounterInfo *net_io_counters() {
+  char *buf = NULL, *lim, *next;
+  struct if_msghdr *ifm;
+  int mib[6];
+  size_t len;
+  int ninterfaces = 0;
+
+  NetIOCounterInfo *ret =
+      (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
+  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
+  NetIOCounters *nc = counters;
+
+  check_mem(ret);
+  check_mem(counters);
+
+  mib[0] = CTL_NET;        // networking subsystem
+  mib[1] = PF_ROUTE;       // type of information
+  mib[2] = 0;              // protocol (IPPROTO_xxx)
+  mib[3] = 0;              // address family
+  mib[4] = NET_RT_IFLIST2; // operation
+  mib[5] = 0;
+
+  check(!(sysctl(mib, 6, NULL, &len, NULL, 0) < 0), "");
+
+  buf = malloc(len);
+  check_mem(buf);
+
+  check(!(sysctl(mib, 6, buf, &len, NULL, 0) < 0), "");
+
+  lim = buf + len;
+
+  for (next = buf; next < lim;) {
+    ifm = (struct if_msghdr *)next;
+    next += ifm->ifm_msglen;
+
+    if (ifm->ifm_type == RTM_IFINFO2) {
+      ninterfaces++;
+
+      struct if_msghdr2 *if2m = (struct if_msghdr2 *)ifm;
+      struct sockaddr_dl *sdl = (struct sockaddr_dl *)(if2m + 1);
+      char ifc_name[32];
+
+      strncpy(ifc_name, sdl->sdl_data, sdl->sdl_nlen);
+      ifc_name[sdl->sdl_nlen] = 0;
+
+      nc->name = strdup(ifc_name);
+      nc->bytes_sent = if2m->ifm_data.ifi_obytes;
+      nc->bytes_recv = if2m->ifm_data.ifi_ibytes;
+      nc->packets_sent = if2m->ifm_data.ifi_opackets;
+      nc->packets_recv = if2m->ifm_data.ifi_ipackets;
+      nc->errin = if2m->ifm_data.ifi_ierrors;
+      nc->errout = if2m->ifm_data.ifi_oerrors;
+      nc->dropin = if2m->ifm_data.ifi_iqdrops;
+      nc->dropout = 0; // dropout not supported
+
+      nc++;
+
+    } else {
+      continue;
+    }
+  }
+
+  free(buf);
+  ret->iocounters = counters;
+  ret->nitems = ninterfaces;
+  return ret;
+
+error:
+  if (buf != NULL)
+    free(buf);
+  if (counters)
+    free(counters);
+  if (nc)
+    free(nc);
+  return NULL;
+}
 
 void free_net_iocounter_info(NetIOCounterInfo *d) {
   int i;

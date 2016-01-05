@@ -74,6 +74,24 @@ void test_diskiocounters() {
   printf("\n");
 }
 
+void test_netiocounters() {
+  NetIOCounterInfo *n;
+  NetIOCounters *dp;
+  int i;
+  n = net_io_counters();
+  dp = n->iocounters;
+  printf("Interfaces: %d\n", n->nitems);
+  for (i = 0; i < n->nitems; i++) {
+    printf("%s: bytes_sent=%ld bytes_rec=%ld packets_sen=%ld packets_rec=%ld "
+           "erri=%ld errou=%ld dropi=%ld dropou=%ld \n",
+           dp->name, dp->bytes_sent, dp->bytes_recv, dp->packets_sent,
+           dp->packets_recv, dp->errin, dp->errout, dp->dropin, dp->dropout);
+    dp++;
+  }
+  free_net_iocounter_info(n);
+  printf("\n");
+}
+
 void test_getusers() {
   UsersInfo *r;
   int i;
@@ -273,7 +291,7 @@ int main() {
   test_diskusage();
   test_diskpartitioninfo();
   test_diskiocounters();
-  //  test_netiocounters();
+  test_netiocounters();
   test_getusers();
   test_boottime();
   //  test_virtualmeminfo();
