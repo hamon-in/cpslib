@@ -12,16 +12,13 @@ void test_diskusage() {
   disk_usage("/etc", &du);
   printf("/etc\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
          du.used, du.free, du.percent);
-  disk_usage("/home", &du);
-  printf("/home\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
-         du.used, du.free, du.percent);
   printf("\n");
 }
 
 void test_diskpartitioninfo() {
   int i;
   DiskPartitionInfo *phys_dp, *all_dp;
-  printf(" -- disk_partitions \n");
+  printf(" -- disk_partitions (physical) \n");
   phys_dp = disk_partitions(1);
   if (!phys_dp) {
     printf("Aborting\n");
@@ -37,7 +34,7 @@ void test_diskpartitioninfo() {
 
   printf("\n");
 
-  printf(" -- disk_partitions \n");
+  printf(" -- disk_partitions (all) \n");
   all_dp = disk_partitions(0);
   if (!all_dp) {
     printf("Aborting\n");
