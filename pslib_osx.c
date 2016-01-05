@@ -271,19 +271,6 @@ error:
   return NULL;
 }
 
-void free_disk_partition_info(DiskPartitionInfo *di) {
-  DiskPartition *d = di->partitions;
-  while (di->nitems--) {
-    free(d->device);
-    free(d->mountpoint);
-    free(d->fstype);
-    free(d->opts);
-    d++;
-  }
-  free(di->partitions);
-  free(di);
-}
-
 DiskIOCounterInfo *disk_io_counters() {
   CFDictionaryRef parent_dict;
   CFDictionaryRef props_dict;
@@ -432,16 +419,6 @@ error:
   return NULL;
 }
 
-void free_disk_iocounter_info(DiskIOCounterInfo *di) {
-  DiskIOCounters *d = di->iocounters;
-  while (di->nitems--) {
-    free(d->name);
-    d++;
-  }
-  free(di->iocounters);
-  free(di);
-}
-
 NetIOCounterInfo *net_io_counters() {
   char *buf = NULL, *lim, *next;
   struct if_msghdr *ifm;
@@ -517,15 +494,6 @@ error:
   if (nc)
     free(nc);
   return NULL;
-}
-
-void free_net_iocounter_info(NetIOCounterInfo *d) {
-  int i;
-  for (i = 0; i < d->nitems; i++) {
-    free(d->iocounters[i].name);
-  }
-  free(d->iocounters);
-  free(d);
 }
 
 float get_boot_time() {
@@ -693,15 +661,6 @@ Process *get_process(pid_t pid) {
   return NULL;
 }
 
-void free_process(Process *p) {
-  free(p->name);
-  free(p->exe);
-  free(p->cmdline);
-  free(p->username);
-  free(p->terminal);
-  free(p);
-}
-
 int swap_memory(SwapMemInfo *ret) {
   ret = NULL;
   return 0;
@@ -714,6 +673,38 @@ int virtual_memory(VmemInfo *ret) {
 
 /* Auxiliary public functions for garbage collection */
 
+void free_disk_partition_info(DiskPartitionInfo *di) {
+  DiskPartition *d = di->partitions;
+  while (di->nitems--) {
+    free(d->device);
+    free(d->mountpoint);
+    free(d->fstype);
+    free(d->opts);
+    d++;
+  }
+  free(di->partitions);
+  free(di);
+}
+
+void free_disk_iocounter_info(DiskIOCounterInfo *di) {
+  DiskIOCounters *d = di->iocounters;
+  while (di->nitems--) {
+    free(d->name);
+    d++;
+  }
+  free(di->iocounters);
+  free(di);
+}
+
+void free_net_iocounter_info(NetIOCounterInfo *d) {
+  int i;
+  for (i = 0; i < d->nitems; i++) {
+    free(d->iocounters[i].name);
+  }
+  free(d->iocounters);
+  free(d);
+}
+
 void free_users_info(UsersInfo *ui) {
   Users *u = ui->users;
   while (ui->nitems--) {
@@ -725,6 +716,17 @@ void free_users_info(UsersInfo *ui) {
   free(ui->users);
   free(ui);
 }
+
+void free_process(Process *p) {
+  free(p->name);
+  free(p->exe);
+  free(p->cmdline);
+  free(p->username);
+  free(p->terminal);
+  free(p);
+}
+
+/* Coverage related cruft */
 
 void __gcov_flush(void);
 /*
