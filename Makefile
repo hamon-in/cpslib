@@ -21,6 +21,9 @@ $(TARGET_LIB): $(OBJS)
 $(EXEC): $(EXEC).c $(TARGET_LIB)
 	$(CC) ${CFLAGS} -o $@ $< -L. -lpslib -Wl,-rpath .
 
+test: clean shared
+	cd bindings/python && make clean && make && cd - && export DYLD_LIBRARY_PATH=`pwd` && py.test
+
 .PHONY: covclean
 covclean:
 	${RM} *.gcno *.gcda *.gcov
