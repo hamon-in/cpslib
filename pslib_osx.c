@@ -132,6 +132,23 @@ static double calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2) {
   return busy_percentage;
 }
 
+/*
+ * A wrapper around host_statistics() invoked with HOST_VM_INFO.
+ */
+static int pslib_sys_vminfo(vm_statistics_data_t *vmstat) {
+  kern_return_t ret;
+  mach_msg_type_number_t count = sizeof(*vmstat) / sizeof(integer_t);
+  mach_port_t mport = mach_host_self();
+
+  ret = host_statistics(mport, HOST_VM_INFO, (host_info_t)vmstat, &count);
+  if (ret != KERN_SUCCESS) {
+    log_err("host_statistics() failed: %s", mach_error_string(ret));
+    return 0;
+  }
+  mach_port_deallocate(mach_task_self(), mport);
+  return 1;
+}
+
 /* Public functions */
 
 int disk_usage(char path[], DiskUsage *ret) {
@@ -662,7 +679,30 @@ Process *get_process(pid_t pid) {
 }
 
 int swap_memory(SwapMemInfo *ret) {
-  ret = NULL;
+  int mib[2];
+  size_t size;
+  struct xsw_usage totals;
+  vm_statistics_data_t vmstat;
+  int pagesize = getpagesize();
+
+  mib[0] = CTL_VM;
+  mib[1] = VM_SWAPUSAGE;
+  size = sizeof(totals);
+  if (sysctl(mib, 2, &totals, &size, NULL, 0) == -1) {
+    log_err("sysctl(VM_SWAPUSAGE) failed");
+  }
+  if (!pslib_sys_vminfo(&vmstat)) {
+    ret = NULL;
+    return -1;
+  }
+
+  ret->total = totals.xsu_total;
+  ret->used = totals.xsu_used;
+  ret->free = totals.xsu_avail;
+  ret->percent = percentage(totals.xsu_used, totals.xsu_total);
+  ret->sin = (unsigned long long)vmstat.pageins * pagesize;
+  ret->sout = (unsigned long long)vmstat.pageouts * pagesize;
+
   return 0;
 }
 

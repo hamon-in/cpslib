@@ -121,6 +121,43 @@ void test_boottime() {
   printf("%.1f\n\n", t);
 }
 
+void test_virtualmeminfo() {
+  VmemInfo r;
+  int t = virtual_memory(&r);
+  if (t == -1) {
+    printf("Aborting\n");
+    return;
+  }
+  printf(" -- virtual_memory\n");
+  printf("Total: %lu\n", r.total);
+  printf("Available: %lu\n", r.available);
+  printf("Percent: %f\n", r.percent);
+  printf("Used: %lu\n", r.used);
+  printf("Free: %lu\n", r.free);
+  printf("Active: %lu\n", r.active);
+  printf("Inactive: %lu\n", r.inactive);
+  printf("Buffers: %lu\n", r.buffers);
+  printf("Cached: %lu\n", r.cached);
+  printf("\n");
+}
+
+void test_swap() {
+  SwapMemInfo r;
+  int t = swap_memory(&r);
+  if (t == -1) {
+    printf("Aborting\n");
+    return;
+  }
+  printf(" -- swap_memory\n");
+  printf("Total: %lu\n", r.total);
+  printf("Used: %lu\n", r.used);
+  printf("Free: %lu\n", r.free);
+  printf("Percent: %f\n", r.percent);
+  printf("Sin: %lu\n", r.sin);
+  printf("Sout: %lu\n", r.sout);
+  printf("\n");
+}
+
 void test_cpu_times() {
   CpuTimes *r;
   r = cpu_times(0);
@@ -294,9 +331,9 @@ int main() {
   test_netiocounters();
   test_getusers();
   test_boottime();
-  //  test_virtualmeminfo();
-  //  test_swap();
-  //
+  test_virtualmeminfo();
+  test_swap();
+
   test_cpu_times();
   test_cpu_times_percpu();
 

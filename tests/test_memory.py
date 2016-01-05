@@ -1,7 +1,11 @@
+import sys
+import pytest
+
 import psutil
 from pycpslib import lib as P
 from pycpslib import ffi
 
+@pytest.mark.skipif("sys.platform == 'darwin'")
 def test_virtual_memory(almost_equal, flush):
     pslib_vmem = ffi.new("VmemInfo *")
     P.virtual_memory(pslib_vmem)
