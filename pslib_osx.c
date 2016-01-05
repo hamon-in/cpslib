@@ -707,7 +707,35 @@ int swap_memory(SwapMemInfo *ret) {
 }
 
 int virtual_memory(VmemInfo *ret) {
-  ret = NULL;
+  int mib[2];
+  uint64_t total;
+  size_t len = sizeof(total);
+  vm_statistics_data_t vm;
+  int pagesize = getpagesize();
+  // physical mem
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+
+  // This is also available as sysctlbyname("hw.memsize").
+  if (sysctl(mib, 2, &total, &len, NULL, 0)) {
+    log_err("sysctl(HW_MEMSIZE) failed");
+  }
+
+  // vm
+  if (!pslib_sys_vminfo(&vm)) {
+    ret = NULL;
+    return -1;
+  }
+
+  ret->total = total;
+  ret->free = (unsigned long long)vm.free_count * pagesize;
+  ret->active = (unsigned long long)vm.active_count * pagesize;
+  ret->inactive = (unsigned long long)vm.inactive_count * pagesize;
+  ret->wired = (unsigned long long)vm.wire_count * pagesize;
+  ret->available = ret->free + ret->inactive;
+  ret->percent = percentage((ret->total - ret->available), ret->total);
+  ret->used = ret->active + ret->inactive + ret->wired;
+
   return 0;
 }
 

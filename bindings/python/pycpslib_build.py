@@ -105,6 +105,7 @@ typedef struct {
   unsigned long inactive;
   unsigned long buffers;
   unsigned long cached;
+  unsigned long wired;
 } VmemInfo;
 
 int virtual_memory(VmemInfo *);

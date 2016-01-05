@@ -143,6 +143,7 @@ typedef struct {
   unsigned long inactive;
   unsigned long buffers;
   unsigned long cached;
+  unsigned long wired;
 } VmemInfo;
 
 typedef struct {
