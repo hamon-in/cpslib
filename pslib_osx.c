@@ -17,8 +17,6 @@
 #include "pslib.h"
 #include "common.h"
 
-void __gcov_flush(void);
-
 /* Internal functions */
 
 static CpuTimes *per_cpu_times() {
@@ -405,7 +403,7 @@ DiskIOCounterInfo *disk_io_counters() {
       disk_info->writes = writes;
       disk_info->readbytes = read_bytes;
       disk_info->writebytes = write_bytes;
-      // Read/Write time on OS X comes back in nanoseconds, conver to
+      // Read/Write time on OS X comes back in nanoseconds, convert to
       // milliseconds as in psutil
       disk_info->readtime = read_time / 1000 / 1000;
       disk_info->writetime = write_time / 1000 / 1000;
@@ -648,6 +646,7 @@ void free_users_info(UsersInfo *ui) {
   free(ui);
 }
 
+void __gcov_flush(void);
 /*
   The following function is an ugly workaround to ensure that coverage
   data can be manually flushed to disk during py.test invocations. If
