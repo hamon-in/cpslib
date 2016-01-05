@@ -37,7 +37,6 @@ def test_all_partition_attribs(flush):
                 found = True
         assert found, """No match for Partition(mountpoint = '{}', device = '{}', fstype = '{}', opts = '{}')""".format(mountpoint, device, fstype, opts)
 
-@pytest.mark.skipif("sys.platform == 'darwin'")
 def test_disk_usage(flush):
     for mountpoint in ["/", "/etc/", "/home", "/var"]:
         pslib_usage = ffi.new("DiskUsage *")

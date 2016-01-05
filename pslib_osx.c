@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/statvfs.h>
 #include <sys/sysctl.h>
 #include <utmpx.h>
 #include <mach/mach.h>
@@ -129,9 +130,18 @@ static double calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2) {
 /* Public functions */
 
 int disk_usage(char path[], DiskUsage *ret) {
-  path[0] = 0;
-  ret = NULL;
+  struct statvfs s;
+  int r;
+  r = statvfs(path, &s);
+  check(r == 0, "Error in calling statvfs for %s", path);
+  ret->free = s.f_bavail * s.f_frsize;
+  ret->total = s.f_blocks * s.f_frsize;
+  ret->used = (s.f_blocks - s.f_bfree) * s.f_frsize;
+  ret->percent = percentage(ret->used, ret->total);
+
   return 0;
+error:
+  return -1;
 }
 
 DiskPartitionInfo *disk_partitions(int physical) {

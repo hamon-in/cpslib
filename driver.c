@@ -3,6 +3,56 @@
 #include <unistd.h>
 #include "pslib.h"
 
+void test_diskusage() {
+  DiskUsage du;
+  printf(" -- disk_usage \n");
+  disk_usage("/", &du);
+  printf("/\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
+         du.used, du.free, du.percent);
+  disk_usage("/etc", &du);
+  printf("/etc\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
+         du.used, du.free, du.percent);
+  disk_usage("/home", &du);
+  printf("/home\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
+         du.used, du.free, du.percent);
+  printf("\n");
+}
+
+void test_diskpartitioninfo() {
+  int i;
+  DiskPartitionInfo *phys_dp, *all_dp;
+  printf(" -- disk_partitions \n");
+  phys_dp = disk_partitions(1);
+  if (!phys_dp) {
+    printf("Aborting\n");
+    return;
+  }
+  printf("Partitions : %d\n", phys_dp->nitems);
+  for (i = 0; i < phys_dp->nitems; i++)
+    printf("%s %s %s %s\n", phys_dp->partitions[i].device,
+           phys_dp->partitions[i].mountpoint, phys_dp->partitions[i].fstype,
+           phys_dp->partitions[i].opts);
+
+  free_disk_partition_info(phys_dp);
+
+  printf("\n");
+
+  printf(" -- disk_partitions \n");
+  all_dp = disk_partitions(0);
+  if (!all_dp) {
+    printf("Aborting\n");
+    return;
+  }
+  printf("Partitions : %d\n", all_dp->nitems);
+  for (i = 0; i < all_dp->nitems; i++)
+    printf("%s %s %s %s\n", all_dp->partitions[i].device,
+           all_dp->partitions[i].mountpoint, all_dp->partitions[i].fstype,
+           all_dp->partitions[i].opts);
+
+  free_disk_partition_info(all_dp);
+  printf("\n");
+}
+
 void test_diskiocounters() {
   DiskIOCounterInfo *d;
   DiskIOCounters *dp;
@@ -223,8 +273,8 @@ void test_cpu_count() {
 }
 
 int main() {
-  //  test_diskusage();
-  //  test_diskpartitioninfo();
+  test_diskusage();
+  test_diskpartitioninfo();
   test_diskiocounters();
   //  test_netiocounters();
   test_getusers();
