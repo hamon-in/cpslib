@@ -327,7 +327,7 @@ void test_cpu_count() {
   printf("\n");
 }
 
-int main() {
+int main(void) {
   test_diskusage();
   test_diskpartitioninfo();
   test_diskiocounters();
@@ -348,5 +348,4 @@ int main() {
   //
   test_cpu_count();
   //  test_process();
-  return 0;
 }
