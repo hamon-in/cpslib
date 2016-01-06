@@ -1,4 +1,3 @@
-import sys
 import pytest
 
 import psutil
@@ -6,7 +5,7 @@ from pycpslib import lib as P
 from pycpslib import ffi
 
 @pytest.mark.linux2
-def test_virtual_memory(almost_equal, flush):
+def test_virtual_memory_linux(almost_equal, flush):
     pslib_vmem = ffi.new("VmemInfo *")
     P.virtual_memory(pslib_vmem)
     psutil_vmem = psutil.virtual_memory()
@@ -22,7 +21,7 @@ def test_virtual_memory(almost_equal, flush):
     assert almost_equal(pslib_vmem.percent, psutil_vmem.percent)
 
 @pytest.mark.darwin
-def test_virtual_memory(almost_equal, flush):
+def test_virtual_memory_darwin(almost_equal, flush):
     pslib_vmem = ffi.new("VmemInfo *")
     P.virtual_memory(pslib_vmem)
     psutil_vmem = psutil.virtual_memory()
