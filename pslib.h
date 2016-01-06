@@ -213,6 +213,8 @@ double *cpu_util_percent(int percpu, CpuTimes *prev_times);
 
 int cpu_count(int);
 
+int pid_exists(pid_t);
+
 Process *get_process(pid_t);
 void free_process(Process *);
 

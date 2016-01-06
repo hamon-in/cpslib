@@ -3,6 +3,7 @@
 #include <mntent.h>
 #include <pwd.h>
 #include <search.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1041,6 +1042,26 @@ cpu_count(int logical)
   return ret;
 }
 
+/* Check whether pid exists in the current process table. */
+int pid_exists(pid_t pid) {
+  if (pid == 0) // see `man 2 kill` for pid zero
+    return 1;
+
+  if (kill(pid, 0) == -1) {
+    if (errno == ESRCH) {
+      log_err("No such process");
+      return 0;
+    } else if (errno == EPERM) {
+      // permission denied, but process does exist
+      return 1;
+    } else {
+      // log error with errno
+      log_err("");
+      return 0;
+    }
+  }
+  return 1;
+}
 
 Process *
 get_process(pid_t pid)

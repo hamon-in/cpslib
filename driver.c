@@ -385,6 +385,17 @@ test_cpu_count()
   printf("\n");
 }
 
+void test_pid_exists() {
+  pid_t pid = getpid();
+  printf(" -- pid_exists \n");
+  if (pid_exists(pid))
+    printf("pid %d exists\n", pid);
+  else {
+    printf("pid %d does not exist\n", pid);
+  }
+  printf("\n");
+}
+
 void test_process()
 {
   pid_t pid = getpid();
@@ -429,6 +440,7 @@ main()
   test_cpu_times_percent_percpu();
 
   test_cpu_count();
+  test_pid_exists();
   test_process();
   return 0;
 }

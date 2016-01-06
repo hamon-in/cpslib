@@ -4,6 +4,12 @@ import psutil
 from pycpslib import lib as P 
 from pycpslib import ffi
 
+def test_pid_exists(flush):
+    cpid = os.getpid()
+    peu = psutil.pid_exists(cpid)
+    pel = P.pid_exists(cpid)
+    assert peu == pel
+
 def test_process(flush):
     cpid = os.getpid()
     psu = psutil.Process(cpid)
