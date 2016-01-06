@@ -1,7 +1,6 @@
 import psutil
-from pycpslib import lib as P 
+from pycpslib import lib as P
 from pycpslib import ffi
-
 
 def test_net_io_counters(flush):
     psutil_counters = psutil.net_io_counters(True)
