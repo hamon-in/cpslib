@@ -158,6 +158,8 @@ typedef struct {
   char *terminal;
 } Process;
 
+int pid_exists(int);
+
 Process *get_process(int);
 
 void gcov_flush(void);

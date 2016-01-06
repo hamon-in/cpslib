@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -671,6 +672,27 @@ UsersInfo *get_users() {
 error:
   free_users_info(ret);
   return NULL;
+}
+
+/* Check whether pid exists in the current process table. */
+int pid_exists(pid_t pid) {
+  if (pid == 0) // see `man 2 kill` for pid zero
+    return 1;
+
+  if (kill(pid, 0) == -1) {
+    if (errno == ESRCH) {
+      log_err("No such process");
+      return 0;
+    } else if (errno == EPERM) {
+      // permission denied, but process does exist
+      return 1;
+    } else {
+      // log error with errno
+      log_err("");
+      return 0;
+    }
+  }
+  return 1;
 }
 
 Process *get_process(pid_t pid) {
