@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "pslib.h"
 
@@ -12,7 +13,6 @@ void test_diskusage() {
   disk_usage("/etc", &du);
   printf("/etc\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
          du.used, du.free, du.percent);
-  printf("\n");
 }
 
 void test_diskpartitioninfo() {
@@ -80,7 +80,7 @@ void test_netiocounters() {
   int i;
   n = net_io_counters();
   dp = n->iocounters;
-  printf("Interfaces: %d\n", n->nitems);
+  printf(" -- net_io_counters (interface count: %d)\n", n->nitems);
   for (i = 0; i < n->nitems; i++) {
     printf("%s: bytes_sent=%ld bytes_rec=%ld packets_sen=%ld packets_rec=%ld "
            "erri=%ld errou=%ld dropi=%ld dropou=%ld \n",
@@ -123,6 +123,8 @@ void test_boottime() {
 
 void test_virtualmeminfo() {
   VmemInfo r;
+  // Empty out to prevent garbage in platform-specific fields
+  memset(&r, 0, sizeof(VmemInfo));
   int t = virtual_memory(&r);
   if (t == -1) {
     printf("Aborting\n");
@@ -138,6 +140,7 @@ void test_virtualmeminfo() {
   printf("Inactive: %lu\n", r.inactive);
   printf("Buffers: %lu\n", r.buffers);
   printf("Cached: %lu\n", r.cached);
+  printf("Wired: %lu\n", r.wired);
   printf("\n");
 }
 
