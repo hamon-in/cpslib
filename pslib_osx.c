@@ -136,7 +136,7 @@ static double calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2) {
 /*
  * A wrapper around host_statistics() invoked with HOST_VM_INFO.
  */
-static int pslib_sys_vminfo(vm_statistics_data_t *vmstat) {
+static int sys_vminfo(vm_statistics_data_t *vmstat) {
   kern_return_t ret;
   mach_msg_type_number_t count = sizeof(*vmstat) / sizeof(integer_t);
   mach_port_t mport = mach_host_self();
@@ -713,7 +713,7 @@ int swap_memory(SwapMemInfo *ret) {
   if (sysctl(mib, 2, &totals, &size, NULL, 0) == -1) {
     log_err("sysctl(VM_SWAPUSAGE) failed");
   }
-  if (!pslib_sys_vminfo(&vmstat)) {
+  if (!sys_vminfo(&vmstat)) {
     ret = NULL;
     return -1;
   }
@@ -744,7 +744,7 @@ int virtual_memory(VmemInfo *ret) {
   }
 
   // vm
-  if (!pslib_sys_vminfo(&vm)) {
+  if (!sys_vminfo(&vm)) {
     ret = NULL;
     return -1;
   }
