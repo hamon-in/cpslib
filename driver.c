@@ -335,6 +335,28 @@ void test_pid_exists() {
   else {
     printf("pid %d does not exist\n", pid);
   }
+  printf("\n");
+}
+
+void test_process() {
+  pid_t pid = getpid();
+  Process *process = get_process(pid);
+  printf(" -- process \n");
+  printf("pid %d\n", process->pid);
+  printf("ppid %d\n", process->ppid);
+  printf("name %s\n", process->name);
+  printf("exe %s\n", process->exe);
+  printf("cmdline %s\n", process->cmdline);
+  printf("Real uid %d\n", process->uid);
+  printf("Effective uid %d\n", process->euid);
+  printf("Saved uid %d\n", process->suid);
+  printf("Real gid %d\n", process->gid);
+  printf("Effective gid %d\n", process->egid);
+  printf("Saved gid %d\n", process->sgid);
+  printf("Username %s\n", process->username);
+  printf("Terminal %s\n", process->terminal);
+  printf("\n");
+  free_process(process);
 }
 
 int main(void) {
@@ -357,6 +379,6 @@ int main(void) {
   test_cpu_times_percent_percpu();
 
   test_cpu_count();
-  //  test_process();
   test_pid_exists();
+  test_process();
 }

@@ -6,6 +6,8 @@
 #include <sys/statvfs.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
+#include <libproc.h>
+#include <pwd.h>
 #include <utmpx.h>
 #include <mach/mach.h>
 
@@ -22,6 +24,8 @@
 
 #include "pslib.h"
 #include "common.h"
+
+#define TV2DOUBLE(t) ((t).tv_sec + (t).tv_usec / 1000000.0)
 
 /* Internal functions */
 
@@ -148,6 +152,242 @@ static int sys_vminfo(vm_statistics_data_t *vmstat) {
   }
   mach_port_deallocate(mach_task_self(), mport);
   return 1;
+}
+
+static int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
+  int mib[4];
+  size_t len;
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_PID;
+  mib[3] = pid;
+
+  // fetch the info with sysctl()
+  len = sizeof(struct kinfo_proc);
+
+  // now read the data from sysctl
+  if (sysctl(mib, 4, kp, &len, NULL, 0) == -1) {
+    // throw errno as the error
+    log_err("");
+    return -1;
+  }
+
+  // sysctl succeeds but len is zero, happens when process has gone away
+  check(len != 0, "No such process");
+  return 0;
+error:
+  return -1;
+}
+
+static pid_t get_ppid(pid_t pid) {
+  struct kinfo_proc kp;
+
+  if (get_kinfo_proc(pid, &kp) == -1)
+    return -1;
+
+  return (pid_t)kp.kp_eproc.e_ppid;
+}
+
+static char *get_procname(pid_t pid) {
+  struct kinfo_proc kp;
+
+  if (get_kinfo_proc(pid, &kp) == -1)
+    return NULL;
+
+  return strdup(kp.kp_proc.p_comm);
+}
+
+static char *get_exe(pid_t pid) {
+  char buf[PATH_MAX];
+  int ret;
+
+  ret = proc_pidpath(pid, &buf, sizeof(buf));
+  if (ret == 0) {
+    if (!pid_exists(pid))
+      log_err("No such process");
+    else
+      log_err("Access denied");
+    return NULL;
+  }
+  return strdup(buf);
+}
+
+// Read the maximum argument size for processes
+int get_argmax() {
+  int argmax;
+  int mib[] = {CTL_KERN, KERN_ARGMAX};
+  size_t size = sizeof(argmax);
+
+  if (sysctl(mib, 2, &argmax, &size, NULL, 0) == 0)
+    return argmax;
+  return 0;
+}
+
+static char *get_cmdline(pid_t pid) {
+  int mib[3];
+  int nargs;
+  int len;
+  char *procargs = NULL;
+  char *arg_ptr;
+  char *arg_end;
+  char *curr_arg;
+  size_t argmax;
+
+  char *ret;
+  int bufsize = 500;
+
+  ret = (char *)calloc(bufsize, sizeof(char));
+  check_mem(ret);
+
+  // special case for PID 0 (kernel_task) where cmdline cannot be fetched
+  if (pid == 0)
+    return 0;
+
+  // read argmax and allocate memory for argument space.
+  argmax = get_argmax();
+  check(argmax, "");
+
+  procargs = (char *)malloc(argmax);
+  check_mem(procargs);
+
+  // read argument space
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROCARGS2;
+  mib[2] = pid;
+  if (sysctl(mib, 3, procargs, &argmax, NULL, 0) < 0) {
+    if (EINVAL == errno) {
+      // EINVAL == access denied OR nonexistent PID
+      if (pid_exists(pid))
+        log_err("Access denied");
+      else
+        log_err("No such process");
+    }
+    goto error;
+  }
+
+  arg_end = &procargs[argmax];
+  // copy the number of arguments to nargs
+  memcpy(&nargs, procargs, sizeof(nargs));
+
+  arg_ptr = procargs + sizeof(nargs);
+  len = strlen(arg_ptr);
+  arg_ptr += len + 1;
+
+  if (arg_ptr == arg_end) {
+    free(procargs);
+    return 0;
+  }
+
+  // skip ahead to the first argument
+  for (; arg_ptr < arg_end; arg_ptr++) {
+    if (*arg_ptr != '\0')
+      break;
+  }
+
+  // iterate through arguments
+  curr_arg = arg_ptr;
+  strcpy(ret, "");
+  len = 0;
+  while (arg_ptr < arg_end && nargs > 0) {
+    if (*arg_ptr++ == '\0') {
+      strcat(ret, curr_arg);
+      len += strlen(curr_arg);
+      ret[len] = ' ';
+      ret[++len] = '\0';
+
+      // iterate to next arg and decrement # of args
+      curr_arg = arg_ptr;
+      nargs--;
+    }
+  }
+  ret[--len] = '\0';
+
+  free(procargs);
+
+  if (len == bufsize) {
+    log_warn("TBD: Long command line. Returning only partial string");
+    return ret;
+  }
+  if (len <= bufsize) {
+    return ret;
+  }
+
+error:
+  if (procargs)
+    free(procargs);
+  if (ret)
+    free(ret);
+  return NULL;
+}
+
+static double get_create_time(pid_t pid) {
+
+  struct kinfo_proc kp;
+
+  if (get_kinfo_proc(pid, &kp) == -1)
+    return -1;
+
+  return TV2DOUBLE(kp.kp_proc.p_starttime);
+}
+
+static long *get_uids(pid_t pid) {
+  long *ret = (long *)calloc(3, sizeof(long));
+  struct kinfo_proc kp;
+
+  if (get_kinfo_proc(pid, &kp) == -1)
+    return NULL;
+
+  ret[0] = (long)kp.kp_eproc.e_pcred.p_ruid;
+  ret[1] = (long)kp.kp_eproc.e_ucred.cr_uid;
+  ret[2] = (long)kp.kp_eproc.e_pcred.p_svuid;
+
+  return ret;
+}
+
+static long *get_gids(pid_t pid) {
+  long *ret = (long *)calloc(3, sizeof(long));
+  struct kinfo_proc kp;
+
+  if (get_kinfo_proc(pid, &kp) == -1)
+    return NULL;
+
+  ret[0] = (long)kp.kp_eproc.e_pcred.p_rgid;
+  ret[1] = (long)kp.kp_eproc.e_ucred.cr_groups[0];
+  ret[2] = (long)kp.kp_eproc.e_pcred.p_svgid;
+
+  return ret;
+}
+
+static char *get_username(unsigned int ruid) {
+  struct passwd *ret = NULL;
+  char *username = NULL;
+  ret = getpwuid(ruid);
+  check(ret, "Couldn't access passwd database for entry %d", ruid);
+  username = strdup(ret->pw_name);
+  check(username, "Couldn't allocate memory for name");
+  return username;
+error:
+  return NULL;
+}
+
+static char *get_terminal(pid_t pid) {
+  struct kinfo_proc kp;
+  dev_t dev;
+  char *ttname;
+  char *ret;
+
+  if (get_kinfo_proc(pid, &kp) == -1)
+    return NULL;
+
+  dev = kp.kp_eproc.e_tdev;
+  if (dev == NODEV || (ttname = devname(dev, S_IFCHR)) == NULL)
+    return "??";
+  else {
+    ret = strdup("/dev/");
+    ret = (char *)realloc(ret, sizeof(ttname + 5));
+    strcat(ret, ttname);
+    return ret;
+  }
 }
 
 /* Public functions */
@@ -696,8 +936,44 @@ int pid_exists(pid_t pid) {
 }
 
 Process *get_process(pid_t pid) {
-  pid = 0;
-  return NULL;
+  /* TBD: Add test for invalid pid. Right now, we get a lot of errors and some
+   * structure.*/
+  Process *retval = (Process *)calloc(1, sizeof(Process));
+  long *uids = NULL;
+  long *gids = NULL;
+  retval->pid = pid;
+  retval->ppid = get_ppid(pid);
+  retval->name = get_procname(pid);
+  retval->exe = get_exe(pid);
+  retval->cmdline = get_cmdline(pid);
+  retval->create_time = get_create_time(pid);
+  uids = get_uids(pid);
+  if (uids) {
+    retval->uid = uids[0];
+    retval->euid = uids[1];
+    retval->suid = uids[2];
+    retval->username =
+        get_username(retval->uid); /* Uses real uid and not euid */
+  } else {
+    retval->uid = retval->euid = retval->suid = 0;
+    retval->username = NULL;
+  }
+
+  gids = get_gids(pid);
+  if (uids) {
+    retval->gid = gids[0];
+    retval->egid = gids[1];
+    retval->sgid = gids[2];
+  } else {
+    retval->uid = retval->euid = retval->suid = 0;
+  }
+
+  retval->terminal = get_terminal(pid);
+  if (uids)
+    free(uids);
+  if (gids)
+    free(gids);
+  return retval;
 }
 
 int swap_memory(SwapMemInfo *ret) {

@@ -1,6 +1,4 @@
 import os
-import pytest
-import sys
 
 import psutil
 from pycpslib import lib as P
@@ -12,7 +10,6 @@ def test_pid_exists(flush):
     pel = P.pid_exists(cpid)
     assert peu == pel
 
-@pytest.mark.skipif("sys.platform == 'darwin'")
 def test_process(flush):
     cpid = os.getpid()
     psu = psutil.Process(cpid)
