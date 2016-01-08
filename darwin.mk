@@ -1,4 +1,5 @@
-CFLAGS  = -fPIC -Wall -Werror -Wunused -Wextra -O0 -g -std=gnu11
+CFLAGS  = -O0 -g -std=c11 -fPIC -march=native -Wall -Wextra -Wunused
+CFLAGS += -Werror -Wshadow
 CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS  = -dynamiclib --coverage
 LDFLAGS += -framework CoreFoundation -framework IOKit
