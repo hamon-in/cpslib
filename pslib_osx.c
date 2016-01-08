@@ -384,7 +384,7 @@ static char *get_terminal(pid_t pid) {
     return "??";
   else {
     ret = strdup("/dev/");
-    ret = (char *)realloc(ret, sizeof(ttname + 5));
+    ret = (char *)realloc(ret, strlen(ret) + strlen(ttname));
     strcat(ret, ttname);
     return ret;
   }
