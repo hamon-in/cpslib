@@ -70,8 +70,9 @@ static CpuTimes *per_cpu_times() {
   return ret;
 
 error:
-  if (ret)
+  if (ret) {
     free(ret);
+  }
   if (cpu_load_info != NULL) {
     sysret = vm_deallocate(mach_task_self(), (vm_address_t)info_array,
                            info_count * sizeof(int));
@@ -115,8 +116,9 @@ static CpuTimes *calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2) {
   return ret;
 
 error:
-  if (ret)
+  if (ret) {
     free(ret);
+  }
   return NULL;
 }
 
@@ -280,8 +282,9 @@ static char *get_cmdline(pid_t pid) {
 
   // skip ahead to the first argument
   for (; arg_ptr < arg_end; arg_ptr++) {
-    if (*arg_ptr != '\0')
+    if (*arg_ptr != '\0') {
       break;
+    }
   }
 
   // iterate through arguments
@@ -313,10 +316,12 @@ static char *get_cmdline(pid_t pid) {
   }
 
 error:
-  if (procargs)
+  if (procargs) {
     free(procargs);
-  if (ret)
+  }
+  if (ret) {
     free(ret);
+  }
   return NULL;
 }
 
@@ -746,10 +751,12 @@ NetIOCounterInfo *net_io_counters() {
 error:
   if (buf != NULL)
     free(buf);
-  if (counters)
+  if (counters) {
     free(counters);
-  if (nc)
+  }
+  if (nc) {
     free(nc);
+  }
   return NULL;
 }
 
@@ -796,8 +803,9 @@ CpuTimes *cpu_times(int percpu) {
   }
 
 error:
-  if (ret)
+  if (ret) {
     free(ret);
+  }
   return NULL;
 }
 
@@ -816,8 +824,9 @@ double *cpu_util_percent(int percpu, CpuTimes *prev_times) {
   free(current);
   return percentage;
 error:
-  if (current)
+  if (current) {
     free(current);
+  }
   return NULL;
 }
 
@@ -839,8 +848,9 @@ CpuTimes *cpu_times_percent(int percpu, CpuTimes *prev_times) {
   free(current);
   return ret;
 error:
-  if (current)
+  if (current) {
     free(current);
+  }
   return NULL;
 }
 
