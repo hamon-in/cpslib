@@ -247,7 +247,7 @@ static char *get_cmdline(pid_t pid) {
   argmax = get_argmax();
   check(argmax, "");
 
-  procargs = (char *)malloc(argmax);
+  procargs = (char *)calloc(1, argmax);
   check_mem(procargs);
 
   // read argument space
@@ -431,7 +431,7 @@ DiskPartitionInfo *disk_partitions(int physical) {
   check(num != -1, "");
 
   len = sizeof(*fs) * num;
-  fs = malloc(len);
+  fs = (struct statfs *)calloc(1, len);
   check_mem(fs);
 
   num = getfsstat(fs, len, MNT_NOWAIT);
@@ -700,7 +700,7 @@ NetIOCounterInfo *net_io_counters() {
 
   check(!(sysctl(mib, 6, NULL, &len, NULL, 0) < 0), "");
 
-  buf = malloc(len);
+  buf = (char *)calloc(1, len);
   check_mem(buf);
 
   check(!(sysctl(mib, 6, buf, &len, NULL, 0) < 0), "");
