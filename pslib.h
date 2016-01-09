@@ -1,5 +1,4 @@
-#ifndef __pslib_linux_h
-#define __pslib_linux_h
+#pragma once
 
 enum proc_status {
   STATUS_RUNNING,
@@ -220,6 +219,5 @@ void free_process(Process *);
 /* Required to avoid [-Wimplicit-function-declaration] for python bindings */
 void gcov_flush(void);
 
-#endif
 // disk_io_counters_per_disk
 // net_io_counters_per_nic

@@ -1,5 +1,4 @@
-#ifndef __common_h
-#define __common_h
+#pragma once
 
 #include <stdio.h>
 #include <errno.h>
@@ -53,5 +52,3 @@ char *squeeze(char *, const char *);
     errno = 0;                                                                 \
     goto error;                                                                \
   }
-
-#endif
