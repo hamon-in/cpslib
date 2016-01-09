@@ -321,7 +321,6 @@ error:
 }
 
 static double get_create_time(pid_t pid) {
-
   struct kinfo_proc kp;
 
   if (get_kinfo_proc(pid, &kp) == -1)
@@ -381,7 +380,7 @@ static char *get_terminal(pid_t pid) {
 
   dev = kp.kp_eproc.e_tdev;
   if (dev == NODEV || (ttname = devname(dev, S_IFCHR)) == NULL)
-    return "??";
+    return strdup("??");
   else {
     ret = strdup("/dev/");
     ret = (char *)realloc(ret, strlen(ret) + strlen(ttname));
