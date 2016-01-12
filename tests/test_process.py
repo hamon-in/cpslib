@@ -1,7 +1,7 @@
 import os
 
 import psutil
-from pycpslib import lib as P 
+from pycpslib import lib as P
 from pycpslib import ffi
 
 def test_pid_exists(flush):
@@ -30,6 +30,3 @@ def test_process(flush):
     assert gids.saved == psl.sgid
     assert psu.username() == ffi.string(psl.username)
     assert psu.terminal() == ffi.string(psl.terminal)
-
-
-    

@@ -1,6 +1,8 @@
-#ifndef __pslib_linux_h
-#define __pslib_linux_h
+#pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 enum proc_status {
   STATUS_RUNNING,
@@ -24,7 +26,7 @@ enum ioprio_class {
   IOPRIO_CLASS_IDLE
 };
 
-enum rlimit {
+/*enum rlimit {
   RLIMIT_INFINITY,
   RLIMIT_AS,
   RLIMIT_CORE,
@@ -42,7 +44,7 @@ enum rlimit {
   RLIMIT_RTTIME,
   RLIMIT_SIGPENDING,
   RLIMIT_STACK
-};
+};*/
 
 enum con_status {
   ESTABLISHED,
@@ -71,11 +73,10 @@ enum proc_priority {
   REALTIME_PRIORITY_CLASS
 };
 
-
 typedef struct {
-  unsigned long total;
-  unsigned long used;
-  unsigned long free;
+  uint64_t total;
+  uint64_t used;
+  uint64_t free;
   float percent;
 } DiskUsage;
 
@@ -84,42 +85,42 @@ typedef struct {
   char *mountpoint;
   char *fstype;
   char *opts;
-} DiskPartition; /* TBD: Pluralise */
+} DiskPartition; /* TODO: Pluralise */
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   DiskPartition *partitions;
 } DiskPartitionInfo;
 
 typedef struct {
   char *name;
-  unsigned long readbytes;
-  unsigned long writebytes;
-  unsigned long reads;
-  unsigned long writes;
-  unsigned long readtime;
-  unsigned long writetime;
+  uint64_t readbytes;
+  uint64_t writebytes;
+  uint64_t reads;
+  uint64_t writes;
+  uint64_t readtime;
+  uint64_t writetime;
 } DiskIOCounters;
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   DiskIOCounters *iocounters;
 } DiskIOCounterInfo;
 
 typedef struct {
-  char * name;
-  unsigned long bytes_sent;
-  unsigned long bytes_recv;
-  unsigned long packets_sent;
-  unsigned long packets_recv;
-  unsigned long errin;
-  unsigned long errout;
-  unsigned long dropin;
-  unsigned long dropout;
+  char *name;
+  uint64_t bytes_sent;
+  uint64_t bytes_recv;
+  uint64_t packets_sent;
+  uint64_t packets_recv;
+  uint64_t errin;
+  uint64_t errout;
+  uint64_t dropin;
+  uint64_t dropout;
 } NetIOCounters;
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   NetIOCounters *iocounters;
 } NetIOCounterInfo;
 
@@ -131,29 +132,30 @@ typedef struct {
 } Users;
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   Users *users;
 } UsersInfo;
 
 typedef struct {
-  unsigned long total;
-  unsigned long available;
+  uint64_t total;
+  uint64_t available;
   float percent;
-  unsigned long used;
-  unsigned long free;
-  unsigned long active;
-  unsigned long inactive;
-  unsigned long buffers;
-  unsigned long cached;
+  uint64_t used;
+  uint64_t free;
+  uint64_t active;
+  uint64_t inactive;
+  uint64_t buffers;
+  uint64_t cached;
+  uint64_t wired;
 } VmemInfo;
 
 typedef struct {
-  unsigned long total;
-  unsigned long used;
-  unsigned long free;
+  uint64_t total;
+  uint64_t used;
+  uint64_t free;
   float percent;
-  unsigned long sin;
-  unsigned long sout;
+  uint64_t sin;
+  uint64_t sout;
 } SwapMemInfo;
 
 typedef struct {
@@ -176,44 +178,44 @@ typedef struct {
   char *exe;
   char *cmdline;
   double create_time;
-  unsigned int uid;
-  unsigned int euid;
-  unsigned int suid;
-  unsigned int gid;
-  unsigned int egid;
-  unsigned int sgid;
+  uint32_t uid;
+  uint32_t euid;
+  uint32_t suid;
+  uint32_t gid;
+  uint32_t egid;
+  uint32_t sgid;
   char *username;
   char *terminal;
 } Process;
 
-int disk_usage(char [], DiskUsage *);
+bool disk_usage(const char[], DiskUsage *);
 
-DiskPartitionInfo *disk_partitions(int);
+DiskPartitionInfo *disk_partitions(bool);
 void free_disk_partition_info(DiskPartitionInfo *);
 
 DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
-NetIOCounterInfo *net_io_counters(void); 
+NetIOCounterInfo *net_io_counters(void);
 void free_net_iocounter_info(NetIOCounterInfo *);
 
-UsersInfo *get_users(void); 
+UsersInfo *get_users(void);
 void free_users_info(UsersInfo *);
 
-long int get_boot_time(void);
+uint32_t get_boot_time(void);
 
-int virtual_memory(VmemInfo *); 
-int swap_memory(SwapMemInfo *);
+bool virtual_memory(VmemInfo *);
+bool swap_memory(SwapMemInfo *);
 
-CpuTimes *cpu_times(int);
+CpuTimes *cpu_times(bool);
 
-CpuTimes *cpu_times_percent(int, CpuTimes *);
+CpuTimes *cpu_times_percent(bool, CpuTimes *);
 
-double *cpu_util_percent(int percpu, CpuTimes *prev_times); 
+double *cpu_util_percent(bool percpu, CpuTimes *prev_times);
 
-int cpu_count(int);
+uint32_t cpu_count(bool);
 
-int pid_exists(pid_t);
+bool pid_exists(pid_t);
 
 Process *get_process(pid_t);
 void free_process(Process *);
@@ -221,6 +223,5 @@ void free_process(Process *);
 /* Required to avoid [-Wimplicit-function-declaration] for python bindings */
 void gcov_flush(void);
 
-#endif
 // disk_io_counters_per_disk
 // net_io_counters_per_nic

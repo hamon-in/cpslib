@@ -1,13 +1,13 @@
-CC = gcc
-CFLAGS  = -O0 -g -std=gnu11 -fPIC -march=native -Wall -Wextra -Wunused
+CFLAGS  = -O0 -g -std=c11 -fPIC -march=native -Wall -Wextra -Wunused
 CFLAGS += -Werror -Wshadow
 CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS = -shared --coverage
-RM = rm -f
-TARGET_LIB = libpslib.so
+LDFLAGS  = -dynamiclib --coverage
+LDFLAGS += -framework CoreFoundation -framework IOKit
+RM = rm -rf
+TARGET_LIB = libpslib.dylib
 EXEC = driver
 
-SRCS = common.c pslib_linux.c
+SRCS = common.c pslib_osx.c
 OBJS = $(SRCS:.c=.o)
 
 .PHONY: all
@@ -23,7 +23,7 @@ $(EXEC): $(EXEC).c $(TARGET_LIB)
 	$(CC) ${CFLAGS} -o $@ $< -L. -lpslib -Wl,-rpath .
 
 test: clean shared
-		cd bindings/python && make clean && make && cd - && export LD_LIBRARY_PATH=`pwd` && py.test -v -ra
+	cd bindings/python && make clean && make && cd - && export DYLD_LIBRARY_PATH=`pwd` && py.test -v -ra
 
 .PHONY: covclean
 covclean:
@@ -31,7 +31,7 @@ covclean:
 
 .PHONY: clean
 clean: covclean
-	${RM} ${TARGET_LIB} ${OBJS} $(EXEC)
+	${RM} ${TARGET_LIB} ${OBJS} $(EXEC) *dSYM
 
 check-syntax:
 	gcc -Wall -o /dev/null -S ${CHK_SOURCES}
