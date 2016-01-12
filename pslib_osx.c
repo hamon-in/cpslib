@@ -396,7 +396,7 @@ static char *get_terminal(pid_t pid) {
 
 /* Public functions */
 
-bool disk_usage(char path[], DiskUsage *ret) {
+bool disk_usage(const char path[], DiskUsage *ret) {
   struct statvfs s;
   int32_t r;
   r = statvfs(path, &s);
