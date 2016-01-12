@@ -27,7 +27,7 @@ void test_diskpartitioninfo() {
     printf("Aborting\n");
     return;
   }
-  printf("Partitions : %d\n", phys_dp->nitems);
+  printf("Partitions : %" PRIu32 "\n", phys_dp->nitems);
   for (i = 0; i < phys_dp->nitems; i++)
     printf("%s %s %s %s\n", phys_dp->partitions[i].device,
            phys_dp->partitions[i].mountpoint, phys_dp->partitions[i].fstype,
@@ -43,7 +43,7 @@ void test_diskpartitioninfo() {
     printf("Aborting\n");
     return;
   }
-  printf("Partitions : %d\n", all_dp->nitems);
+  printf("Partitions : %" PRIu32 "\n", all_dp->nitems);
   for (i = 0; i < all_dp->nitems; i++)
     printf("%s %s %s %s\n", all_dp->partitions[i].device,
            all_dp->partitions[i].mountpoint, all_dp->partitions[i].fstype,
@@ -83,7 +83,7 @@ void test_netiocounters() {
   uint32_t i;
   n = net_io_counters();
   dp = n->iocounters;
-  printf(" -- net_io_counters (interface count: %d)\n", n->nitems);
+  printf(" -- net_io_counters (interface count: %" PRIu32 ")\n", n->nitems);
   for (i = 0; i < n->nitems; i++) {
     printf("%s: bytes_sent=%" PRIu64 " bytes_rec=%" PRIu64
            " packets_sen=%" PRIu64 " packets_rec=%" PRIu64 " "
@@ -106,7 +106,7 @@ void test_getusers() {
     printf("Failed \n");
     return;
   }
-  printf("Total: %d\n", r->nitems);
+  printf("Total: %" PRIu32 "\n", r->nitems);
   printf("Name\tTerminal Host\tStarted\n");
   for (i = 0; i < r->nitems; i++) {
     printf("%s\t%s\t %s\t%.1f\n", r->users[i].username, r->users[i].tty,
@@ -123,7 +123,7 @@ void test_boottime() {
     printf("Aborting\n");
     return;
   }
-  printf("%u\n\n", t);
+  printf("%" PRIu32 "\n\n", t);
 }
 
 void test_virtualmeminfo() {
@@ -197,7 +197,7 @@ void test_cpu_times_percpu() {
   }
   printf(" -- cpu_times_percpu\n");
   for (uint32_t i = 0; i < ncpus; i++) {
-    printf("CPU %d :: ", i + 1);
+    printf("CPU %" PRIu32 " :: ", i + 1);
     printf(" Usr: %.3lf;", c->user);
     printf(" Nice: %.3lf;", c->nice);
     printf(" Sys: %.3lf;", c->system);
@@ -250,7 +250,7 @@ void test_cpu_util_percent_percpu() {
   percentages = cpu_util_percent(1, info);
   printf(" -- cpu_util_percent_percpu\n");
   for (uint32_t i = 0; i < ncpus; i++) {
-    printf("Cpu #%d : %f\n", i, percentages[i]);
+    printf("Cpu #%" PRIu32 " : %f\n", i, percentages[i]);
   }
 
   printf("\n");
@@ -309,7 +309,7 @@ void test_cpu_times_percent_percpu() {
   printf(" -- cpu_times_percent_percpu\n");
   printf("CPU times as percentage of total per CPU (0.1 second sample)\n");
   for (uint32_t i = 0; i < ncpus; i++) {
-    printf("CPU %d :: ", i + 1);
+    printf("CPU %" PRIu32 " :: ", i + 1);
     printf("Usr: %.3lf;", info->user);
     printf(" Nice: %.3lf;", info->nice);
     printf(" Sys: %.3lf;", info->system);
@@ -338,7 +338,7 @@ void test_cpu_count() {
     printf("Aborting\n");
     return;
   }
-  printf("Logical : %d\nPhysical : %d\n", logical, physical);
+  printf("Logical : %" PRIu32 "\nPhysical : %" PRIu32 "\n", logical, physical);
   printf("\n");
 }
 
@@ -346,9 +346,9 @@ void test_pid_exists() {
   pid_t pid = getpid();
   printf(" -- pid_exists \n");
   if (pid_exists(pid))
-    printf("pid %d exists\n", pid);
+    printf("pid %" PRId32 " exists\n", pid);
   else {
-    printf("pid %d does not exist\n", pid);
+    printf("pid %" PRId32 " does not exist\n", pid);
   }
   printf("\n");
 }
@@ -357,17 +357,17 @@ void test_process() {
   pid_t pid = getpid();
   Process *process = get_process(pid);
   printf(" -- process \n");
-  printf("pid %d\n", process->pid);
-  printf("ppid %d\n", process->ppid);
+  printf("pid %" PRId32 "\n", process->pid);
+  printf("ppid %" PRId32 "\n", process->ppid);
   printf("name %s\n", process->name);
   printf("exe %s\n", process->exe);
   printf("cmdline %s\n", process->cmdline);
-  printf("Real uid %d\n", process->uid);
-  printf("Effective uid %d\n", process->euid);
-  printf("Saved uid %d\n", process->suid);
-  printf("Real gid %d\n", process->gid);
-  printf("Effective gid %d\n", process->egid);
-  printf("Saved gid %d\n", process->sgid);
+  printf("Real uid %" PRIu32 "\n", process->uid);
+  printf("Effective uid %" PRIu32 "\n", process->euid);
+  printf("Saved uid %" PRIu32 "\n", process->suid);
+  printf("Real gid %" PRIu32 "\n", process->gid);
+  printf("Effective gid %" PRIu32 "\n", process->egid);
+  printf("Saved gid %" PRIu32 "\n", process->sgid);
   printf("Username %s\n", process->username);
   printf("Terminal %s\n", process->terminal);
   printf("\n");
