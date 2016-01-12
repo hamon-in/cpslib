@@ -70,9 +70,9 @@ enum proc_priority {
 };
 
 typedef struct {
-  unsigned long total;
-  unsigned long used;
-  unsigned long free;
+  uint64_t total;
+  uint64_t used;
+  uint64_t free;
   float percent;
 } DiskUsage;
 
@@ -84,39 +84,39 @@ typedef struct {
 } DiskPartition; /* TBD: Pluralise */
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   DiskPartition *partitions;
 } DiskPartitionInfo;
 
 typedef struct {
   char *name;
-  unsigned long readbytes;
-  unsigned long writebytes;
-  unsigned long reads;
-  unsigned long writes;
-  unsigned long readtime;
-  unsigned long writetime;
+  uint64_t readbytes;
+  uint64_t writebytes;
+  uint64_t reads;
+  uint64_t writes;
+  uint64_t readtime;
+  uint64_t writetime;
 } DiskIOCounters;
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   DiskIOCounters *iocounters;
 } DiskIOCounterInfo;
 
 typedef struct {
   char *name;
-  unsigned long bytes_sent;
-  unsigned long bytes_recv;
-  unsigned long packets_sent;
-  unsigned long packets_recv;
-  unsigned long errin;
-  unsigned long errout;
-  unsigned long dropin;
-  unsigned long dropout;
+  uint64_t bytes_sent;
+  uint64_t bytes_recv;
+  uint64_t packets_sent;
+  uint64_t packets_recv;
+  uint64_t errin;
+  uint64_t errout;
+  uint64_t dropin;
+  uint64_t dropout;
 } NetIOCounters;
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   NetIOCounters *iocounters;
 } NetIOCounterInfo;
 
@@ -128,30 +128,30 @@ typedef struct {
 } Users;
 
 typedef struct {
-  int nitems;
+  uint32_t nitems;
   Users *users;
 } UsersInfo;
 
 typedef struct {
-  unsigned long total;
-  unsigned long available;
+  uint64_t total;
+  uint64_t available;
   float percent;
-  unsigned long used;
-  unsigned long free;
-  unsigned long active;
-  unsigned long inactive;
-  unsigned long buffers;
-  unsigned long cached;
-  unsigned long wired;
+  uint64_t used;
+  uint64_t free;
+  uint64_t active;
+  uint64_t inactive;
+  uint64_t buffers;
+  uint64_t cached;
+  uint64_t wired;
 } VmemInfo;
 
 typedef struct {
-  unsigned long total;
-  unsigned long used;
-  unsigned long free;
+  uint64_t total;
+  uint64_t used;
+  uint64_t free;
   float percent;
-  unsigned long sin;
-  unsigned long sout;
+  uint64_t sin;
+  uint64_t sout;
 } SwapMemInfo;
 
 typedef struct {
@@ -174,12 +174,12 @@ typedef struct {
   char *exe;
   char *cmdline;
   double create_time;
-  unsigned int uid;
-  unsigned int euid;
-  unsigned int suid;
-  unsigned int gid;
-  unsigned int egid;
-  unsigned int sgid;
+  uint32_t uid;
+  uint32_t euid;
+  uint32_t suid;
+  uint32_t gid;
+  uint32_t egid;
+  uint32_t sgid;
   char *username;
   char *terminal;
 } Process;

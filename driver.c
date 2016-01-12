@@ -8,15 +8,15 @@ void test_diskusage() {
   DiskUsage du;
   printf(" -- disk_usage \n");
   disk_usage("/", &du);
-  printf("/\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
+  printf("/\ntotal: %llu\nused: %llu\nfree: %llu\npercent: %f\n\n", du.total,
          du.used, du.free, du.percent);
   disk_usage("/etc", &du);
-  printf("/etc\ntotal: %lu\nused: %lu\nfree: %lu\npercent: %f\n\n", du.total,
+  printf("/etc\ntotal: %llu\nused: %llu\nfree: %llu\npercent: %f\n\n", du.total,
          du.used, du.free, du.percent);
 }
 
 void test_diskpartitioninfo() {
-  int i;
+  uint32_t i;
   DiskPartitionInfo *phys_dp, *all_dp;
   printf(" -- disk_partitions (physical) \n");
   phys_dp = disk_partitions(1);
@@ -61,11 +61,11 @@ void test_diskiocounters() {
 
   printf(" -- disk_io_counters \n");
   dp = d->iocounters;
-  int i;
+  uint32_t i;
   for (i = 0; i < d->nitems; i++) {
-    printf("%s: \tread_count=%ld, write_count=%ld, \n"
-           "\tread_bytes=%ld, write_bytes=%ld, \n"
-           "\tread_time=%ld, write_time=%ld\n",
+    printf("%s: \tread_count=%llu, write_count=%llu, \n"
+           "\tread_bytes=%llu, write_bytes=%llu, \n"
+           "\tread_time=%llu, write_time=%llu\n",
            dp->name, dp->reads, dp->writes, dp->readbytes, dp->writebytes,
            dp->readtime, dp->writetime);
     dp++;
@@ -77,15 +77,16 @@ void test_diskiocounters() {
 void test_netiocounters() {
   NetIOCounterInfo *n;
   NetIOCounters *dp;
-  int i;
+  uint32_t i;
   n = net_io_counters();
   dp = n->iocounters;
   printf(" -- net_io_counters (interface count: %d)\n", n->nitems);
   for (i = 0; i < n->nitems; i++) {
-    printf("%s: bytes_sent=%ld bytes_rec=%ld packets_sen=%ld packets_rec=%ld "
-           "erri=%ld errou=%ld dropi=%ld dropou=%ld \n",
-           dp->name, dp->bytes_sent, dp->bytes_recv, dp->packets_sent,
-           dp->packets_recv, dp->errin, dp->errout, dp->dropin, dp->dropout);
+    printf(
+        "%s: bytes_sent=%llu bytes_rec=%llu packets_sen=%llu packets_rec=%llu "
+        "erri=%llu errou=%llu dropi=%llu dropou=%llu \n",
+        dp->name, dp->bytes_sent, dp->bytes_recv, dp->packets_sent,
+        dp->packets_recv, dp->errin, dp->errout, dp->dropin, dp->dropout);
     dp++;
   }
   free_net_iocounter_info(n);
@@ -94,7 +95,7 @@ void test_netiocounters() {
 
 void test_getusers() {
   UsersInfo *r;
-  int i;
+  uint32_t i;
   printf(" -- users \n");
   r = get_users();
   if (!r) {
@@ -131,16 +132,16 @@ void test_virtualmeminfo() {
     return;
   }
   printf(" -- virtual_memory\n");
-  printf("Total: %lu\n", r.total);
-  printf("Available: %lu\n", r.available);
+  printf("Total: %llu\n", r.total);
+  printf("Available: %llu\n", r.available);
   printf("Percent: %f\n", r.percent);
-  printf("Used: %lu\n", r.used);
-  printf("Free: %lu\n", r.free);
-  printf("Active: %lu\n", r.active);
-  printf("Inactive: %lu\n", r.inactive);
-  printf("Buffers: %lu\n", r.buffers);
-  printf("Cached: %lu\n", r.cached);
-  printf("Wired: %lu\n", r.wired);
+  printf("Used: %llu\n", r.used);
+  printf("Free: %llu\n", r.free);
+  printf("Active: %llu\n", r.active);
+  printf("Inactive: %llu\n", r.inactive);
+  printf("Buffers: %llu\n", r.buffers);
+  printf("Cached: %llu\n", r.cached);
+  printf("Wired: %llu\n", r.wired);
   printf("\n");
 }
 
@@ -152,12 +153,12 @@ void test_swap() {
     return;
   }
   printf(" -- swap_memory\n");
-  printf("Total: %lu\n", r.total);
-  printf("Used: %lu\n", r.used);
-  printf("Free: %lu\n", r.free);
+  printf("Total: %llu\n", r.total);
+  printf("Used: %llu\n", r.used);
+  printf("Free: %llu\n", r.free);
   printf("Percent: %f\n", r.percent);
-  printf("Sin: %lu\n", r.sin);
-  printf("Sout: %lu\n", r.sout);
+  printf("Sin: %llu\n", r.sin);
+  printf("Sout: %llu\n", r.sout);
   printf("\n");
 }
 

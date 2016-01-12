@@ -418,7 +418,7 @@ DiskPartitionInfo *disk_partitions(int physical) {
   uint64_t flags;
   char opts[400];
   struct statfs *fs = NULL;
-  int nparts = 5;
+  uint32_t nparts = 5;
 
   DiskPartition *partitions =
       (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
@@ -873,7 +873,7 @@ error:
 }
 
 UsersInfo *get_users() {
-  int nusers = 100;
+  uint32_t nusers = 100;
 
   UsersInfo *ret = (UsersInfo *)calloc(1, sizeof(UsersInfo));
   check_mem(ret);
@@ -1072,7 +1072,7 @@ void free_disk_iocounter_info(DiskIOCounterInfo *di) {
 }
 
 void free_net_iocounter_info(NetIOCounterInfo *d) {
-  int i;
+  uint32_t i;
   for (i = 0; i < d->nitems; i++) {
     free(d->iocounters[i].name);
   }
