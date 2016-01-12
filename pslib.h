@@ -188,9 +188,9 @@ typedef struct {
   char *terminal;
 } Process;
 
-int disk_usage(char[], DiskUsage *);
+bool disk_usage(char[], DiskUsage *);
 
-DiskPartitionInfo *disk_partitions(int);
+DiskPartitionInfo *disk_partitions(bool);
 void free_disk_partition_info(DiskPartitionInfo *);
 
 DiskIOCounterInfo *disk_io_counters(void);
@@ -204,18 +204,18 @@ void free_users_info(UsersInfo *);
 
 float get_boot_time(void);
 
-int virtual_memory(VmemInfo *);
-int swap_memory(SwapMemInfo *);
+bool virtual_memory(VmemInfo *);
+bool swap_memory(SwapMemInfo *);
 
-CpuTimes *cpu_times(int);
+CpuTimes *cpu_times(bool);
 
-CpuTimes *cpu_times_percent(int, CpuTimes *);
+CpuTimes *cpu_times_percent(bool, CpuTimes *);
 
-double *cpu_util_percent(int percpu, CpuTimes *prev_times);
+double *cpu_util_percent(bool percpu, CpuTimes *prev_times);
 
-int cpu_count(int);
+uint32_t cpu_count(bool);
 
-int pid_exists(pid_t);
+bool pid_exists(pid_t);
 
 Process *get_process(pid_t);
 void free_process(Process *);

@@ -36,7 +36,7 @@ static CpuTimes *per_cpu_times() {
   mach_msg_type_number_t info_count;
   kern_return_t kerror;
   processor_cpu_load_info_data_t *cpu_load_info = NULL;
-  int sysret;
+  kern_return_t sysret;
 
   mach_port_t host_port = mach_host_self();
   kerror = host_processor_info(host_port, PROCESSOR_CPU_LOAD_INFO, &cpu_count,
@@ -395,7 +395,7 @@ static char *get_terminal(pid_t pid) {
 
 /* Public functions */
 
-int disk_usage(char path[], DiskUsage *ret) {
+bool disk_usage(char path[], DiskUsage *ret) {
   struct statvfs s;
   int r;
   r = statvfs(path, &s);
@@ -410,7 +410,7 @@ error:
   return -1;
 }
 
-DiskPartitionInfo *disk_partitions(int physical) {
+DiskPartitionInfo *disk_partitions(bool physical) {
   int num;
   int i;
   long len;
@@ -774,7 +774,7 @@ error:
   return -1;
 }
 
-CpuTimes *cpu_times(int percpu) {
+CpuTimes *cpu_times(bool percpu) {
   CpuTimes *ret = NULL;
 
   if (!percpu) {
@@ -808,7 +808,7 @@ error:
   return NULL;
 }
 
-double *cpu_util_percent(int percpu, CpuTimes *prev_times) {
+double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
   int i, ncpus = percpu ? cpu_count(1) : 1;
   double *percentage = (double *)calloc(ncpus, sizeof(double));
@@ -829,7 +829,7 @@ error:
   return NULL;
 }
 
-CpuTimes *cpu_times_percent(int percpu, CpuTimes *prev_times) {
+CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
   CpuTimes *t;
   int i, ncpus = percpu ? cpu_count(1) : 1;
@@ -853,7 +853,7 @@ error:
   return NULL;
 }
 
-int cpu_count(int logical) {
+uint32_t cpu_count(bool logical) {
   int ncpu;
   size_t len = sizeof(ncpu);
 
@@ -923,7 +923,7 @@ error:
 }
 
 /* Check whether pid exists in the current process table. */
-int pid_exists(pid_t pid) {
+bool pid_exists(pid_t pid) {
   if (pid == 0) // see `man 2 kill` for pid zero
     return 1;
 
@@ -984,7 +984,7 @@ Process *get_process(pid_t pid) {
   return retval;
 }
 
-int swap_memory(SwapMemInfo *ret) {
+bool swap_memory(SwapMemInfo *ret) {
   int mib[2];
   size_t size;
   struct xsw_usage totals;
@@ -1012,7 +1012,7 @@ int swap_memory(SwapMemInfo *ret) {
   return 0;
 }
 
-int virtual_memory(VmemInfo *ret) {
+bool virtual_memory(VmemInfo *ret) {
   int mib[2];
   uint64_t total;
   size_t len = sizeof(total);
