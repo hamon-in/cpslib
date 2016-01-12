@@ -759,7 +759,7 @@ error:
   return NULL;
 }
 
-float get_boot_time() {
+uint32_t get_boot_time() {
   /* read KERN_BOOTIME */
   int32_t mib[2] = {CTL_KERN, KERN_BOOTTIME};
   struct timeval result;
@@ -768,6 +768,7 @@ float get_boot_time() {
 
   check(sysctl(mib, 2, &result, &len, NULL, 0) != -1, "sysctl failed");
   boot_time = result.tv_sec;
+  // For some odd reason, test fails without this type cast
   return (float)boot_time;
 
 error:
