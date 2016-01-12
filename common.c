@@ -23,7 +23,7 @@ int int_comp(const void *key, const void *memb) {
     return 0;
   } else {
     return -1;
-}
+  }
 }
 
 char *grep_awk(FILE *fp, const char *fstr, int nfield, const char *delim) {

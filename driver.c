@@ -32,7 +32,7 @@ void test_diskpartitioninfo() {
     printf("%s %s %s %s\n", phys_dp->partitions[i].device,
            phys_dp->partitions[i].mountpoint, phys_dp->partitions[i].fstype,
            phys_dp->partitions[i].opts);
-}
+  }
 
   free_disk_partition_info(phys_dp);
 
@@ -49,7 +49,7 @@ void test_diskpartitioninfo() {
     printf("%s %s %s %s\n", all_dp->partitions[i].device,
            all_dp->partitions[i].mountpoint, all_dp->partitions[i].fstype,
            all_dp->partitions[i].opts);
-}
+  }
 
   free_disk_partition_info(all_dp);
   printf("\n");

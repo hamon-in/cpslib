@@ -76,7 +76,7 @@ static CpuTimes *calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2) {
 error:
   if (ret) {
     free(ret);
-}
+  }
   return NULL;
 }
 
@@ -179,7 +179,7 @@ error:
     fclose(fs);
   if (line) {
     free(line);
-}
+  }
   if (*ndevices != 0)
     for (i = 0; i < *ndevices; i++)
       free(retval[i]);
@@ -268,7 +268,7 @@ error:
     fclose(fp);
   if (tmp) {
     free(tmp);
-}
+  }
   return NULL;
 }
 
@@ -298,7 +298,7 @@ error:
     fclose(fp);
   if (contents) {
     free(contents);
-}
+  }
   return NULL;
 }
 
@@ -400,7 +400,7 @@ error:
     fclose(fp);
   if (tmp) {
     free(tmp);
-}
+  }
   return NULL;
 }
 
@@ -505,7 +505,7 @@ DiskPartitionInfo *disk_partitions(bool physical) {
 
   for (i = 0; i < nphys_devices; i++) {
     free(phys_devices[i]);
-}
+  }
   free(phys_devices);
 
   return ret;
@@ -613,7 +613,7 @@ DiskIOCounterInfo *disk_io_counters() {
 
   for (i = 0; i < nparts; i++) {
     free(partitions[i]);
-}
+  }
   free(partitions);
   free(line);
   fclose(fp);
@@ -625,11 +625,11 @@ error:
     fclose(fp);
   if (line) {
     free(line);
-}
+  }
   if (partitions) {
     for (i = 0; i < nparts; i++) {
       free(partitions[i]);
-}
+    }
     free(partitions);
   }
   free_disk_iocounter_info(ret);
@@ -712,13 +712,13 @@ error:
     fclose(fp);
   if (line) {
     free(line);
-}
+  }
   if (counters) {
     free(counters);
-}
+  }
   if (nc) {
     free(nc);
-}
+  }
   return NULL;
 }
 
@@ -820,10 +820,10 @@ error:
     fclose(fp);
   if (line) {
     free(line);
-}
+  }
   if (tmp) {
     free(tmp);
-}
+  }
   return -1;
 }
 
@@ -878,7 +878,7 @@ error:
     fclose(fp);
   if (line) {
     free(line);
-}
+  }
   return false;
 }
 
@@ -930,7 +930,7 @@ error:
     fclose(fp);
   if (line) {
     free(line);
-}
+  }
   return false;
 }
 
@@ -963,7 +963,7 @@ CpuTimes *cpu_times(bool percpu) {
       check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
       if (strncmp(line, "cpu", 3) != 0) {
         break;
-}
+      }
       check(parse_cpu_times(line, ret + i) == 0,
             "Error while parsing /proc/stat line for cpu times");
       i++;
@@ -978,10 +978,10 @@ error:
     fclose(fp);
   if (line) {
     free(line);
-}
+  }
   if (ret) {
     free(ret);
-}
+  }
   return NULL;
 }
 
@@ -1005,7 +1005,7 @@ CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
 error:
   if (current) {
     free(current);
-}
+  }
   return NULL;
 }
 
@@ -1026,7 +1026,7 @@ double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
 error:
   if (current) {
     free(current);
-}
+  }
   return NULL;
 }
 
