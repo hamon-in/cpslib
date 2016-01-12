@@ -37,6 +37,7 @@ static CpuTimes *per_cpu_times() {
   kern_return_t kerror;
   processor_cpu_load_info_data_t *cpu_load_info = NULL;
   kern_return_t sysret;
+  int32_t pagesize = getpagesize();
 
   mach_port_t host_port = mach_host_self();
   kerror = host_processor_info(host_port, PROCESSOR_CPU_LOAD_INFO, &cpu_count,
@@ -50,7 +51,7 @@ static CpuTimes *per_cpu_times() {
   ret = (CpuTimes *)calloc(cpu_count, sizeof(CpuTimes));
   check_mem(ret);
 
-  for (unsigned int i = 0; i < cpu_count; i++) {
+  for (natural_t i = 0; i < cpu_count; i++) {
     (ret + i)->user =
         (double)cpu_load_info[i].cpu_ticks[CPU_STATE_USER] / CLK_TCK;
     (ret + i)->nice =
@@ -62,7 +63,7 @@ static CpuTimes *per_cpu_times() {
   }
 
   sysret = vm_deallocate(mach_task_self(), (vm_address_t)info_array,
-                         info_count * sizeof(int));
+                         info_count * pagesize);
   if (sysret != KERN_SUCCESS)
     log_warn("vm_deallocate() failed");
 
@@ -74,7 +75,7 @@ error:
   }
   if (cpu_load_info != NULL) {
     sysret = vm_deallocate(mach_task_self(), (vm_address_t)info_array,
-                           info_count * sizeof(int));
+                           info_count * pagesize);
     if (sysret != KERN_SUCCESS)
       log_warn("vm_deallocate() failed");
   }
@@ -141,7 +142,7 @@ static double calculate_cpu_util_percentage(CpuTimes *t1, CpuTimes *t2) {
 /*
  * A wrapper around host_statistics() invoked with HOST_VM_INFO.
  */
-static int sys_vminfo(vm_statistics_data_t *vmstat) {
+static bool sys_vminfo(vm_statistics_data_t *vmstat) {
   kern_return_t ret;
   mach_msg_type_number_t count = sizeof(*vmstat) / sizeof(integer_t);
   mach_port_t mport = mach_host_self();
@@ -149,14 +150,14 @@ static int sys_vminfo(vm_statistics_data_t *vmstat) {
   ret = host_statistics(mport, HOST_VM_INFO, (host_info_t)vmstat, &count);
   if (ret != KERN_SUCCESS) {
     log_err("host_statistics() failed: %s", mach_error_string(ret));
-    return 0;
+    return false;
   }
   mach_port_deallocate(mach_task_self(), mport);
-  return 1;
+  return true;
 }
 
-static int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
-  int mib[4];
+static bool get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
+  int32_t mib[4];
   size_t len;
   mib[0] = CTL_KERN;
   mib[1] = KERN_PROC;
@@ -170,20 +171,20 @@ static int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
   if (sysctl(mib, 4, kp, &len, NULL, 0) == -1) {
     // throw errno as the error
     log_err("");
-    return -1;
+    return false;
   }
 
   // sysctl succeeds but len is zero, happens when process has gone away
   check(len != 0, "No such process");
-  return 0;
+  return true;
 error:
-  return -1;
+  return false;
 }
 
 static pid_t get_ppid(pid_t pid) {
   struct kinfo_proc kp;
 
-  if (get_kinfo_proc(pid, &kp) == -1)
+  if (!get_kinfo_proc(pid, &kp))
     return -1;
 
   return (pid_t)kp.kp_eproc.e_ppid;
@@ -192,7 +193,7 @@ static pid_t get_ppid(pid_t pid) {
 static char *get_procname(pid_t pid) {
   struct kinfo_proc kp;
 
-  if (get_kinfo_proc(pid, &kp) == -1)
+  if (!get_kinfo_proc(pid, &kp))
     return NULL;
 
   return strdup(kp.kp_proc.p_comm);
@@ -200,7 +201,7 @@ static char *get_procname(pid_t pid) {
 
 static char *get_exe(pid_t pid) {
   char buf[PATH_MAX];
-  int ret;
+  int32_t ret;
 
   ret = proc_pidpath(pid, &buf, sizeof(buf));
   if (ret == 0) {
@@ -214,9 +215,9 @@ static char *get_exe(pid_t pid) {
 }
 
 // Read the maximum argument size for processes
-int get_argmax() {
-  int argmax;
-  int mib[] = {CTL_KERN, KERN_ARGMAX};
+int32_t get_argmax() {
+  int32_t argmax;
+  int32_t mib[] = {CTL_KERN, KERN_ARGMAX};
   size_t size = sizeof(argmax);
 
   if (sysctl(mib, 2, &argmax, &size, NULL, 0) == 0)
@@ -225,9 +226,9 @@ int get_argmax() {
 }
 
 static char *get_cmdline(pid_t pid) {
-  int mib[3];
-  int nargs;
-  int len;
+  int32_t mib[3];
+  int32_t nargs;
+  int32_t len;
   char *procargs = NULL;
   char *arg_ptr;
   char *arg_end;
@@ -235,7 +236,7 @@ static char *get_cmdline(pid_t pid) {
   size_t argmax;
 
   char *ret;
-  int bufsize = 500;
+  int32_t bufsize = 500;
 
   ret = (char *)calloc(bufsize, sizeof(char));
   check_mem(ret);
@@ -327,7 +328,7 @@ error:
 static double get_create_time(pid_t pid) {
   struct kinfo_proc kp;
 
-  if (get_kinfo_proc(pid, &kp) == -1)
+  if (!get_kinfo_proc(pid, &kp))
     return -1;
 
   return TV2DOUBLE(kp.kp_proc.p_starttime);
@@ -337,7 +338,7 @@ static long *get_uids(pid_t pid) {
   long *ret = (long *)calloc(3, sizeof(long));
   struct kinfo_proc kp;
 
-  if (get_kinfo_proc(pid, &kp) == -1)
+  if (!get_kinfo_proc(pid, &kp))
     return NULL;
 
   ret[0] = (long)kp.kp_eproc.e_pcred.p_ruid;
@@ -351,7 +352,7 @@ static long *get_gids(pid_t pid) {
   long *ret = (long *)calloc(3, sizeof(long));
   struct kinfo_proc kp;
 
-  if (get_kinfo_proc(pid, &kp) == -1)
+  if (!get_kinfo_proc(pid, &kp))
     return NULL;
 
   ret[0] = (long)kp.kp_eproc.e_pcred.p_rgid;
@@ -361,7 +362,7 @@ static long *get_gids(pid_t pid) {
   return ret;
 }
 
-static char *get_username(unsigned int ruid) {
+static char *get_username(uint32_t ruid) {
   struct passwd *ret = NULL;
   char *username = NULL;
   ret = getpwuid(ruid);
@@ -379,7 +380,7 @@ static char *get_terminal(pid_t pid) {
   char *ttname;
   char *ret;
 
-  if (get_kinfo_proc(pid, &kp) == -1)
+  if (!get_kinfo_proc(pid, &kp))
     return NULL;
 
   dev = kp.kp_eproc.e_tdev;
@@ -397,7 +398,7 @@ static char *get_terminal(pid_t pid) {
 
 bool disk_usage(char path[], DiskUsage *ret) {
   struct statvfs s;
-  int r;
+  int32_t r;
   r = statvfs(path, &s);
   check(r == 0, "Error in calling statvfs for %s", path);
   ret->free = s.f_bavail * s.f_frsize;
@@ -405,14 +406,13 @@ bool disk_usage(char path[], DiskUsage *ret) {
   ret->used = (s.f_blocks - s.f_bfree) * s.f_frsize;
   ret->percent = percentage(ret->used, ret->total);
 
-  return 0;
+  return true;
 error:
-  return -1;
+  return false;
 }
 
 DiskPartitionInfo *disk_partitions(bool physical) {
-  int num;
-  int i;
+  int32_t num;
   long len;
   uint64_t flags;
   char opts[400];
@@ -441,7 +441,7 @@ DiskPartitionInfo *disk_partitions(bool physical) {
   num = getfsstat(fs, len, MNT_NOWAIT);
   check(num != -1, "");
 
-  for (i = 0; i < num; i++) {
+  for (int32_t i = 0; i < num; i++) {
     opts[0] = 0;
     flags = fs[i].f_flags;
 
@@ -596,7 +596,7 @@ DiskIOCounterInfo *disk_io_counters() {
         goto error;
       }
 
-      const int kMaxDiskNameSize = 64;
+      const int32_t kMaxDiskNameSize = 64;
       CFStringRef disk_name_ref =
           (CFStringRef)CFDictionaryGetValue(parent_dict, CFSTR(kIOBSDNameKey));
       char disk_name[kMaxDiskNameSize];
@@ -683,9 +683,9 @@ error:
 NetIOCounterInfo *net_io_counters() {
   char *buf = NULL, *lim, *next;
   struct if_msghdr *ifm;
-  int mib[6];
+  int32_t mib[6];
   size_t len;
-  int ninterfaces = 0;
+  int32_t ninterfaces = 0;
 
   NetIOCounterInfo *ret =
       (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
@@ -761,7 +761,7 @@ error:
 
 float get_boot_time() {
   /* read KERN_BOOTIME */
-  int mib[2] = {CTL_KERN, KERN_BOOTTIME};
+  int32_t mib[2] = {CTL_KERN, KERN_BOOTTIME};
   struct timeval result;
   size_t len = sizeof result;
   time_t boot_time = 0;
@@ -810,14 +810,14 @@ error:
 
 double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
-  int i, ncpus = percpu ? cpu_count(1) : 1;
+  uint32_t ncpus = percpu ? cpu_count(1) : 1;
   double *percentage = (double *)calloc(ncpus, sizeof(double));
   check(prev_times, "Need a reference point. prev_times can't be NULL");
 
   current = cpu_times(percpu);
   check(current, "Couldn't obtain CPU times");
 
-  for (i = 0; i < ncpus; i++) {
+  for (uint32_t i = 0; i < ncpus; i++) {
     percentage[i] = calculate_cpu_util_percentage(prev_times + i, current + i);
   }
   free(current);
@@ -832,14 +832,14 @@ error:
 CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
   CpuTimes *t;
-  int i, ncpus = percpu ? cpu_count(1) : 1;
+  uint32_t ncpus = percpu ? cpu_count(1) : 1;
   CpuTimes *ret;
   check(prev_times, "Need a reference point. prev_times can't be NULL");
   current = cpu_times(percpu);
   check(current, "Couldn't obtain CPU times");
   ret = (CpuTimes *)calloc(ncpus, sizeof(CpuTimes));
   check_mem(ret);
-  for (i = 0; i < ncpus; i++) {
+  for (uint32_t i = 0; i < ncpus; i++) {
     t = calculate_cpu_times_percentage(prev_times + i, current + i);
     *(ret + i) = *t;
     free(t);
@@ -854,7 +854,7 @@ error:
 }
 
 uint32_t cpu_count(bool logical) {
-  int ncpu;
+  uint32_t ncpu;
   size_t len = sizeof(ncpu);
 
   if (logical) {
@@ -925,22 +925,22 @@ error:
 /* Check whether pid exists in the current process table. */
 bool pid_exists(pid_t pid) {
   if (pid == 0) // see `man 2 kill` for pid zero
-    return 1;
+    return true;
 
   if (kill(pid, 0) == -1) {
     if (errno == ESRCH) {
       log_err("No such process");
-      return 0;
+      return false;
     } else if (errno == EPERM) {
       // permission denied, but process does exist
-      return 1;
+      return true;
     } else {
       // log error with errno
       log_err("");
-      return 0;
+      return false;
     }
   }
-  return 1;
+  return true;
 }
 
 Process *get_process(pid_t pid) {
@@ -985,11 +985,11 @@ Process *get_process(pid_t pid) {
 }
 
 bool swap_memory(SwapMemInfo *ret) {
-  int mib[2];
+  int32_t mib[2];
   size_t size;
   struct xsw_usage totals;
   vm_statistics_data_t vmstat;
-  int pagesize = getpagesize();
+  int32_t pagesize = getpagesize();
 
   mib[0] = CTL_VM;
   mib[1] = VM_SWAPUSAGE;
@@ -999,7 +999,7 @@ bool swap_memory(SwapMemInfo *ret) {
   }
   if (!sys_vminfo(&vmstat)) {
     ret = NULL;
-    return -1;
+    return false;
   }
 
   ret->total = totals.xsu_total;
@@ -1009,15 +1009,15 @@ bool swap_memory(SwapMemInfo *ret) {
   ret->sin = (unsigned long long)vmstat.pageins * pagesize;
   ret->sout = (unsigned long long)vmstat.pageouts * pagesize;
 
-  return 0;
+  return true;
 }
 
 bool virtual_memory(VmemInfo *ret) {
-  int mib[2];
+  int32_t mib[2];
   uint64_t total;
   size_t len = sizeof(total);
   vm_statistics_data_t vm;
-  int pagesize = getpagesize();
+  int32_t pagesize = getpagesize();
   // physical mem
   mib[0] = CTL_HW;
   mib[1] = HW_MEMSIZE;
@@ -1030,7 +1030,7 @@ bool virtual_memory(VmemInfo *ret) {
   // vm
   if (!sys_vminfo(&vm)) {
     ret = NULL;
-    return -1;
+    return false;
   }
 
   ret->total = total;
@@ -1042,7 +1042,7 @@ bool virtual_memory(VmemInfo *ret) {
   ret->percent = percentage((ret->total - ret->available), ret->total);
   ret->used = ret->active + ret->inactive + ret->wired;
 
-  return 0;
+  return true;
 }
 
 /* Auxiliary public functions for garbage collection */
