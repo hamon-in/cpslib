@@ -35,7 +35,7 @@ void test_diskpartitioninfo() {
   printf("\n");
 
   printf(" -- disk_partitions (all) \n");
-  all_dp = disk_partitions(0);
+  all_dp = disk_partitions(false);
   if (!all_dp) {
     printf("Aborting\n");
     return;
@@ -162,7 +162,7 @@ void test_swap() {
 
 void test_cpu_times() {
   CpuTimes *r;
-  r = cpu_times(0);
+  r = cpu_times(false);
   if (!r) {
     printf("Aborting\n");
     return;
@@ -179,8 +179,8 @@ void test_cpu_times() {
 
 void test_cpu_times_percpu() {
   CpuTimes *r, *c;
-  uint32_t ncpus = cpu_count(1);
-  c = r = cpu_times(1);
+  uint32_t ncpus = cpu_count(true);
+  c = r = cpu_times(true);
   if (!r) {
     printf("Aborting\n");
     return;
@@ -202,7 +202,7 @@ void test_cpu_times_percpu() {
 void test_cpu_util_percent() {
   CpuTimes *info;
   double *utilisation;
-  info = cpu_times(0);
+  info = cpu_times(false);
 
   if (!info) {
     printf("Aborting\n");
@@ -210,7 +210,7 @@ void test_cpu_util_percent() {
   }
 
   usleep(100000);
-  utilisation = cpu_util_percent(0, info);
+  utilisation = cpu_util_percent(false, info);
   printf(" -- cpu_util_percent\n");
   printf("%f\n", *utilisation);
   printf("\n");
@@ -222,7 +222,7 @@ void test_cpu_util_percent() {
 void test_cpu_util_percent_percpu() {
   CpuTimes *info;
   double *percentages;
-  uint32_t ncpus = cpu_count(1);
+  uint32_t ncpus = cpu_count(true);
   info = cpu_times(1);
 
   if (!info) {
@@ -246,13 +246,13 @@ void test_cpu_util_percent_percpu() {
 void test_cpu_times_percent() {
   CpuTimes *info;
   CpuTimes *ret;
-  info = cpu_times(0);
+  info = cpu_times(false);
   if (!info) {
     printf("Aborting\n");
     return;
   }
   usleep(100000);
-  ret = cpu_times_percent(0, info); /* Actual percentages since last call */
+  ret = cpu_times_percent(false, info); /* Actual percentages since last call */
   if (!ret) {
     printf("Error while computing utilisation percentage\n");
     return;
@@ -276,15 +276,15 @@ void test_cpu_times_percent() {
 
 void test_cpu_times_percent_percpu() {
   CpuTimes *info, *last, *r;
-  uint32_t ncpus = cpu_count(1);
-  last = cpu_times(1);
+  uint32_t ncpus = cpu_count(true);
+  last = cpu_times(true);
   if (!last) {
     printf("Aborting\n");
     return;
   }
   usleep(100000);
   r = info =
-      cpu_times_percent(1, last); /* Actual percentages since last call */
+      cpu_times_percent(true, last); /* Actual percentages since last call */
   if (!info) {
     printf("Error while computing utilisation percentage\n");
     return;
@@ -315,8 +315,8 @@ void test_cpu_times_percent_percpu() {
 void test_cpu_count() {
   uint32_t logical;
   uint32_t physical;
-  logical = cpu_count(1);
-  physical = cpu_count(0);
+  logical = cpu_count(true);
+  physical = cpu_count(false);
   printf(" -- cpu_count \n");
   if (logical == UINT32_MAX || physical == UINT32_MAX) {
     printf("Aborting\n");
