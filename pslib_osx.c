@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/sysctl.h>
-#include <sys/types.h>
 #include <libproc.h>
 #include <pwd.h>
 #include <utmpx.h>

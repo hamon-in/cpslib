@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <sys/types.h>
+
 enum proc_status {
   STATUS_RUNNING,
   STATUS_SLEEPING,
