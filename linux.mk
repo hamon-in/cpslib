@@ -27,11 +27,11 @@ test: clean shared
 
 .PHONY: covclean
 covclean:
-	${RM} *.gcno *.gcda *.gcov
+	${RM} *.gcno *.gcda *.gcov *.gch
 
 .PHONY: clean
 clean: covclean
-	${RM} ${TARGET_LIB} ${OBJS} $(EXEC)
+	${RM} ${TARGET_LIB} ${OBJS} $(EXEC) driver.o
 
 check-syntax:
 	gcc -Wall -o /dev/null -S ${CHK_SOURCES}
