@@ -1,10 +1,11 @@
 #pragma once
 
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
-float percentage(unsigned long int, unsigned long int);
+float percentage(uint64_t, uint64_t);
 int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
 char *grep_awk(FILE *, const char *, int, const char *);
