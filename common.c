@@ -19,10 +19,11 @@ int str_comp(const void *key, const void *memb) {
 int int_comp(const void *key, const void *memb) {
   const int a = *(int *)key;
   const int b = *(int *)memb;
-  if (a == b)
+  if (a == b) {
     return 0;
-  else
+  } else {
     return -1;
+}
 }
 
 char *grep_awk(FILE *fp, const char *fstr, int nfield, const char *delim) {

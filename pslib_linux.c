@@ -74,8 +74,9 @@ static CpuTimes *calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2) {
   return ret;
 
 error:
-  if (ret)
+  if (ret) {
     free(ret);
+}
   return NULL;
 }
 
@@ -176,8 +177,9 @@ char **get_physical_devices(size_t *ndevices) {
 error:
   if (fs)
     fclose(fs);
-  if (line)
+  if (line) {
     free(line);
+}
   if (*ndevices != 0)
     for (i = 0; i < *ndevices; i++)
       free(retval[i]);
@@ -264,8 +266,9 @@ static char *get_exe(pid_t pid) {
 error:
   if (fp)
     fclose(fp);
-  if (tmp)
+  if (tmp) {
     free(tmp);
+}
   return NULL;
 }
 
@@ -293,8 +296,9 @@ static char *get_cmdline(pid_t pid) {
 error:
   if (fp)
     fclose(fp);
-  if (contents)
+  if (contents) {
     free(contents);
+}
   return NULL;
 }
 
@@ -394,8 +398,9 @@ static char *get_terminal(pid_t pid) {
 error:
   if (fp)
     fclose(fp);
-  if (tmp)
+  if (tmp) {
     free(tmp);
+}
   return NULL;
 }
 
@@ -498,8 +503,9 @@ DiskPartitionInfo *disk_partitions(bool physical) {
   }
   endmntent(file);
 
-  for (i = 0; i < nphys_devices; i++)
+  for (i = 0; i < nphys_devices; i++) {
     free(phys_devices[i]);
+}
   free(phys_devices);
 
   return ret;
@@ -605,8 +611,9 @@ DiskIOCounterInfo *disk_io_counters() {
     }
   }
 
-  for (i = 0; i < nparts; i++)
+  for (i = 0; i < nparts; i++) {
     free(partitions[i]);
+}
   free(partitions);
   free(line);
   fclose(fp);
@@ -616,11 +623,13 @@ DiskIOCounterInfo *disk_io_counters() {
 error:
   if (fp)
     fclose(fp);
-  if (line)
+  if (line) {
     free(line);
+}
   if (partitions) {
-    for (i = 0; i < nparts; i++)
+    for (i = 0; i < nparts; i++) {
       free(partitions[i]);
+}
     free(partitions);
   }
   free_disk_iocounter_info(ret);
@@ -701,12 +710,15 @@ error:
   /* TODO: ret not freed here */
   if (fp)
     fclose(fp);
-  if (line)
+  if (line) {
     free(line);
-  if (counters)
+}
+  if (counters) {
     free(counters);
-  if (nc)
+}
+  if (nc) {
     free(nc);
+}
   return NULL;
 }
 
@@ -806,10 +818,12 @@ uint32_t get_boot_time() {
 error:
   if (fp)
     fclose(fp);
-  if (line)
+  if (line) {
     free(line);
-  if (tmp)
+}
+  if (tmp) {
     free(tmp);
+}
   return -1;
 }
 
@@ -862,8 +876,9 @@ bool virtual_memory(VmemInfo *ret) {
 error:
   if (fp)
     fclose(fp);
-  if (line)
+  if (line) {
     free(line);
+}
   return false;
 }
 
@@ -913,8 +928,9 @@ bool swap_memory(SwapMemInfo *ret) {
 error:
   if (fp)
     fclose(fp);
-  if (line)
+  if (line) {
     free(line);
+}
   return false;
 }
 
@@ -945,8 +961,9 @@ CpuTimes *cpu_times(bool percpu) {
 
     while (1) { /* Dropped the first line, read the rest */
       check(fgets(line, 140, fp), "Couldn't read from /proc/stat");
-      if (strncmp(line, "cpu", 3) != 0)
+      if (strncmp(line, "cpu", 3) != 0) {
         break;
+}
       check(parse_cpu_times(line, ret + i) == 0,
             "Error while parsing /proc/stat line for cpu times");
       i++;
@@ -959,10 +976,12 @@ CpuTimes *cpu_times(bool percpu) {
 error:
   if (fp)
     fclose(fp);
-  if (line)
+  if (line) {
     free(line);
-  if (ret)
+}
+  if (ret) {
     free(ret);
+}
   return NULL;
 }
 
@@ -984,8 +1003,9 @@ CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return ret;
 error:
-  if (current)
+  if (current) {
     free(current);
+}
   return NULL;
 }
 
@@ -1004,8 +1024,9 @@ double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return percentage;
 error:
-  if (current)
+  if (current) {
     free(current);
+}
   return NULL;
 }
 

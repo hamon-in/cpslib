@@ -28,10 +28,11 @@ void test_diskpartitioninfo() {
     return;
   }
   printf("Partitions : %" PRIu32 "\n", phys_dp->nitems);
-  for (i = 0; i < phys_dp->nitems; i++)
+  for (i = 0; i < phys_dp->nitems; i++) {
     printf("%s %s %s %s\n", phys_dp->partitions[i].device,
            phys_dp->partitions[i].mountpoint, phys_dp->partitions[i].fstype,
            phys_dp->partitions[i].opts);
+}
 
   free_disk_partition_info(phys_dp);
 
@@ -44,10 +45,11 @@ void test_diskpartitioninfo() {
     return;
   }
   printf("Partitions : %" PRIu32 "\n", all_dp->nitems);
-  for (i = 0; i < all_dp->nitems; i++)
+  for (i = 0; i < all_dp->nitems; i++) {
     printf("%s %s %s %s\n", all_dp->partitions[i].device,
            all_dp->partitions[i].mountpoint, all_dp->partitions[i].fstype,
            all_dp->partitions[i].opts);
+}
 
   free_disk_partition_info(all_dp);
   printf("\n");
