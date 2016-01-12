@@ -113,21 +113,20 @@ void test_getusers() {
 }
 
 void test_boottime() {
-  float t = get_boot_time();
+  uint32_t t = get_boot_time();
   printf(" -- boot_time \n");
-  if (t == -1) {
+  if (t == UINT32_MAX) {
     printf("Aborting\n");
     return;
   }
-  printf("%.1f\n\n", t);
+  printf("%u\n\n", t);
 }
 
 void test_virtualmeminfo() {
   VmemInfo r;
   // Empty out to prevent garbage in platform-specific fields
   memset(&r, 0, sizeof(VmemInfo));
-  int t = virtual_memory(&r);
-  if (t == -1) {
+  if (!virtual_memory(&r)) {
     printf("Aborting\n");
     return;
   }
@@ -147,8 +146,7 @@ void test_virtualmeminfo() {
 
 void test_swap() {
   SwapMemInfo r;
-  int t = swap_memory(&r);
-  if (t == -1) {
+  if (!swap_memory(&r)) {
     printf("Aborting\n");
     return;
   }
@@ -181,14 +179,14 @@ void test_cpu_times() {
 
 void test_cpu_times_percpu() {
   CpuTimes *r, *c;
-  int i, ncpus = cpu_count(1);
+  uint32_t ncpus = cpu_count(1);
   c = r = cpu_times(1);
   if (!r) {
     printf("Aborting\n");
     return;
   }
   printf(" -- cpu_times_percpu\n");
-  for (i = 0; i < ncpus; i++) {
+  for (uint32_t i = 0; i < ncpus; i++) {
     printf("CPU %d :: ", i + 1);
     printf(" Usr: %.3lf;", c->user);
     printf(" Nice: %.3lf;", c->nice);
@@ -224,7 +222,7 @@ void test_cpu_util_percent() {
 void test_cpu_util_percent_percpu() {
   CpuTimes *info;
   double *percentages;
-  int i, ncpus = cpu_count(1);
+  uint32_t ncpus = cpu_count(1);
   info = cpu_times(1);
 
   if (!info) {
@@ -235,7 +233,7 @@ void test_cpu_util_percent_percpu() {
   usleep(100000);
   percentages = cpu_util_percent(1, info);
   printf(" -- cpu_util_percent_percpu\n");
-  for (i = 0; i < ncpus; i++) {
+  for (uint32_t i = 0; i < ncpus; i++) {
     printf("Cpu #%d : %f\n", i, percentages[i]);
   }
 
@@ -278,7 +276,7 @@ void test_cpu_times_percent() {
 
 void test_cpu_times_percent_percpu() {
   CpuTimes *info, *last, *r;
-  int i, ncpus = cpu_count(1);
+  uint32_t ncpus = cpu_count(1);
   last = cpu_times(1);
   if (!last) {
     printf("Aborting\n");
@@ -294,7 +292,7 @@ void test_cpu_times_percent_percpu() {
 
   printf(" -- cpu_times_percent_percpu\n");
   printf("CPU times as percentage of total per CPU (0.1 second sample)\n");
-  for (i = 0; i < ncpus; i++) {
+  for (uint32_t i = 0; i < ncpus; i++) {
     printf("CPU %d :: ", i + 1);
     printf("Usr: %.3lf;", info->user);
     printf(" Nice: %.3lf;", info->nice);
@@ -315,12 +313,12 @@ void test_cpu_times_percent_percpu() {
 }
 
 void test_cpu_count() {
-  int logical;
-  int physical;
+  uint32_t logical;
+  uint32_t physical;
   logical = cpu_count(1);
   physical = cpu_count(0);
   printf(" -- cpu_count \n");
-  if (logical == -1 || physical == -1) {
+  if (logical == UINT32_MAX || physical == UINT32_MAX) {
     printf("Aborting\n");
     return;
   }
