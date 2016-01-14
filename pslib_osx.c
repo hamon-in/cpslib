@@ -811,7 +811,7 @@ error:
 
 double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
-  uint32_t ncpus = percpu ? cpu_count(1) : 1;
+  uint32_t ncpus = percpu ? cpu_count(true) : 1;
   double *percentage = (double *)calloc(ncpus, sizeof(double));
   check(prev_times, "Need a reference point. prev_times can't be NULL");
 
@@ -833,7 +833,7 @@ error:
 CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
   CpuTimes *current = NULL;
   CpuTimes *t;
-  uint32_t ncpus = percpu ? cpu_count(1) : 1;
+  uint32_t ncpus = percpu ? cpu_count(true) : 1;
   CpuTimes *ret;
   check(prev_times, "Need a reference point. prev_times can't be NULL");
   current = cpu_times(percpu);
