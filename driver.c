@@ -10,11 +10,11 @@ void test_diskusage() {
   printf(" -- disk_usage \n");
   disk_usage("/", &du);
   printf("/\ntotal: %" PRIu64 "\nused: %" PRIu64 "\nfree: %" PRIu64
-         "\npercent: %f\n\n",
+         "\npercent: %.1f\n\n",
          du.total, du.used, du.free, du.percent);
   disk_usage("/etc", &du);
   printf("/etc\ntotal: %" PRIu64 "\nused: %" PRIu64 "\nfree: %" PRIu64
-         "\npercent: %f\n\n",
+         "\npercent: %.1f\n\n",
          du.total, du.used, du.free, du.percent);
 }
 
@@ -139,7 +139,7 @@ void test_virtualmeminfo() {
   printf(" -- virtual_memory\n");
   printf("Total: %" PRIu64 "\n", r.total);
   printf("Available: %" PRIu64 "\n", r.available);
-  printf("Percent: %f\n", r.percent);
+  printf("Percent: %.1f\n", r.percent);
   printf("Used: %" PRIu64 "\n", r.used);
   printf("Free: %" PRIu64 "\n", r.free);
   printf("Active: %" PRIu64 "\n", r.active);
@@ -160,7 +160,7 @@ void test_swap() {
   printf("Total: %" PRIu64 "\n", r.total);
   printf("Used: %" PRIu64 "\n", r.used);
   printf("Free: %" PRIu64 "\n", r.free);
-  printf("Percent: %f\n", r.percent);
+  printf("Percent: %.1f\n", r.percent);
   printf("Sin: %" PRIu64 "\n", r.sin);
   printf("Sout: %" PRIu64 "\n", r.sout);
   printf("\n");
@@ -174,16 +174,16 @@ void test_cpu_times() {
     return;
   }
   printf(" -- cpu_times\n");
-  printf("User: %.3lf;", r->user);
-  printf(" Nice: %.3lf;", r->nice);
-  printf(" System: %.3lf;", r->system);
-  printf(" Idle: %.3lf;", r->idle);
-  printf(" IOWait: %.3lf;", r->iowait);
-  printf(" IRQ: %.3lf;", r->irq);
-  printf(" SoftIRQ: %.3lf;", r->softirq);
-  printf(" Steal: %.3lf;", r->steal);
-  printf(" Guest: %.3lf;", r->guest);
-  printf(" Guest nice: %.3lf\n", r->guest_nice);
+  printf("User: %.1lf;", r->user);
+  printf(" Nice: %.1lf;", r->nice);
+  printf(" System: %.1lf;", r->system);
+  printf(" Idle: %.1lf;", r->idle);
+  printf(" IOWait: %.1lf;", r->iowait);
+  printf(" IRQ: %.1lf;", r->irq);
+  printf(" SoftIRQ: %.1lf;", r->softirq);
+  printf(" Steal: %.1lf;", r->steal);
+  printf(" Guest: %.1lf;", r->guest);
+  printf(" Guest nice: %.1lf\n", r->guest_nice);
   printf("\n\n");
 
   free(r);
@@ -200,16 +200,16 @@ void test_cpu_times_percpu() {
   printf(" -- cpu_times_percpu\n");
   for (uint32_t i = 0; i < ncpus; i++) {
     printf("CPU %" PRIu32 " :: ", i + 1);
-    printf(" Usr: %.3lf;", c->user);
-    printf(" Nice: %.3lf;", c->nice);
-    printf(" Sys: %.3lf;", c->system);
-    printf(" Idle: %.3lf;", c->idle);
-    printf(" IOWait: %.3lf;", c->iowait);
-    printf(" IRQ: %.3lf;", c->irq);
-    printf(" SoftIRQ: %.3lf;", c->softirq);
-    printf(" Steal: %.3lf;", c->steal);
-    printf(" Guest: %.3lf;", c->guest);
-    printf(" Guest nice: %.3lf\n", c->guest_nice);
+    printf(" Usr: %.1lf;", c->user);
+    printf(" Nice: %.1lf;", c->nice);
+    printf(" Sys: %.1lf;", c->system);
+    printf(" Idle: %.1lf;", c->idle);
+    printf(" IOWait: %.1lf;", c->iowait);
+    printf(" IRQ: %.1lf;", c->irq);
+    printf(" SoftIRQ: %.1lf;", c->softirq);
+    printf(" Steal: %.1lf;", c->steal);
+    printf(" Guest: %.1lf;", c->guest);
+    printf(" Guest nice: %.1lf\n", c->guest_nice);
     printf("\n");
     c++;
   }
@@ -230,7 +230,7 @@ void test_cpu_util_percent() {
   usleep(100000);
   utilisation = cpu_util_percent(false, info);
   printf(" -- cpu_util_percent\n");
-  printf("%f\n", *utilisation);
+  printf("%.1f\n", *utilisation);
   printf("\n");
 
   free(utilisation);
@@ -252,7 +252,7 @@ void test_cpu_util_percent_percpu() {
   percentages = cpu_util_percent(1, info);
   printf(" -- cpu_util_percent_percpu\n");
   for (uint32_t i = 0; i < ncpus; i++) {
-    printf("Cpu #%" PRIu32 " : %f\n", i, percentages[i]);
+    printf("Cpu #%" PRIu32 " : %.1f\n", i, percentages[i]);
   }
 
   printf("\n");
@@ -277,16 +277,16 @@ void test_cpu_times_percent() {
   }
   printf(" -- cpu_times_percent\n");
   printf("CPU times as percentage of total (0.1 second sample)\n");
-  printf("Usr: %.3lf;", ret->user);
-  printf(" Nice: %.3lf;", ret->nice);
-  printf(" Sys: %.3lf;", ret->system);
-  printf(" Idle: %.3lf;", ret->idle);
-  printf(" IOWait: %.3lf;", ret->iowait);
-  printf(" IRQ: %.3lf;", ret->irq);
-  printf(" SoftIRQ: %.3lf;", ret->softirq);
-  printf(" Steal: %.3lf;", ret->steal);
-  printf(" Guest: %.3lf;", ret->guest);
-  printf(" Guest nice: %.3lf\n", ret->guest_nice);
+  printf("Usr: %.1lf;", ret->user);
+  printf(" Nice: %.1lf;", ret->nice);
+  printf(" Sys: %.1lf;", ret->system);
+  printf(" Idle: %.1lf;", ret->idle);
+  printf(" IOWait: %.1lf;", ret->iowait);
+  printf(" IRQ: %.1lf;", ret->irq);
+  printf(" SoftIRQ: %.1lf;", ret->softirq);
+  printf(" Steal: %.1lf;", ret->steal);
+  printf(" Guest: %.1lf;", ret->guest);
+  printf(" Guest nice: %.1lf\n", ret->guest_nice);
   printf("\n");
   free(info);
   free(ret);
@@ -312,16 +312,16 @@ void test_cpu_times_percent_percpu() {
   printf("CPU times as percentage of total per CPU (0.1 second sample)\n");
   for (uint32_t i = 0; i < ncpus; i++) {
     printf("CPU %" PRIu32 " :: ", i + 1);
-    printf("Usr: %.3lf;", info->user);
-    printf(" Nice: %.3lf;", info->nice);
-    printf(" Sys: %.3lf;", info->system);
-    printf(" Idle: %.3lf;", info->idle);
-    printf(" IOWait: %.3lf;", info->iowait);
-    printf(" IRQ: %.3lf;", info->irq);
-    printf(" SoftIRQ: %.3lf;", info->softirq);
-    printf(" Steal: %.3lf;", info->steal);
-    printf(" Guest: %.3lf;", info->guest);
-    printf(" Guest nice: %.3lf\n", info->guest_nice);
+    printf("Usr: %.1lf;", info->user);
+    printf(" Nice: %.1lf;", info->nice);
+    printf(" Sys: %.1lf;", info->system);
+    printf(" Idle: %.1lf;", info->idle);
+    printf(" IOWait: %.1lf;", info->iowait);
+    printf(" IRQ: %.1lf;", info->irq);
+    printf(" SoftIRQ: %.1lf;", info->softirq);
+    printf(" Steal: %.1lf;", info->steal);
+    printf(" Guest: %.1lf;", info->guest);
+    printf(" Guest nice: %.1lf\n", info->guest_nice);
     info++;
   }
 
