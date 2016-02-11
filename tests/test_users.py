@@ -4,7 +4,7 @@ from pycpslib import ffi
 
 
 def test_get_users(flush):
-    psutil_users = psutil.get_users()
+    psutil_users = psutil.users()
     pslib_users = P.get_users()
 
     for i in range(pslib_users.nitems):
