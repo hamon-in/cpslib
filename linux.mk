@@ -23,7 +23,7 @@ $(EXEC): $(EXEC).c $(TARGET_LIB)
 	$(CC) ${CFLAGS} -o $@ $< -L. -lpslib -Wl,-rpath .
 
 test: clean shared
-		cd bindings/python && make clean && make && cd - && export LD_LIBRARY_PATH=`pwd` && py.test -v -ra
+	cd bindings/python && make clean && make && cd - && export LD_LIBRARY_PATH=`pwd` && py.test -v -ra
 
 .PHONY: covclean
 covclean:
