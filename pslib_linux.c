@@ -306,6 +306,7 @@ static double get_create_time(pid_t pid) {
   FILE *fp = NULL;
   char procfile[50];
   char s_pid[10];
+  char *tmp;
   double ct_jiffies;
   double ct_seconds;
   double clock_ticks = sysconf(_SC_CLK_TCK);
@@ -315,7 +316,9 @@ static double get_create_time(pid_t pid) {
   sprintf(procfile, "/proc/%d/stat", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process stat file");
-  ct_jiffies = atof(grep_awk(fp, s_pid, 21, " "));
+  tmp = grep_awk(fp, s_pid, 21, " ");
+  ct_jiffies = atof(tmp);
+  free(tmp);
   fclose(fp);
   ct_seconds = boot_time + (ct_jiffies / clock_ticks);
   return ct_seconds;
