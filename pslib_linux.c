@@ -561,6 +561,7 @@ DiskIOCounterInfo *disk_io_counters() {
     }
   }
   fclose(fp);
+  fp = NULL;
 
   nmemb = nparts;
   counters = (DiskIOCounters *)calloc(nparts, sizeof(DiskIOCounters));
