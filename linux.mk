@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS  = -O0 -g -std=gnu11 -fPIC -march=native -Wall -Wextra -Wunused
-CFLAGS += -Werror -Wshadow -fsanitize=address
+CFLAGS += -Werror -Wshadow
 CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS = -shared --coverage
 RM = rm -f
