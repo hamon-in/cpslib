@@ -703,7 +703,7 @@ error:
     fclose(fp);
   free(line);
   free(counters);
-  free(nc);
+  free(ret);
   return NULL;
 }
 
