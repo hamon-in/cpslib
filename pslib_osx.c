@@ -70,9 +70,7 @@ static CpuTimes *per_cpu_times() {
   return ret;
 
 error:
-  if (ret) {
-    free(ret);
-  }
+  free(ret);
   if (cpu_load_info != NULL) {
     sysret = vm_deallocate(mach_task_self(), (vm_address_t)info_array,
                            info_count * pagesize);
@@ -116,9 +114,7 @@ static CpuTimes *calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2) {
   return ret;
 
 error:
-  if (ret) {
-    free(ret);
-  }
+  free(ret);
   return NULL;
 }
 
@@ -316,12 +312,8 @@ static char *get_cmdline(pid_t pid) {
   }
 
 error:
-  if (procargs) {
-    free(procargs);
-  }
-  if (ret) {
-    free(ret);
-  }
+  free(procargs);
+  free(ret);
   return NULL;
 }
 
@@ -526,8 +518,7 @@ DiskPartitionInfo *disk_partitions(bool physical) {
   return ret;
 
 error:
-  if (fs != NULL)
-    free(fs);
+  free(fs);
   free_disk_partition_info(ret);
   return NULL;
 }
@@ -748,14 +739,9 @@ NetIOCounterInfo *net_io_counters() {
   return ret;
 
 error:
-  if (buf != NULL)
-    free(buf);
-  if (counters) {
-    free(counters);
-  }
-  if (nc) {
-    free(nc);
-  }
+  free(buf);
+  free(counters);
+  free(nc);
   return NULL;
 }
 
@@ -803,9 +789,7 @@ CpuTimes *cpu_times(bool percpu) {
   }
 
 error:
-  if (ret) {
-    free(ret);
-  }
+  free(ret);
   return NULL;
 }
 
@@ -824,9 +808,7 @@ double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return percentage;
 error:
-  if (current) {
-    free(current);
-  }
+  free(current);
   return NULL;
 }
 
@@ -848,9 +830,7 @@ CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return ret;
 error:
-  if (current) {
-    free(current);
-  }
+  free(current);
   return NULL;
 }
 
@@ -978,10 +958,8 @@ Process *get_process(pid_t pid) {
   }
 
   retval->terminal = get_terminal(pid);
-  if (uids)
-    free(uids);
-  if (gids)
-    free(gids);
+  free(uids);
+  free(gids);
   return retval;
 }
 
