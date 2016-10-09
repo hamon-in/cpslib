@@ -74,9 +74,7 @@ static CpuTimes *calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2) {
   return ret;
 
 error:
-  if (ret) {
-    free(ret);
-  }
+  free(ret);
   return NULL;
 }
 
@@ -177,9 +175,7 @@ char **get_physical_devices(size_t *ndevices) {
 error:
   if (fs)
     fclose(fs);
-  if (line) {
-    free(line);
-  }
+  free(line);
   if (*ndevices != 0)
     for (i = 0; i < *ndevices; i++)
       free(retval[i]);
@@ -266,9 +262,7 @@ static char *get_exe(pid_t pid) {
 error:
   if (fp)
     fclose(fp);
-  if (tmp) {
-    free(tmp);
-  }
+  free(tmp);
   return NULL;
 }
 
@@ -296,9 +290,7 @@ static char *get_cmdline(pid_t pid) {
 error:
   if (fp)
     fclose(fp);
-  if (contents) {
-    free(contents);
-  }
+  free(contents);
   return NULL;
 }
 
@@ -401,9 +393,7 @@ static char *get_terminal(pid_t pid) {
 error:
   if (fp)
     fclose(fp);
-  if (tmp) {
-    free(tmp);
-  }
+  free(tmp);
   return NULL;
 }
 
@@ -626,9 +616,7 @@ DiskIOCounterInfo *disk_io_counters() {
 error:
   if (fp)
     fclose(fp);
-  if (line) {
-    free(line);
-  }
+  free(line);
   if (partitions) {
     for (i = 0; i < nparts; i++) {
       free(partitions[i]);
@@ -713,15 +701,9 @@ error:
   /* TODO: ret not freed here */
   if (fp)
     fclose(fp);
-  if (line) {
-    free(line);
-  }
-  if (counters) {
-    free(counters);
-  }
-  if (nc) {
-    free(nc);
-  }
+  free(line);
+  free(counters);
+  free(nc);
   return NULL;
 }
 
@@ -821,12 +803,8 @@ uint32_t get_boot_time() {
 error:
   if (fp)
     fclose(fp);
-  if (line) {
-    free(line);
-  }
-  if (tmp) {
-    free(tmp);
-  }
+  free(line);
+  free(tmp);
   return -1;
 }
 
@@ -879,9 +857,7 @@ bool virtual_memory(VmemInfo *ret) {
 error:
   if (fp)
     fclose(fp);
-  if (line) {
-    free(line);
-  }
+  free(line);
   return false;
 }
 
@@ -931,9 +907,7 @@ bool swap_memory(SwapMemInfo *ret) {
 error:
   if (fp)
     fclose(fp);
-  if (line) {
-    free(line);
-  }
+  free(line);
   return false;
 }
 
@@ -979,12 +953,8 @@ CpuTimes *cpu_times(bool percpu) {
 error:
   if (fp)
     fclose(fp);
-  if (line) {
-    free(line);
-  }
-  if (ret) {
-    free(ret);
-  }
+  free(line);
+  free(ret);
   return NULL;
 }
 
@@ -1006,9 +976,7 @@ CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return ret;
 error:
-  if (current) {
-    free(current);
-  }
+  free(current);
   return NULL;
 }
 
@@ -1027,9 +995,7 @@ double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return percentage;
 error:
-  if (current) {
-    free(current);
-  }
+  free(current);
   return NULL;
 }
 
@@ -1098,10 +1064,8 @@ Process *get_process(pid_t pid) {
   }
 
   retval->terminal = get_terminal(pid);
-  if (uids)
-    free(uids);
-  if (gids)
-    free(gids);
+  free(uids);
+  free(gids);
   return retval;
 }
 
