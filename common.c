@@ -48,6 +48,7 @@ char *grep_awk(FILE *fp, const char *fstr, int nfield, const char *delim) {
   free(line);
   return NULL;
 error:
+  free(line);
   return NULL;
 }
 
