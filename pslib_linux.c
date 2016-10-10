@@ -269,11 +269,12 @@ error:
 static char *get_cmdline(pid_t pid) {
   FILE *fp = NULL;
   char procfile[50];
-  char *contents;
+  char *contents = NULL;
   int bufsize = 500;
   ssize_t read;
 
   contents = (char *)calloc(bufsize, sizeof(char));
+  check_mem(contents);
   sprintf(procfile, "/proc/%d/cmdline", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process cmdline file");
@@ -525,17 +526,18 @@ void free_disk_partition_info(DiskPartitionInfo *di) {
 
 DiskIOCounterInfo *disk_io_counters() {
   const int sector_size = 512;
-
-  char *line = (char *)calloc(150, sizeof(char));
-  char **partitions = (char **)calloc(30, sizeof(char *));
-
+  char *line = NULL;
+  char **partitions = NULL;
   char *tmp;
   int i = 0, nparts = 0;
   size_t nmemb;
   DiskIOCounters *counters = NULL;
   DiskIOCounters *ci = NULL;
-  DiskIOCounterInfo *ret =
-      (DiskIOCounterInfo *)calloc(1, sizeof(DiskIOCounterInfo));
+  DiskIOCounterInfo *ret = NULL;
+
+  line = (char *)calloc(150, sizeof(char));
+  partitions = (char **)calloc(30, sizeof(char *));
+  ret = (DiskIOCounterInfo *)calloc(1, sizeof(DiskIOCounterInfo));
 
   FILE *fp = fopen("/proc/partitions", "r");
   check(fp, "Couldn't open /proc/partitions");
@@ -624,7 +626,8 @@ error:
     }
     free(partitions);
   }
-  free_disk_iocounter_info(ret);
+  if(ret)
+    free_disk_iocounter_info(ret);
 
   return NULL;
 }
@@ -641,15 +644,19 @@ void free_disk_iocounter_info(DiskIOCounterInfo *di) {
 
 NetIOCounterInfo *net_io_counters() {
   FILE *fp = NULL;
-  NetIOCounterInfo *ret =
-      (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
-  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
-  NetIOCounters *nc = counters;
+  NetIOCounterInfo *ret = NULL;
+  NetIOCounters *counters = NULL;
+  NetIOCounters *nc = NULL;
   int i = 0, ninterfaces = 0;
-  char *line = (char *)calloc(200, sizeof(char));
+  char *line = NULL;
   char *tmp = NULL;
+
+  ret = (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
+  counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
+  line = (char *)calloc(200, sizeof(char));
   check_mem(line);
   check_mem(counters);
+  nc = counters;
   check_mem(ret);
   fp = fopen("/proc/net/dev", "r");
   check(fp, "Couldn't open /proc/net/dev");
@@ -780,8 +787,9 @@ uint32_t get_boot_time() {
   char *tmp = NULL;
   unsigned long ret = -1;
   FILE *fp = fopen("/proc/stat", "r");
-  char *line = (char *)calloc(200, sizeof(char));
+  char *line = NULL;
   check(fp, "Couldn't open /proc/stat");
+  line = (char *)calloc(200, sizeof(char));
   check_mem(line);
 
   while (fgets(line, 150, fp)) {

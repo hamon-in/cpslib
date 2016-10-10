@@ -410,11 +410,11 @@ DiskPartitionInfo *disk_partitions(bool physical) {
   char opts[400];
   struct statfs *fs = NULL;
   uint32_t nparts = 5;
+  DiskPartitionInfo *ret = NULL;
 
   DiskPartition *partitions =
       (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
-  DiskPartitionInfo *ret =
-      (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
+  ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
   DiskPartition *d = partitions;
   check_mem(partitions);
   check_mem(ret);
@@ -677,14 +677,15 @@ NetIOCounterInfo *net_io_counters() {
   int32_t mib[6];
   size_t len;
   int32_t ninterfaces = 0;
-
-  NetIOCounterInfo *ret =
-      (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
-  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
-  NetIOCounters *nc = counters;
+  NetIOCounterInfo *ret = NULL;
+  NetIOCounters *counters = NULL;
+  NetIOCounters *nc = NULL;
+  ret = (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
+  counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
 
   check_mem(ret);
   check_mem(counters);
+  nc = counters;
 
   mib[0] = CTL_NET;        // networking subsystem
   mib[1] = PF_ROUTE;       // type of information
