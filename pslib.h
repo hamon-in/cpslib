@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+
 enum proc_status {
   STATUS_RUNNING,
   STATUS_SLEEPING,
@@ -188,6 +189,46 @@ typedef struct {
   char *terminal;
 } Process;
 
+//for storing list of pids
+typedef struct {
+    pid_t *pid;
+    int size;
+} Pidlist;
+// structure to store ip address
+typedef struct{
+    char ip[500];
+    int port;
+}address ;
+//stores details of connections
+typedef struct{
+    int fd;
+    int family;
+    int type;
+    address *laddr;
+    address *raddr;
+    enum con_status status;
+    pid_t pid;
+}Conn;
+
+typedef struct{
+    uint32_t nitems;
+    Conn * Connections;
+} ConnInfo;
+//structure for storing famiy and type for each kind of connections
+typedef struct{
+    char name[7];
+    int family;
+    int type_;
+} Connection;
+// structure for storing list of pid and fd for each inode
+typedef struct i_nodes{
+  int inode;
+  struct i_nodes *Next_in_list;
+  struct i_nodes *Next_collision; /* to manage collision as hashing is implemented */
+  pid_t pid;
+  int fd;
+} Inodes;
+
 bool disk_usage(const char[], DiskUsage *);
 
 DiskPartitionInfo *disk_partitions(bool);
@@ -220,8 +261,12 @@ bool pid_exists(pid_t);
 Process *get_process(pid_t);
 void free_process(Process *);
 
+ConnInfo *net_connections(char kind[]);
+void free_ConnInfo(ConnInfo *);
+
 /* Required to avoid [-Wimplicit-function-declaration] for python bindings */
 void gcov_flush(void);
 
 // disk_io_counters_per_disk
 // net_io_counters_per_nic
+

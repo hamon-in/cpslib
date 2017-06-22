@@ -12,9 +12,15 @@
 #include <sys/sysinfo.h>
 #include <unistd.h>
 #include <utmp.h>
+#include <dirent.h>
+#include <inttypes.h>
+#include <arpa/inet.h>
+
 
 #include "pslib.h"
 #include "common.h"
+
+#define HASHSIZE 2731
 
 void __gcov_flush(void);
 
@@ -306,6 +312,7 @@ static double get_create_time(pid_t pid) {
   FILE *fp = NULL;
   char procfile[50];
   char s_pid[10];
+  char *tmp;
   double ct_jiffies;
   double ct_seconds;
   double clock_ticks = sysconf(_SC_CLK_TCK);
@@ -315,7 +322,9 @@ static double get_create_time(pid_t pid) {
   sprintf(procfile, "/proc/%d/stat", pid);
   fp = fopen(procfile, "r");
   check(fp, "Couldn't open process stat file");
-  ct_jiffies = atof(grep_awk(fp, s_pid, 21, " "));
+  tmp = grep_awk(fp, s_pid, 21, " ");
+  ct_jiffies = atof(tmp);
+  free(tmp);
   fclose(fp);
   ct_seconds = boot_time + (ct_jiffies / clock_ticks);
   return ct_seconds;
@@ -1109,6 +1118,584 @@ void free_process(Process *p) {
   free(p->username);
   free(p->terminal);
   free(p);
+}
+//             NET CONNECTIONS
+
+
+Connection tcp4 = {"tcp", AF_INET, SOCK_STREAM};
+Connection tcp6 = {"tcp6", AF_INET6, SOCK_STREAM};
+Connection udp4 = {"udp", AF_INET, SOCK_DGRAM};
+Connection udp6 = {"udp6", AF_INET6, SOCK_DGRAM};
+Connection Unix = {"unix", AF_UNIX, 0};
+
+const struct{
+    const char* kind_label[12];
+    const Connection *kind[11][6];
+} tmap = {{"all", "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6", "unix", "inet", "inet4", "inet6", '\0'},
+        {{&tcp4,&tcp6, &udp4, &udp6, &Unix, NULL},
+        {&tcp4, &tcp6, NULL},
+        {&tcp4, NULL},
+        {&tcp6, NULL},
+        {&udp4, &udp6, NULL},
+        {&udp4, NULL},
+        {&udp6, NULL},
+        {&Unix, NULL},
+        {&tcp4, &tcp6, &udp4, &udp6, NULL},
+        {&tcp4, &udp4, NULL},
+        {&tcp6, &udp6, NULL}}
+        };
+
+
+
+bool IsSame(Conn *a,Conn *b)
+{
+    if((a->family==b->family) && (a->fd==b->fd) && (a->pid==b->pid) && (a->status==b->status) && (a->type==b->type))
+    {
+        if((!strcmp(a->laddr->ip,b->laddr->ip)) && (!strcmp(a->raddr->ip,b->raddr->ip)) && (a->raddr->port == b->raddr->port) && (a->laddr->port==b->laddr->port))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int isnumber(char c[])
+{
+    int i = 0;
+    for (i=0;c[i]!='\0';i++)
+    {
+        if (!isdigit(c[i]))
+            return 0;
+    }
+    return 1;
+}
+// Returns list of all PIDs
+Pidlist *pids()
+{
+    DIR *d;
+    Pidlist *ret;
+    struct dirent *dir;
+    ret = (Pidlist*)calloc(1,sizeof(Pidlist));
+    check_mem(ret);
+    ret->pid = (pid_t*)calloc(1,sizeof(pid_t));
+    check_mem(ret->pid);
+    ret->size = 1;
+    d = opendir("/proc");
+    check_mem(d);
+    while ((dir = readdir(d)) != NULL)
+    {
+        if(sscanf(dir->d_name,"%"PRId32, &ret->pid[ret->size-1]))
+        {
+            ret->size++;
+        }
+        if(ret->size > 1)
+            ret->pid = (pid_t*)realloc(ret->pid,(ret->size)*sizeof(pid_t));
+    }
+    closedir(d);
+    return ret;
+    error:
+    if(ret)
+    {
+        if(ret->pid)
+        {
+           free(ret->pid);
+        }
+        free(ret);
+    }
+    if(d)
+    {
+        closedir(d);
+    }
+    return NULL;
+}
+
+Inodes *get_proc_inodes(pid_t pid)
+{
+    DIR *d;
+    struct dirent *dir;
+    Inodes *inodes = NULL;
+    char filepath[500];
+    char link[500];
+    char fdpath[500];
+    int inode, len, no=0;
+    inodes = (Inodes *)calloc(1,sizeof(Inodes));
+    check_mem(inodes);
+    snprintf(fdpath, sizeof(fdpath), "/proc/%"PRId32"/fd", pid);
+    d = opendir(fdpath);
+    if(d)/*Error is ignored as we could get a lot of permission denied*/
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            if ( (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..")!= 0) )
+            {
+                snprintf(filepath, sizeof(filepath), "%s/%s", fdpath, dir->d_name);
+                len = readlink(filepath,link,500);
+                check((len!=-1),"readlink error\n");
+                link[len] = '\0';
+                if (sscanf(link, "socket:[%d]", &inode))
+                {
+                    sscanf(dir->d_name, "%d", &(inodes[no].fd));
+                    inodes[no].inode = inode;
+                    inodes[no].pid = pid;
+                    inodes[no].Next_collision = NULL;
+                    inodes[no].Next_in_list = NULL;
+                    no++;
+                    if(no > 0)
+                    {
+                        inodes = (Inodes*)realloc(inodes,(no+1)*sizeof(Inodes));
+                        check_mem(inodes);
+                    }
+                }
+            }
+        }
+        closedir(d);
+    }
+    inodes[no].inode = -1;
+    inodes[no].pid = -1;
+    inodes[no].fd = -1;
+    inodes[no].Next_collision = NULL;
+    inodes[no].Next_in_list = NULL;
+    return inodes;
+    error:
+    if(d)
+    {
+        closedir(d);
+    }
+    if(inodes)
+    {
+        free(inodes);
+    }
+    return NULL;
+}
+//function which calcultes key for Hash table from inode
+unsigned long hashfunction(int inode)
+{
+    unsigned int hash = HASHSIZE;
+    hash = (inode ^ hash )% hash;
+    return hash;
+}
+//function to update hash table by inserting lselement to inodes
+Inodes *Update(Inodes *ls_element, Inodes *inodes)
+{
+    Inodes *tmp;
+    if(inodes == NULL)
+    {
+        inodes = ls_element;
+    }
+    else if(inodes->inode == ls_element->inode)
+    {
+        if(inodes->pid == ls_element->pid)
+        {
+            ls_element->Next_in_list = inodes;
+            inodes =  ls_element;
+        }
+        else
+        {
+            tmp = inodes->Next_collision;
+            inodes = ls_element;
+            ls_element->Next_collision = tmp;
+        }
+    }
+    else
+    {
+        inodes->Next_collision = Update(ls_element,inodes->Next_collision);
+    }
+    return inodes;
+}
+
+Inodes **get_all_inodes()
+{
+    Inodes **inodes = NULL, *ls=NULL;
+    Pidlist *PID;
+    int i,j=0,index=0;
+    inodes = (Inodes **)calloc(HASHSIZE, sizeof(Inodes*));
+    check_mem(inodes);
+    PID = pids();
+    for(i = 0; i < PID->size ;i++ )
+    {
+        ls = get_proc_inodes(PID->pid[i]);
+        for(j=0;ls[j].inode != -1;j++)
+        {
+            index = hashfunction(ls[j].inode);
+            inodes[index]=Update(&ls[j],inodes[index]);
+        }
+    }
+    return inodes;
+    error:
+    return NULL;
+}
+/* convert IPv6 address to human readable form like
+ * "0500000A:0016" -> ("10.0.0.5", 22) */
+address *decodeIPv4(char Addr[],address *Address)
+{
+    /* TODO : changing byte order with respect to endian*/
+    uint32_t IP;
+    sscanf(Addr, "%"SCNx32":%x", &IP, &(Address->port));
+    const struct in_addr naddr4 = {IP};
+    const char *tmp = inet_ntop(AF_INET,&naddr4, Address->ip, 150);
+    check(tmp,"decode of IPv4 failed\n");
+    return Address;
+    error:
+    return NULL;
+}
+/* convert IPv6 address to human readable form like
+ * "0000000000000000FFFF00000100007F:9E49" -> ("::ffff:127.0.0.1", 40521)*/
+address *decodeIPv6(char Addr[], address *Address)
+{
+    /* TODO : changing byte order with respect to endian*/
+    uint8_t int_ip[16];
+    sscanf(Addr, "%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx:%x",
+           &int_ip[0], &int_ip[1], &int_ip[2], &int_ip[3],
+           &int_ip[4], &int_ip[5], &int_ip[6], &int_ip[7],
+           &int_ip[8], &int_ip[9], &int_ip[10], &int_ip[11],
+           &int_ip[12], &int_ip[13], &int_ip[14], &int_ip[15],&(Address->port));
+    const struct in6_addr naddr6 = {{{(int_ip[3]),(int_ip[2]),(int_ip[1]),int_ip[0],
+                            int_ip[7],int_ip[6],int_ip[5],int_ip[4],
+                            int_ip[11],int_ip[10],int_ip[9],int_ip[8],
+                            int_ip[15],int_ip[14],int_ip[13],int_ip[12]}}};
+    const char *tmp = inet_ntop(AF_INET6,&naddr6,(Address->ip),150);
+    check(tmp,"decode of IPv6 failed\n");
+    return Address;
+    error:
+    return NULL;
+}
+/*
+ * Accept an "ip:port" address as displayed in /proc/net/ *
+ * and convert it into a human readable form, like:
+ * "0500000A:0016" -> ("10.0.0.5", 22)
+ * "0000000000000000FFFF00000100007F:9E49" -> ("::ffff:127.0.0.1", 40521)*/
+address *decode_address(char Addr[], int family)
+{
+    address * Address;
+    Address = (address *)calloc(1, sizeof(address));
+    check_mem(Address);
+    char IP[50];
+    sscanf(Addr,"%s:%x",IP,&(Address->port));
+    if(family == AF_INET)
+    {
+        Address = decodeIPv4(IP, Address);
+    }
+    else
+    {
+        Address = decodeIPv6(IP, Address);
+    }
+    if(Address->port == 0)
+    {
+        strcpy(Address->ip,"NONE");
+        Address->port = -1;
+        return Address;
+    }
+    return Address;
+    error:
+    if(Address)
+    {
+        free(Address);
+    }
+    return NULL;
+}
+/* return Inode pointer with required inode(int)*/
+Inodes *find_inode(Inodes **inodes,int inode)
+{
+    int index = hashfunction(inode);
+    Inodes *tmp=inodes[index];
+    if(tmp)
+    {
+        while(tmp->inode != inode)
+        {
+            tmp = tmp->Next_collision;
+            if(tmp==NULL)
+                return NULL;
+        }
+        return tmp;
+    }
+    return NULL;
+}
+/* Parse /proc/net/tcp* and /proc/net/udp* files. */
+ConnInfo* process_inet(char filepath[], int family, int type_,Inodes** inodes,pid_t filter_pid)
+{
+    FILE *fp = NULL;
+    ConnInfo *ret = NULL;
+    //Conn *ret=NULL;
+    Inodes *inodeptr;
+    char line[LINE_MAX];
+    char *tmp,*laddr,*raddr;
+    int i = 0, inode, fd, status;
+    pid_t pid;
+    ret = (ConnInfo*)calloc(1,sizeof(ConnInfo));
+    check_mem(ret);
+    ret->nitems=0;
+    ret->Connections = (Conn*)calloc(1, sizeof(Conn));
+    check_mem(ret->Connections);
+    if (filepath[strlen(filepath)-1] == '6' && (access(filepath, F_OK )==-1))
+    {//doesnot support IPv6
+        ret->Connections=NULL;
+        return ret;
+    }
+    fp = fopen(filepath, "r");
+    check(fp, "Couldn't open %s",filepath);
+
+    check(fgets(line,LINE_MAX,fp)," ");/* skip first line */
+    while (fgets(line,LINE_MAX,fp))
+    {
+            //tmpptr = (Conn*)calloc(1, sizeof(Conn));
+            //check_mem(tmpptr);
+            tmp = strtok(line, " "); /* sl */
+            tmp = strtok(NULL, " "); /* local_address*/
+            laddr = tmp;
+            tmp = strtok(NULL, " "); /* remaddress*/
+            raddr = tmp;
+            tmp = strtok(NULL, " "); /* status*/
+            status = strtol(tmp,NULL,16);
+            for(i = 0;i< 5;i++)
+            {
+                tmp = strtok(NULL, " "); /* not required parts in file*/
+            }
+            tmp = strtok(NULL, " "); /* uid*/
+            inode = atoi(tmp);
+            inodeptr = find_inode(inodes,inode);
+            if(inodeptr)
+            {
+                fd = inodeptr->fd;
+                pid = inodeptr->pid;
+            }
+            else
+            {
+                fd = -1;
+                pid = -1;
+            }
+            ret->Connections[ret->nitems].fd = fd;
+            ret->Connections[ret->nitems].pid = pid;
+            ret->Connections[ret->nitems].family = family;
+            if ((filter_pid != -1) && (pid != filter_pid))
+            {
+                continue;
+            }
+            else
+            {
+                if (type_ == SOCK_STREAM)
+                    ret->Connections[ret->nitems].status = (status-1);
+                else
+                    ret->Connections[ret->nitems].status = NONE;
+                ret->Connections[ret->nitems].type = type_;
+                ret->Connections[ret->nitems].laddr = decode_address(laddr, family);
+                ret->Connections[ret->nitems].raddr = decode_address(raddr, family);
+
+                ret->nitems++;
+                if(ret->nitems > 0)
+                {
+                    ret->Connections = (Conn*)realloc(ret->Connections,(ret->nitems+1)*(sizeof(Conn)));
+                    check_mem(ret->Connections);
+                }
+            }
+    }
+    fclose(fp);
+    return ret;
+    error:
+    if(fp)
+        fclose(fp);
+    if(ret)
+        free_ConnInfo(ret);
+    return NULL;
+}
+/* Parse /proc/net/unix files.*/
+ConnInfo *process_unix(char filepath[], int family,Inodes** inodes,pid_t filter_pid)
+{
+    FILE *fp = NULL;
+    ConnInfo *ret=NULL;
+    Inodes *inode_same_pid=NULL,*inodeptr;
+    int fd[10],pid[10];
+    char line[LINE_MAX];
+    int i = 0, inode, type;
+    char *tmp,*path;
+    //log_info("\nprocess_unix started\n");
+    fp = fopen(filepath, "r");
+    check(fp, "Couldn't open %s",filepath);
+    ret = (ConnInfo*)calloc(1, sizeof(ConnInfo));
+    check_mem(ret);
+    ret->Connections = (Conn*)calloc(1, sizeof(Conn));
+    check_mem(ret->Connections);
+    ret->nitems = 0;
+    fgets(line,LINE_MAX,fp);
+    while (fgets(line,LINE_MAX,fp))
+    {
+        path = NULL;
+        //log_info("\nfile read line\n");
+        tmp = strtok(line, " ");/* sl No*/
+        for(i = 0;i< 3;i++)
+        {
+            tmp = strtok(NULL, " "); /* not required parts in file*/
+        }
+        tmp = strtok(NULL, " "); /* type */
+        type = atoi(tmp);
+        tmp = strtok(NULL, " ");
+        tmp = strtok(NULL, " "); /* inode */
+        inode = atoi(tmp);
+        path = strtok(NULL, " ");
+        inodeptr = find_inode(inodes,inode);
+        if(inodeptr)
+        {
+            //log_info("\n inode found matching \n");
+            i=0;
+            inode_same_pid = inodeptr;
+            while(inode_same_pid)
+            {
+                fd[i]= inode_same_pid->fd;
+                pid[i]= inode_same_pid->pid;
+                i++;
+                inode_same_pid = inode_same_pid->Next_in_list;
+            }
+            fd[i]=-1;
+            pid[i]=-1;
+        }
+        else {
+            fd[0] = fd[1] = -1;
+            pid[0] = pid[1] = -1;
+        }
+        i=0;
+        do
+        {
+            ret->Connections[ret->nitems].fd = fd[i];
+            ret->Connections[ret->nitems].pid = pid[i];
+            i++;
+            ret->Connections[ret->nitems].family = family;
+            ret->Connections[ret->nitems].type = type;
+            if ((filter_pid != -1) && (ret->Connections[ret->nitems].pid != filter_pid))
+            {
+                continue;
+            }
+            else
+            {
+                ret->Connections[ret->nitems].status = NONE;
+                ret->Connections[ret->nitems].laddr = (address *)calloc(1,sizeof(address));
+                check_mem(ret->Connections[ret->nitems].laddr);
+                ret->Connections[ret->nitems].laddr->port = -1;
+                ret->Connections[ret->nitems].raddr = (address *)calloc(1,sizeof(address));
+                check_mem(ret->Connections[ret->nitems].raddr);
+                ret->Connections[ret->nitems].raddr->port = -1;
+                if(path != NULL)
+                    sscanf(path,"%s\n",ret->Connections[ret->nitems].laddr->ip);//path
+                else
+                    strcpy(ret->Connections[ret->nitems].laddr->ip, "");//path
+                strcpy(ret->Connections[ret->nitems].raddr->ip, "");
+                ret->nitems++;
+                if(ret->nitems > 0)
+                {
+                    ret->Connections = (Conn*)realloc(ret->Connections,(ret->nitems+1)*(sizeof(Conn)));
+                    check_mem(ret->Connections);
+                }
+            }
+        }while(fd[i]!=-1);
+     }
+    fclose(fp);
+    return ret;
+    error:
+    if(fp)
+        fclose(fp);
+    if(ret)
+        free_ConnInfo(ret);
+    return NULL;
+}
+
+ConnInfo *retrive(char kind[],pid_t pid)
+{
+    uint32_t i=0,j=0,k=0,l=0;
+    bool duplicate = false;
+    Inodes **inodes = NULL;
+    ConnInfo *ret=NULL;
+    ConnInfo *ls;
+    char tmp[20];
+
+    while(strcmp(tmap.kind_label[i],kind))
+    {
+        check(tmap.kind_label[i]!='\0',"invalid %s kind argument",kind);
+        i++;
+    }
+    if(pid!=-1)
+    {
+        inodes = (Inodes**)calloc(1,sizeof(Inodes *));
+        check_mem(inodes);
+        inodes[0] = get_proc_inodes(pid);
+        if (inodes[0])
+            return NULL;
+    }
+    else
+    {
+        inodes = get_all_inodes();
+    }
+    check_mem(inodes);
+    ret = (ConnInfo*)calloc(1,sizeof(ConnInfo));
+    check_mem(ret);
+    ret->Connections = (Conn*)calloc(1,sizeof(Conn));
+    check_mem(ret->Connections);
+    ret->nitems=0;
+    while (tmap.kind[i][j]!=NULL)
+    {
+        if ((tmap.kind[i][j]->family == AF_INET) || (tmap.kind[i][j]->family == AF_INET6))
+        {
+            snprintf(tmp, sizeof(tmp), "/proc/net/%s",tmap.kind[i][j]->name);
+            ls = process_inet(tmp,tmap.kind[i][j]->family,tmap.kind[i][j]->type_,inodes,pid);
+            check_mem(ls);
+        }
+        else
+        {
+            snprintf(tmp, sizeof(tmp), "/proc/net/%s",tmap.kind[i][j]->name);
+            ls = process_unix(tmp,tmap.kind[i][j]->family,inodes,pid);
+            check_mem(ls)
+        }
+        k=0;
+        while(k < ls->nitems/*ls->Connections[k] != NULL*/)
+        {
+            duplicate = false;//for finding duplicate
+            for(l=0;l<ret->nitems;l++)
+            {
+                if(IsSame(&(ret->Connections[l]),&(ls->Connections[k])))
+                {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if(!duplicate)
+            {
+                ret->Connections[ret->nitems].family = ls->Connections[k].family;
+                ret->Connections[ret->nitems].fd = ls->Connections[k].fd;
+                ret->Connections[ret->nitems].laddr = ls->Connections[k].laddr;
+                ret->Connections[ret->nitems].pid = ls->Connections[k].pid;
+                ret->Connections[ret->nitems].raddr = ls->Connections[k].raddr;
+                ret->Connections[ret->nitems].status = ls->Connections[k].status;
+                ret->Connections[ret->nitems].type = ls->Connections[k].type;
+                ret->nitems++;
+            }
+            k++;
+            if(ret->nitems > 0)
+            {
+                ret->Connections = (Conn*)realloc(ret->Connections,((ret->nitems + 1)*sizeof(Conn)));
+                check_mem(ret->Connections);
+            }
+        }
+        free(ls);
+        j++;
+    }
+    return ret;
+    error:
+    if(inodes)
+        free(inodes);
+    if(ret)
+        free_ConnInfo(ret);
+    return NULL;
+}
+ConnInfo *net_connections(char kind[])
+{
+    return retrive(kind,-1);
+}
+void free_ConnInfo(ConnInfo *c)
+{
+    uint32_t i;
+    for(i=0;i < c->nitems;i++)
+    {
+        free(c->Connections[i].laddr);
+        free(c->Connections[i].raddr);
+    }
+    free(c);
 }
 
 /*
