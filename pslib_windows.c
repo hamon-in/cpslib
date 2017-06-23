@@ -242,3 +242,143 @@ bool disk_usage(const char path[], DiskUsage *disk) {
 			return FALSE;
 		}
 }
+
+UsersInfo *get_users() {
+	HANDLE hServer = WTS_CURRENT_SERVER_HANDLE;
+	WCHAR *buffer_user = NULL;
+	LPTSTR buffer_addr = NULL;
+	PWTS_SESSION_INFO sessions = NULL;
+	DWORD count;
+	DWORD i;
+	DWORD sessionId;
+	DWORD bytes;
+	PWTS_CLIENT_ADDRESS address;
+	char address_str[50];
+	long long unix_time;
+	char *tmp;
+	PWINSTATIONQUERYINFORMATIONW WinStationQueryInformationW;
+	WINSTATION_INFO station_info;
+	HINSTANCE hInstWinSta = NULL;
+	ULONG returnLen;
+	LPBOOL q = NULL;
+
+	UsersInfo *users_info_ptr = NULL;
+	/*PyObject *py_retlist = PyList_New(0);
+	PyObject *py_tuple = NULL;
+	PyObject *py_address = NULL;
+	PyObject *py_username = NULL;*/
+	hInstWinSta = LoadLibraryA("winsta.dll");
+	WinStationQueryInformationW = (PWINSTATIONQUERYINFORMATIONW) \
+		GetProcAddress(hInstWinSta, "WinStationQueryInformationW");
+	users_info_ptr = (UsersInfo *)calloc(1, sizeof(UsersInfo));
+	check_mem(users_info_ptr);
+	check(WTSEnumerateSessions(hServer, 0, 1, &sessions, &count),
+			"error in retrieving list of sessions on a Remote Desktop Session Host server");
+	users_info_ptr->users = (Users *)calloc(count, sizeof(Users));
+	check_mem(users_info_ptr->users);
+	//users_info_ptr->nitems = 0;
+	users_info_ptr->nitems = 0;
+	for (i = 0; i < count; i++) {
+		//py_address = NULL;
+		//py_tuple = NULL;
+		sessionId = sessions[i].SessionId;
+		if (buffer_user != NULL)
+			WTSFreeMemory(buffer_user);
+		if (buffer_addr != NULL)
+			WTSFreeMemory(buffer_addr);
+
+		buffer_user = NULL;
+		buffer_addr = NULL;
+ 
+		// username
+		bytes = 0;
+		check(WTSQuerySessionInformationW(hServer, sessionId, WTSUserName,
+			&buffer_user, &bytes), "error in retriving Username");
+		if (bytes <= 2)
+			continue;
+		// address
+		bytes = 0;
+		check( WTSQuerySessionInformation(hServer, sessionId, WTSClientAddress,
+			&buffer_addr, &bytes),"error in retriving ClientAddress") 
+
+		address = (PWTS_CLIENT_ADDRESS)buffer_addr;
+		if (address->AddressFamily == 0) {  // AF_INET
+			sprintf_s(address_str,
+				_countof(address_str),
+				"%u.%u.%u.%u",
+				address->Address[0],
+				address->Address[1],
+				address->Address[2],
+				address->Address[3]);
+			tmp = (char *)calloc(50, sizeof(char));
+			check_mem(tmp);
+			strcpy(tmp,address_str);
+			users_info_ptr->users[users_info_ptr->nitems].hostname = tmp;
+		}
+		else {
+			users_info_ptr->users[users_info_ptr->nitems].hostname = NULL;
+		}
+
+		// login time
+		check(WinStationQueryInformationW(hServer,
+			sessionId,
+			WinStationInformation,
+			&station_info,
+			sizeof(station_info),
+			&returnLen), "error in retriving login time");
+		unix_time = ((LONGLONG)station_info.ConnectTime.dwHighDateTime) << 32;
+		unix_time += \
+			station_info.ConnectTime.dwLowDateTime - 116444736000000000LL;
+		unix_time /= 10000000;
+		tmp = (char *)calloc(USERNAME_LENGTH, sizeof(char));
+		check_mem(tmp);
+		if (WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, buffer_user, -1, tmp, USERNAME_LENGTH, "", q) == 0)
+		{
+			DWORD t;
+			t = GetLastError();
+			check(t != ERROR_INSUFFICIENT_BUFFER, "Supplied buffer size was not large enough, or it was incorrectly set to NULL.");
+			check(t != ERROR_INVALID_FLAGS, "The values supplied for flags were not valid.");
+			check(t != ERROR_INVALID_PARAMETER, "Any of the parameter values was invalid");
+			check(t != ERROR_NO_UNICODE_TRANSLATION, "Invalid Unicode was found in a string.");
+		}
+		users_info_ptr->users[users_info_ptr->nitems].username = tmp;
+		users_info_ptr->users[users_info_ptr->nitems].tstamp = (float)unix_time;
+		users_info_ptr->users[users_info_ptr->nitems].tty = NULL;
+		users_info_ptr->nitems++;
+	}
+
+	WTSFreeMemory(sessions);
+	WTSFreeMemory(buffer_user);
+	WTSFreeMemory(buffer_addr);
+	FreeLibrary(hInstWinSta);
+	return users_info_ptr;
+error:
+	if (hInstWinSta != NULL)
+		FreeLibrary(hInstWinSta);
+	if (sessions != NULL)
+		WTSFreeMemory(sessions);
+	if (buffer_user != NULL)
+		WTSFreeMemory(buffer_user);
+	if (buffer_addr != NULL)
+		WTSFreeMemory(buffer_addr);
+	if (users_info_ptr)
+		free_users_info(users_info_ptr);
+	if (tmp)
+		free(tmp);
+	return NULL;
+}
+void free_users_info(UsersInfo *u)
+{
+	uint32_t i;
+	for ( i = 0; i < u->nitems; i++)
+	{
+		if(u->users[i].hostname)
+			free(u->users[i].hostname);
+		if (u->users[i].tty)
+			free(u->users[i].tty);
+		if (u->users[i].username)
+			free(u->users[i].username);
+	}
+	free(u->users);
+	free(u);
+}
