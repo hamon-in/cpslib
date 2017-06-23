@@ -224,3 +224,21 @@ void free_disk_partition_info(DiskPartitionInfo *p)
 	free(p->partitions);
 	free(p);
 }
+
+bool disk_usage(const char path[], DiskUsage *disk) {
+	BOOL retval;
+	ULARGE_INTEGER _, total, free;
+		retval = GetDiskFreeSpaceExA((LPCSTR)path, &_, &total, &free);
+		if (retval)
+		{
+			disk->total = total.QuadPart;
+			disk->free = free.QuadPart;
+			disk->used = disk->total - disk->free;
+			disk->percent = percentage(disk->used, disk->total);
+			return TRUE;
+		}
+		else
+		{
+			return FALSE;
+		}
+}
