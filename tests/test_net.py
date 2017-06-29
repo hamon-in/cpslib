@@ -64,7 +64,7 @@ def test_all_net_connection_attribs(flush):
                         part.family == family,
                         part.type == _type,
                         part.laddr == laddr,
-                        part.raddr == raddr,
+                        part.raddr == raddr or (part.raddr == None and raddr == ''),
                         part.status == status,
                         part.pid == pid or (part.pid is None and pid == -1)]):
                     found = True
