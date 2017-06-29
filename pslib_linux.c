@@ -19,8 +19,18 @@
 
 #include "pslib.h"
 #include "common.h"
-
 #define HASHSIZE 2731
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <linux/if_packet.h>
+#include <errno.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <linux/ethtool.h>
+#include <linux/sockios.h>
+#include <linux/if.h>
 
 void __gcov_flush(void);
 
@@ -42,6 +52,7 @@ static int clean_cmdline(char *ip, int len)
   }
   ip[--i] = '\0';
   return replacements;
+
 }
 
 /* Internal functions */
@@ -127,7 +138,7 @@ static int physical_cpu_count() {
   check_mem(line);
 
   while (fgets(line, 90, fp) != NULL) {
-    if (strncasecmp(line, "physical id", 11) == 0) {
+    if (strncaseecmp(line, "physical id", 11) == 0) {
       strtok(line, ":");
       id = strtol(strtok(NULL, " "), NULL,
                   10); /* TODO: Assuming that physical id is a number */
@@ -706,6 +717,8 @@ NetIOCounterInfo *net_io_counters() {
 
     tmp = strtok(NULL, " \n"); /* Drops out 10*/
     nc->dropout = strtoul(tmp, NULL, 10);
+
+    
 
     nc++;
   }
@@ -1698,6 +1711,194 @@ void free_ConnInfo(ConnInfo *c)
     free(c);
 }
 
+
+NetIfStatsInfo *net_if_stats()
+{
+	uint32_t n_stats = 15;
+	NetIOCounterInfo *counterinfo = net_io_counters();
+	uint32_t num = counterinfo->nitems;
+	NetIOCounters *io_counters = counterinfo->iocounters;
+	uint32_t i=0;
+
+	NetIfStatsInfo *ret = (NetIfStatsInfo * )calloc(1,sizeof(NetIfStatsInfo));
+	NetIfStats *ifstats = (NetIfStats *)calloc(n_stats,sizeof(NetIfStats));
+	NetIfStats *st = ifstats;
+
+	check_mem(ifstats);
+	check_mem(ret);
+
+	ret->nitems = 0;
+	ret->ifstats = ifstats;
+
+	
+	
+	for(i=0;i<num;++i)
+	{
+		char *name=io_counters[i].name;
+
+		uint32_t mtu = net_if_mtu(name);
+		bool isup = net_if_flags(name);
+
+		st->isup = isup;
+		DuplexSpeed *tmp = net_if_duplex_speed(name);
+		st->name = (char*)malloc(sizeof(name));
+		strcpy(st->name,name);
+		if(tmp->duplex == DUPLEX_FULL)
+		  tmp->duplex=2;
+		else if(tmp->duplex == DUPLEX_HALF)
+		  tmp->duplex=1;
+		else if(tmp->duplex == DUPLEX_UNKNOWN)
+		  tmp->duplex=0;
+       		st->duplex = tmp->duplex;
+		st->speed = tmp->speed;
+		free(tmp);
+		st->mtu = mtu;
+		st++;
+		ret->nitems++;
+
+		if (ret->nitems == n_stats)
+		{
+		  n_stats *= 2;
+		  ifstats = (NetIfStats *)realloc(ifstats, sizeof(NetIfStats) * 	n_stats);
+		  check_mem(ifstats);
+		  ret->ifstats = ifstats;
+		  st = ret->ifstats + ret->nitems; /* Move the cursor to the correct
+                                            value in case the realloc moved
+		                                            the memory */
+		}
+    	
+	}
+	free_net_iocounter_info(counterinfo);
+	return ret;
+error:
+	
+	free_net_iocounter_info(counterinfo);
+	free_net_ifstats_info(ret);
+	return NULL;	
+	
+}
+void free_net_ifstats_info(NetIfStatsInfo *d) {
+  for (uint32_t i = 0; i < d->nitems; i++) {
+    free(d->ifstats[i].name);
+  }
+  free(d->ifstats);
+  free(d);
+}
+uint32_t net_if_mtu(char *name) {
+    char *nic_name = name;
+    int sock = 0;
+    int ret;
+	struct ifreq ifr;
+
+
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock == -1)
+        goto error;
+
+
+    strncpy(ifr.ifr_name, nic_name, sizeof(ifr.ifr_name));
+    ret = ioctl(sock, SIOCGIFMTU, &ifr);
+
+    if (ret == -1)
+        goto error;
+    close(sock);
+
+
+	return ifr.ifr_mtu;
+error:
+    if (sock != 0)
+        close(sock);
+    return -1;
+}
+
+uint32_t net_if_flags(char *name) {
+    char *nic_name = name;
+    int sock = 0;
+    int ret;
+    struct ifreq ifr;
+
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock == -1)
+        goto error;
+
+    strncpy(ifr.ifr_name, nic_name, sizeof(ifr.ifr_name));
+
+    ret = ioctl(sock, SIOCGIFFLAGS, &ifr);
+    if (ret == -1)
+        goto error;
+
+    close(sock);
+    if ((ifr.ifr_flags & IFF_UP) != 0)
+        return 1;
+    else
+        return 0;
+
+error:
+    if (sock != 0)
+        close(sock);
+    return -1;
+}
+
+DuplexSpeed  *net_if_duplex_speed(char *name) {
+    char *nic_name = name;
+    int sock = 0;
+    int ret;
+    int duplex;
+    int speed;
+
+
+    
+    struct ifreq ifr;
+    struct ethtool_cmd ethcmd;
+    if(nic_name == NULL)
+	return NULL;
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock == -1)
+        goto error;
+    strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+    // duplex and speed
+    memset(&ethcmd, 0, sizeof ethcmd);
+    ethcmd.cmd = ETHTOOL_GSET;
+    ifr.ifr_data = (void *)&ethcmd;
+    ret = ioctl(sock, SIOCETHTOOL, &ifr);
+
+    if (ret != -1) {
+        duplex = ethcmd.duplex;
+        speed = ethcmd.speed;
+    }
+
+    else {
+        if ((errno == EOPNOTSUPP) || (errno == EINVAL)) {
+            // EOPNOTSUPP may occur in case of wi-fi cards.
+            // For EINVAL see:
+            // https://github.com/giampaolo/psutil/issues/797
+            //     #issuecomment-202999532
+            duplex = DUPLEX_UNKNOWN;
+            speed = 0;
+        }
+        else {
+            goto error;
+        }
+    }
+
+    close(sock);
+
+    DuplexSpeed *retv = (DuplexSpeed*)malloc(sizeof(DuplexSpeed));
+    check_mem(retv);
+	
+    retv->duplex=duplex;
+    retv->speed=speed;
+
+    return retv;
+
+error:
+    if (sock != -1)
+        close(sock);
+    return NULL;
+}
+
+
+
 /*
   The following function is an ugly workaround to ensure that coverage
   data can be manually flushed to disk during py.test invocations. If
@@ -1706,3 +1907,5 @@ void free_ConnInfo(ConnInfo *c)
 
  */
 void gcov_flush(void) { __gcov_flush(); }
+
+

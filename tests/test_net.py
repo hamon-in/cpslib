@@ -70,4 +70,3 @@ def test_all_net_connection_attribs(flush):
                     found = True
                     break
             assert found, """No match for conn (fd = '{}',  family= '{}', type= '{}', laddr = '{}', raddr = '{}', status = '{}', pid = '{}')""".format(fd, family, _type, laddr, raddr, status, pid)
-

@@ -18,6 +18,7 @@ void test_diskusage() {
          du.total, du.used, du.free, du.percent);
 }
 
+
 void test_diskpartitioninfo() {
   uint32_t i;
   DiskPartitionInfo *phys_dp, *all_dp;
@@ -444,6 +445,21 @@ void test_net_connections()
         free_ConnInfo(result);
     }
 }
+void test_netifstats()
+{
+  NetIfStatsInfo *n;
+  NetIfStats *dp;
+  uint32_t i;
+  n = net_if_stats();
+  dp = n->ifstats;
+  printf(" -- net_if_stats (interface count: %" PRIu32 ")\n", n->nitems);
+  for (i = 0; i < n->nitems; i++) {
+    printf("%s\t:snicstats(isup=%s, duplex=%" PRIu32", speed=%" PRIu32", mtu=%" PRIu32")\n",dp->name,dp->isup?"true":"false",dp->duplex,dp->speed,dp->mtu);	 
+    dp++;
+  }
+  free_net_ifstats_info(n);
+  printf("\n");
+}
 
 int main(void) {
   test_diskusage();
@@ -468,4 +484,5 @@ int main(void) {
   test_pid_exists();
   test_process();
   test_net_connections();
+  test_netifstats();
 }

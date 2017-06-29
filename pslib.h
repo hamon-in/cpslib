@@ -75,6 +75,26 @@ enum proc_priority {
 };
 
 typedef struct {
+	uint32_t duplex;
+	uint32_t speed;
+}DuplexSpeed;
+
+typedef struct {
+	char *name;
+	bool isup;
+	uint32_t duplex;
+	uint32_t speed;
+	uint32_t mtu;	
+}NetIfStats;
+
+
+typedef struct {
+	uint32_t nitems;
+	NetIfStats *ifstats;
+}NetIfStatsInfo;
+
+
+typedef struct {
   uint64_t total;
   uint64_t used;
   uint64_t free;
@@ -267,6 +287,11 @@ void free_ConnInfo(ConnInfo *);
 /* Required to avoid [-Wimplicit-function-declaration] for python bindings */
 void gcov_flush(void);
 
+NetIfStatsInfo *net_if_stats(void);
+uint32_t net_if_mtu(char *);
+DuplexSpeed * net_if_duplex_speed(char*);
+uint32_t net_if_flags(char *);
+void free_net_ifstats_info(NetIfStatsInfo *) ;
 // disk_io_counters_per_disk
 // net_io_counters_per_nic
 
