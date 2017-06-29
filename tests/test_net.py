@@ -70,3 +70,23 @@ def test_all_net_connection_attribs(flush):
                     found = True
                     break
             assert found, """No match for conn (fd = '{}',  family= '{}', type= '{}', laddr = '{}', raddr = '{}', status = '{}', pid = '{}')""".format(fd, family, _type, laddr, raddr, status, pid)
+
+def test_net_if_stats(flush):
+
+    psutil_stats = psutil.net_if_stats()
+    pslib_stats = P.net_if_stats()
+
+
+    for i in range(pslib_stats.nitems):
+        name = ffi.string(pslib_stats.ifstats[i].name)
+        isup = pslib_stats.ifstats[i].isup
+        duplex = pslib_stats.ifstats[i].duplex
+        speed = pslib_stats.ifstats[i].speed
+        mtu = pslib_stats.ifstats[i].mtu
+
+
+        assert isup==psutil_stats[name].isup
+        assert duplex==psutil_stats[name].duplex
+        assert speed==psutil_stats[name].speed
+        assert mtu==psutil_stats[name].mtu
+

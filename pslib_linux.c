@@ -138,7 +138,7 @@ static int physical_cpu_count() {
   check_mem(line);
 
   while (fgets(line, 90, fp) != NULL) {
-    if (strncaseecmp(line, "physical id", 11) == 0) {
+    if (strncasecmp(line, "physical id", 11) == 0) {
       strtok(line, ":");
       id = strtol(strtok(NULL, " "), NULL,
                   10); /* TODO: Assuming that physical id is a number */
