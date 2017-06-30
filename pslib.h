@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+#ifndef pid_t
+#define pid_t int
+#endif
 
 enum proc_status {
   STATUS_RUNNING,
@@ -63,7 +66,7 @@ enum con_status {
   IDLE,
   BOUND
 };
-
+/*
 enum proc_priority {
   ABOVE_NORMAL_PRIORITY_CLASS,
   BELOW_NORMAL_PRIORITY_CLASS,
@@ -72,7 +75,7 @@ enum proc_priority {
   NORMAL_PRIORITY_CLASS,
   REALTIME_PRIORITY_CLASS
 };
-
+*/
 typedef struct {
   uint64_t total;
   uint64_t used;
@@ -158,6 +161,8 @@ typedef struct {
   uint64_t sout;
 } SwapMemInfo;
 
+#if _WIN32
+#else
 typedef struct {
   double user;
   double system;
@@ -170,7 +175,7 @@ typedef struct {
   double guest;
   double guest_nice;
 } CpuTimes;
-
+#endif
 typedef struct {
   pid_t pid;
   pid_t ppid;
@@ -196,29 +201,29 @@ void free_disk_partition_info(DiskPartitionInfo *);
 DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
-NetIOCounterInfo *net_io_counters(void);
-void free_net_iocounter_info(NetIOCounterInfo *);
+//NetIOCounterInfo *net_io_counters(void);
+//void free_net_iocounter_info(NetIOCounterInfo *);
 
 UsersInfo *get_users(void);
 void free_users_info(UsersInfo *);
 
-uint32_t get_boot_time(void);
+//uint32_t get_boot_time(void);
 
-bool virtual_memory(VmemInfo *);
-bool swap_memory(SwapMemInfo *);
+//bool virtual_memory(VmemInfo *);
+//bool swap_memory(SwapMemInfo *);
 
-CpuTimes *cpu_times(bool);
+//CpuTimes *cpu_times(bool);
 
-CpuTimes *cpu_times_percent(bool, CpuTimes *);
+//CpuTimes *cpu_times_percent(bool, CpuTimes *);
 
-double *cpu_util_percent(bool percpu, CpuTimes *prev_times);
+//double *cpu_util_percent(bool percpu, CpuTimes *prev_times);
 
-uint32_t cpu_count(bool);
+//uint32_t cpu_count(bool);
 
-bool pid_exists(pid_t);
+//bool pid_exists(pid_t);
 
-Process *get_process(pid_t);
-void free_process(Process *);
+//Process *get_process(pid_t);
+//void free_process(Process *);
 
 /* Required to avoid [-Wimplicit-function-declaration] for python bindings */
 void gcov_flush(void);

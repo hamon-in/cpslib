@@ -6,36 +6,10 @@
 
 #include "pslib.h"
 #include "common.h"
+#include "pslib_windows.h"
 
 #pragma comment(lib, "WTSAPI32.lib")
-// fix for mingw32, see
-// https://github.com/giampaolo/psutil/issues/351#c2
-typedef struct _DISK_PERFORMANCE_WIN_2008 {
-	LARGE_INTEGER BytesRead;
-	LARGE_INTEGER BytesWritten;
-	LARGE_INTEGER ReadTime;
-	LARGE_INTEGER WriteTime;
-	LARGE_INTEGER IdleTime;
-	DWORD         ReadCount;
-	DWORD         WriteCount;
-	DWORD         QueueDepth;
-	DWORD         SplitCount;
-	LARGE_INTEGER QueryTime;
-	DWORD         StorageDeviceNumber;
-	WCHAR         StorageManagerName[8];
-} DISK_PERFORMANCE_WIN_2008;
 
-typedef struct _WINSTATION_INFO {
-	BYTE Reserved1[72];
-	ULONG SessionId;
-	BYTE Reserved2[4];
-	FILETIME ConnectTime;
-	FILETIME DisconnectTime;
-	FILETIME LastInputTime;
-	FILETIME LoginTime;
-	BYTE Reserved3[1096];
-	FILETIME CurrentTime;
-} WINSTATION_INFO;
 
 
 DiskIOCounterInfo *disk_io_counters(void) {
@@ -381,4 +355,92 @@ void free_users_info(UsersInfo *u)
 	}
 	free(u->users);
 	free(u);
+}
+
+double get_valid_value(double a)
+{
+	if (a <= 0.0)
+		return 0.0;
+	else if (a > 100.0)
+		return 100.0;
+	else
+		return a;
+}
+CpuTimes *calculate(CpuTimes *t1, CpuTimes * t2)
+{
+	double all_delta;
+	int i;
+	CpuTimes *ret;
+	ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
+	check_mem(ret);
+	all_delta = (t2->user + t2->system + t2->interrupt + t2->idle + t2->dpc) - \
+		(t1->user + t1->system + t1->interrupt + t1->idle + t1->dpc);
+	if (all_delta == 0)
+	{
+		all_delta = 100;
+	}
+	ret->user = get_valid_value((t2->user - t1->user)*100.0 / all_delta);
+	ret->system = get_valid_value((t2->system - t1->system)*100.0 / all_delta);
+	ret->interrupt = get_valid_value((t2->interrupt - t1->interrupt)*100.0 / all_delta);
+	ret->idle = get_valid_value((t2->idle - t1->idle)*100.0 / all_delta);
+	ret->dpc = get_valid_value((t2->dpc - t1->dpc)*100.0 / all_delta);
+	return ret;
+error:
+	if (ret)
+	{
+		free(ret);
+	}
+	return NULL;
+}
+
+/*"""Same as cpu_percent() but provides utilization percentages
+for each specific CPU time as is returned by cpu_times().
+
+*interval* and *percpu* arguments have the same meaning as in
+cpu_percent().
+"""*/
+
+CpuTimes *cpu_times_percent(bool percpu, CpuTimes * Last_Cpu_times)
+{
+	uint32_t no_cpu, i;
+	CpuTimes *t2 = NULL, *ret = NULL, *tmp = NULL;
+	t2 = (CpuTimes *)calloc(1, sizeof(CpuTimes));
+	check_mem(t2);
+	if (!percpu) {
+		t2 = cpu_times(false);
+		ret = calculate(t2, Last_Cpu_times);
+	}
+
+	//		# per - cpu usage
+	else {
+		ret = (CpuTimes *)calloc(1, sizeof(CpuTimes));
+		check_mem(ret);
+		t2 = cpu_times(true);
+
+		no_cpu = cpu_count(true);
+		//t2, t2 in zip(tot2, _last_per_cpu_times_2) :
+		for (i = 0; i < no_cpu; i++)
+		{
+			ret = (CpuTimes *)realloc(ret, (i + 1) * sizeof(CpuTimes));
+			check_mem(ret);
+			tmp = calculate(&t2[i], &Last_Cpu_times[i]);
+			check(tmp, "Error in calculting difference");
+			ret[i].user = tmp->user;
+			ret[i].system = tmp->system;
+			ret[i].interrupt = tmp->interrupt;
+			ret[i].idle = tmp->idle;
+			ret[i].dpc = tmp->dpc;
+			free(tmp);
+		}
+
+	}
+	return ret;
+error:
+	if (tmp)
+		free(tmp);
+	if (t2)
+		free(t2);
+	if (ret)
+		free(ret);
+	return NULL;
 }
