@@ -15,22 +15,22 @@
 #include <dirent.h>
 #include <inttypes.h>
 #include <arpa/inet.h>
-
-
-#include "pslib.h"
-#include "common.h"
-#define HASHSIZE 2731
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <linux/if_packet.h>
-#include <errno.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
 #include <linux/if.h>
+
+
+#include "pslib.h"
+#include "common.h"
+#define HASHSIZE 2731
+
 
 void __gcov_flush(void);
 
@@ -1182,6 +1182,15 @@ int isnumber(char c[])
     }
     return 1;
 }
+void free_Pidlist(Pidlist *p)
+{
+ 	if(p)
+    {
+    	if(p->pid)
+        	free(p->pid);
+        free(p);
+    }	
+}
 // Returns list of all PIDs
 Pidlist *pids()
 {
@@ -1208,19 +1217,12 @@ Pidlist *pids()
     return ret;
     error:
     if(ret)
-    {
-        if(ret->pid)
-        {
-           free(ret->pid);
-        }
-        free(ret);
-    }
+    	free_Pidlist(ret);	
     if(d)
-    {
         closedir(d);
-    }
     return NULL;
 }
+
 
 Inodes *get_proc_inodes(pid_t pid)
 {
@@ -1319,7 +1321,7 @@ Inodes *Update(Inodes *ls_element, Inodes *inodes)
 Inodes **get_all_inodes()
 {
     Inodes **inodes = NULL, *ls=NULL;
-    Pidlist *PID;
+    Pidlist *PID = NULL;
     int i,j=0,index=0;
     inodes = (Inodes **)calloc(HASHSIZE, sizeof(Inodes*));
     check_mem(inodes);
@@ -1333,8 +1335,11 @@ Inodes **get_all_inodes()
             inodes[index]=Update(&ls[j],inodes[index]);
         }
     }
+    free_Pidlist(PID);
     return inodes;
     error:
+    if(PID)
+    	free_Pidlist(PID);
     return NULL;
 }
 /* convert IPv6 address to human readable form like
@@ -1428,7 +1433,6 @@ ConnInfo* process_inet(char filepath[], int family, int type_,Inodes** inodes,pi
 {
     FILE *fp = NULL;
     ConnInfo *ret = NULL;
-    //Conn *ret=NULL;
     Inodes *inodeptr;
     char line[LINE_MAX];
     char *tmp,*laddr,*raddr;
@@ -1446,7 +1450,6 @@ ConnInfo* process_inet(char filepath[], int family, int type_,Inodes** inodes,pi
     }
     fp = fopen(filepath, "r");
     check(fp, "Couldn't open %s",filepath);
-
     check(fgets(line,LINE_MAX,fp)," ");/* skip first line */
     while (fgets(line,LINE_MAX,fp))
     {
@@ -1485,13 +1488,17 @@ ConnInfo* process_inet(char filepath[], int family, int type_,Inodes** inodes,pi
             }
             else
             {
+            	ret->Connections[ret->nitems].laddr = NULL;
+            	ret->Connections[ret->nitems].raddr = NULL;
                 if (type_ == SOCK_STREAM)
                     ret->Connections[ret->nitems].status = (status-1);
                 else
                     ret->Connections[ret->nitems].status = NONE;
                 ret->Connections[ret->nitems].type = type_;
                 ret->Connections[ret->nitems].laddr = decode_address(laddr, family);
+                check(ret->Connections[ret->nitems].laddr,"decode Address failed");
                 ret->Connections[ret->nitems].raddr = decode_address(raddr, family);
+                check(ret->Connections[ret->nitems].raddr,"decode Address failed");
 
                 ret->nitems++;
                 if(ret->nitems > 0)
@@ -1632,9 +1639,7 @@ ConnInfo *retrive(char kind[],pid_t pid)
             return NULL;
     }
     else
-    {
         inodes = get_all_inodes();
-    }
     check_mem(inodes);
     ret = (ConnInfo*)calloc(1,sizeof(ConnInfo));
     check_mem(ret);
@@ -1656,6 +1661,8 @@ ConnInfo *retrive(char kind[],pid_t pid)
             check_mem(ls)
         }
         k=0;
+        /* NOTE : psutil 2.1.2 does not remove duplicate therefore test_number_of_connections may fail
+          Reason : psutil 5.2.2 uses set but psutil 2.1.2 uses list */
         while(k < ls->nitems/*ls->Connections[k] != NULL*/)
         {
             duplicate = false;//for finding duplicate
@@ -1705,13 +1712,15 @@ void free_ConnInfo(ConnInfo *c)
     uint32_t i;
     for(i=0;i < c->nitems;i++)
     {
-        free(c->Connections[i].laddr);
-        free(c->Connections[i].raddr);
+    	if(c->Connections[i].laddr)
+        	free(c->Connections[i].laddr);
+        if(c->Connections[i].raddr)
+        	free(c->Connections[i].raddr);
     }
     free(c);
 }
 
-
+//NOT AVAILABLE ON PSUTIL 2.1.2
 NetIfStatsInfo *net_if_stats()
 {
 	uint32_t n_stats = 15;
@@ -1729,13 +1738,9 @@ NetIfStatsInfo *net_if_stats()
 
 	ret->nitems = 0;
 	ret->ifstats = ifstats;
-
-	
-	
 	for(i=0;i<num;++i)
 	{
 		char *name=io_counters[i].name;
-
 		uint32_t mtu = net_if_mtu(name);
 		bool isup = net_if_flags(name);
 
@@ -1777,6 +1782,7 @@ error:
 	return NULL;	
 	
 }
+
 void free_net_ifstats_info(NetIfStatsInfo *d) {
   for (uint32_t i = 0; i < d->nitems; i++) {
     free(d->ifstats[i].name);

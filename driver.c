@@ -393,56 +393,45 @@ void test_net_connections()
     printf("\nnet_connections\n");
     ConnInfo *result;
     char *array[] ={"all", "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6", "unix", "inet", "inet4", "inet6"};
-    int i=0,j=0;
+    uint32_t i=0,j=0;
     for(j=0;j < 11;j++)
     {
         i=0;
-
         result = net_connections(array[j]);
         printf("\n%s\n",array[j]);
         if(result)
         {
-            while(i < (int)result->nitems)
+            while(i < result->nitems)
             {
-                printf("fd=%d, family=%d, type=%d,",result->Connections[i].fd,result->Connections[i].family,result->Connections[i].type);
+                printf("sconn(fd=%d, family=%d, type=%d,",result->Connections[i].fd,result->Connections[i].family,result->Connections[i].type);
                 if(!(strcmp(result->Connections[i].laddr->ip, "NONE")))
-                {
                     printf(" laddr=(),");
-                }
                 else if((result->Connections[i].laddr->port == -1))
-                {
                     printf(" laddr='%s',",result->Connections[i].laddr->ip);
-                }
                 else
-                {
                     printf(" laddr=('%s', %d),",result->Connections[i].laddr->ip,result->Connections[i].laddr->port);
-                }
                 if(!(strcmp(result->Connections[i].raddr->ip, "NONE")))
-                {
                     printf(" raddr=(),");
-                }
                 else if(result->Connections[i].laddr->port == -1)
                 {
-                    printf(" raddr='%s',",result->Connections[i].raddr->ip);
+                	if(!strcmp(result->Connections[i].raddr->ip,""))
+                		printf(" raddr=None,");
+                	else
+                    	printf(" raddr='%s',",result->Connections[i].raddr->ip);
                 }
                 else
-                {
                     printf(" raddr=('%s', %d),",result->Connections[i].raddr->ip,result->Connections[i].raddr->port);
-                }
                 printf(" status='%s',", status[result->Connections[i].status]);
                 if(result->Connections[i].pid==-1)
-                {
-                    printf(" pid=None\n");
-                }
+                    printf(" pid=None)\n");
                 else
-                {
-                    printf(" pid=%d\n", result->Connections[i].pid);
-                }
+                    printf(" pid=%d)\n", result->Connections[i].pid);
                 i++;
             }
 
         }
         free_ConnInfo(result);
+        printf("\n");
     }
 }
 void test_netifstats()
