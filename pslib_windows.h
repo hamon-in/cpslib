@@ -529,6 +529,23 @@ typedef struct
 	float dpc;
 }CpuTimes;
 
+typedef struct {
+  char *name;
+  uint64_t bytes_sent;
+  uint64_t bytes_recv;
+  uint64_t packets_sent;
+  uint64_t packets_recv;
+  uint64_t errin;
+  uint64_t errout;
+  uint64_t dropin;
+  uint64_t dropout;
+} NetIOCounters;
+
+typedef struct {
+  uint32_t nitems;
+  NetIOCounters *iocounters;
+} NetIOCounterInfo;
+
 
 uint32_t get_boot_time(void);
 bool virtual_memory(VmemInfo *);
@@ -538,5 +555,5 @@ uint32_t cpu_count(bool);
 bool pid_exists(pid_t);
 uint32_t *pids(DWORD*);
 CpuStats *cpu_stats();
-
-
+NetIOCounterInfo *net_io_counters(bool);
+voi free_netiocounterinfo(NetIOCounterInfo*);

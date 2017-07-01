@@ -4,11 +4,16 @@
 #include <stdio.h>
 #include <winternl.h>
 #include <powrprof.h>
-
+#include<Winsock2.h>
+#include<ws2ipdef.h>
+#include<Iphlpapi.h>
+#if (_WIN32_WINNT >= 0x0600) // Windows Vista and above
+#include <ws2tcpip.h>
+#endif
 #include "pslib.h"
 #include "common.h"
 #include "pslib_windows.h"
-
+#pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "WTSAPI32.lib")
 
 
@@ -940,7 +945,241 @@ bool pid_exists(long pid)
     return false;
 }
 
+
+PIP_ADAPTER_ADDRESSES get_nic_addresses() {
+    // allocate a 15 KB buffer to start with
+    ULONG outBufLen = 15000;
+    DWORD dwRetVal = 0;
+    ULONG attempts = 0;
+    PIP_ADAPTER_ADDRESSES pAddresses = NULL;
+
+    do {
+        pAddresses = (IP_ADAPTER_ADDRESSES *) malloc(outBufLen);
+        if (pAddresses == NULL) {
+            //PyErr_NoMemory();
+            return NULL;
+        }
+
+        dwRetVal = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, pAddresses, &outBufLen);
+        if (dwRetVal == ERROR_BUFFER_OVERFLOW) {
+            free(pAddresses);
+            pAddresses = NULL;
+        }
+        else {
+            break;
+        }
+
+        attempts++;
+    } while ((dwRetVal == ERROR_BUFFER_OVERFLOW) && (attempts < 3));
+
+    if (dwRetVal != NO_ERROR) {
+        //PyErr_SetString(PyExc_RuntimeError, "GetAdaptersAddresses() syscall failed.");
+        return NULL;
+    }
+
+    return pAddresses;
+}
+
+
+NetIOCounterInfo *net_io_counters_per_nic() 
+{
+    DWORD dwRetVal = 0;
+
+#if (_WIN32_WINNT >= 0x0600) // Windows Vista and above
+    MIB_IF_ROW2 *pIfRow = NULL;
+#else // Windows XP
+    MIB_IFROW *pIfRow = NULL;
+#endif
+
+    PIP_ADAPTER_ADDRESSES pAddresses = NULL;
+    PIP_ADAPTER_ADDRESSES pCurrAddresses = NULL;
+    //PyObject *py_retdict = PyDict_New();
+    ///PyObject *py_nic_info = NULL;
+    //PyObject *py_nic_name = NULL;
+
+    //if (py_retdict == NULL)
+    //    return NULL;
+    pAddresses = get_nic_addresses();
+    if (pAddresses == NULL)
+        goto error;
+    pCurrAddresses = pAddresses;
+
+    
+    NetIOCounterInfo *ret = (NetIOCounterInfo*) calloc(1,sizeof(NetIOCounterInfo));
+    NetIOCounters *counters = (NetIOCounters*) calloc(15,sizeof(NetIOCounters));
+    NetIOCounters *nc = counters;
+    //check_mem(counters);
+    //check_mem(ret);
+    ret->nitems = 0;
+    ret->iocounters = counters;
+
+    while (pCurrAddresses) {
+      //py_nic_name = NULL;
+      //py_nic_info = NULL;
+
+#if (_WIN32_WINNT >= 0x0600) // Windows Vista and above
+      pIfRow = (MIB_IF_ROW2 *) malloc(sizeof(MIB_IF_ROW2));
+#else // Windows XP
+        pIfRow = (MIB_IFROW *) malloc(sizeof(MIB_IFROW));
+#endif
+	
+        if (pIfRow == NULL) {
+	  //PyErr_NoMemory();
+	  goto error;
+        }
+
+#if (_WIN32_WINNT >= 0x0600) // Windows Vista and above
+        SecureZeroMemory((PVOID)pIfRow, sizeof(MIB_IF_ROW2));
+        pIfRow->InterfaceIndex = pCurrAddresses->IfIndex;
+        dwRetVal = GetIfEntry2(pIfRow);
+#else // Windows XP
+        pIfRow->dwIndex = pCurrAddresses->IfIndex;
+        dwRetVal = GetIfEntry(pIfRow);
+#endif
+	
+        if (dwRetVal != NO_ERROR) {
+	  //PyErr_SetString(PyExc_RuntimeError,"GetIfEntry() or GetIfEntry2() syscalls failed.");
+	  goto error;
+        }
+	
+#if (_WIN32_WINNT >= 0x0600) // Windows Vista and above
+	
+	nc->bytes_sent = pIfRow->OutOctets;
+	nc->bytes_recv = pIfRow->InOctets;
+	nc->packets_sent = pIfRow->OutUcastPkts;
+	nc->packets_recv = pIfRow->InUcastPkts;
+	nc->errin = pIfRow->InErrors;
+	nc->errout = pIfRow->OutErrors;
+	nc->dropin = pIfRow->InDiscards;
+	nc->dropout = pIfRow->OutDiscards;
+
+	
+#else // Windows XP
+	nc->bytes_sent = pIfRow->dwOutOctets;
+	nc->bytes_recv = pIfRow->dwInOctets;
+	nc->packets_sent = pIfRow->dwOutUcastPkts;
+	nc->packets_recv = pIfRow->dwInUcastPkts;
+	nc->errin = pIfRow->dwInErrors;
+	nc->errout = pIfRow->dwOutErrors;
+	nc->dropin = pIfRow->dwInDiscards;
+	nc->dropout = pIfRow->dwOutDiscards;
+
+#endif
+
+	nc->name = (char *)calloc(wcslen(pCurrAddresses->FriendlyName) + 1, sizeof(char));
+	LPBOOL q = NULL;
+	int len;
+	len = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, pCurrAddresses->FriendlyName, wcslen(pCurrAddresses->FriendlyName), nc->name, wcslen(pCurrAddresses->FriendlyName), "", q);
+	pCurrAddresses->FriendlyName[len] = '\0';
+	if ( len == 0)
+	{
+		DWORD t;
+		t = GetLastError();
+		//check(t != ERROR_INSUFFICIENT_BUFFER, "Supplied buffer size was not large enough, or it was incorrectly set to NULL.");
+		//check(t != ERROR_INVALID_FLAGS, "The values supplied for flags were not valid.");
+		//check(t != ERROR_INVALID_PARAMETER, "Any of the parameter values was invalid");
+		//check(t != ERROR_NO_UNICODE_TRANSLATION, "Invalid Unicode was found in a string.");
+	}
+
+	ret->nitems++;
+	nc++;
+
+
+	
+        free(pIfRow);
+        pCurrAddresses = pCurrAddresses->Next;
+    }
+
+    free(pAddresses);
+    return ret;
+    
+error:
+    if (pAddresses != NULL)
+      free(pAddresses);
+    if (pIfRow != NULL)
+        free(pIfRow);
+    if(ret!=NULL)
+      free(ret);
+    return NULL;
+}
+void free_netiocounterinfo(NetIOCounterInfo *ret)
+{
+	int i;
+	NetIOCounters *c=ret->iocounters;
+	for(i=0;i<ret->nitems;++i)
+	{
+		free(c->name);
+		++c;
+	}
+	free(ret->iocounters);
+	free(ret);
+}
+
+NetIOCounterInfo *net_io_counters_summed(NetIOCounterInfo *info)
+{
+	NetIOCounterInfo *sum=(NetIOCounterInfo*) calloc(1,sizeof(NetIOCounterInfo));
+	NetIOCounters *r = (NetIOCounters*) calloc(1,sizeof(NetIOCounters));
+	check(sum);
+	check(r);
+	sum->iocounters=r;
+	sum->nitems=1;
+
+	int i;
+	
+	NetIOCounters *c=info->iocounters;
+	for(i=0;i<info->nitems;++i)
+	{
+		r->bytes_recv+=c->bytes_recv;
+		r->bytes_sent+=c->bytes_sent;
+		r->dropin+=c->dropin;
+		r->dropout+=c->dropout;
+		r->errout+=c->errout;
+		r->errin+=c->errin;
+		r->packets_recv+=c->packets_recv;
+		r->packets_sent+=c->packets_sent;
+		++c;
+	}
+	free_netiocounterinfo(info);
+	return sum;
+}
+NetIOCounterInfo *net_io_counters(bool per_nic)
+{
+	NetIOCounterInfo *ret = net_io_counters_per_nic();
+	if(per_nic)
+		return ret;
+	else
+		return net_io_counters_summed(ret);
+}
+
 /*
+void test_netiocounters()
+{
+  NetIOCounterInfo *c = net_io_counters(true);
+  NetIOCounters *r = c->iocounters;
+  
+  if(!c)
+  {
+  	printf("Aborting..\n");
+  	return;
+  }
+  int i=0;
+  printf("__________NET IO COUNTERS_________\n");
+  for(i=0;i<c->nitems;++i)
+    {
+ 		printf("%s:\n",r->name);
+    	printf("\tBytes Sent : %" PRIu64"\n",r->bytes_sent);
+	  	printf("\tBytes Received : %"PRIu64"\n",r->bytes_recv);
+	  	printf("\tPackets Sent : %"PRIu64"\n",r->packets_sent);
+	  	printf("\tPackets Received : %" PRIu64"\n",r->packets_recv);
+	  	printf("\tIn Errors : %" PRIu64"\n",r->errin);
+	  	printf("\tOut Errors : %" PRIu64"\n",r->errout);
+	  	printf("\tIn Discards : %" PRIu64"\n",r->dropin);
+	  	printf("\tOut Discards : %" PRIu64"\n",r->dropout);
+      	++r;
+    }
+    free_netiocounterinfo(c);
+  
+}
 void test_virtual_memory()
 {
 	VirtMemInfo virt;
@@ -1069,6 +1308,6 @@ void main()
 	test_cpu_stats();
 	test_pids();
 	test_pid_exists();
-
+	test_netiocounters();
 }
 */
