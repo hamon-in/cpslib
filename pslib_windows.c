@@ -3,6 +3,7 @@
 #include <wtsapi32.h>
 #include <stdio.h>
 #include <winternl.h>
+#include <powrprof.h>
 
 #include "pslib.h"
 #include "common.h"
@@ -30,7 +31,7 @@ DiskIOCounterInfo *disk_io_counters(void) {
 		hDevice = CreateFile(szDevice, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			NULL, OPEN_EXISTING, 0, NULL);
 
-		if (hDevice == INVALID_HANDLE_VALUE)
+		if (hDevice ==INVALID_HANDLE_VALUE)
 		{
 			continue;
 		}
@@ -444,3 +445,630 @@ error:
 		free(ret);
 	return NULL;
 }
+
+
+bool swap_memory(SwapMemInfo *ret)
+{
+	MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+
+    if (! GlobalMemoryStatusEx(&memInfo))
+        return false;
+            
+    ret->total = memInfo.ullTotalPageFile;
+    ret->free = memInfo.ullAvailPageFile;
+    ret->used = ret->total - ret->free;
+	ret->percent = (ret->used)*100.0/ret->total;
+	ret->sin=0;
+	ret->sout=0;
+	return true;	
+}
+
+bool virtual_memory(VirtMemInfo *ret)
+{
+	MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+
+    if (! GlobalMemoryStatusEx(&memInfo))
+        return false;
+            
+    ret->total = memInfo.ullTotalPhys;
+    ret->avail = memInfo.ullAvailPhys;
+    ret->used = ret->total - ret->avail;
+	ret->percent = (ret->used)*100.0/ret->total;
+	return true;
+}
+
+
+
+unsigned int cpu_count_logical() {
+    SYSTEM_INFO system_info;
+    system_info.dwNumberOfProcessors = 0;
+
+    GetSystemInfo(&system_info);
+    if (system_info.dwNumberOfProcessors == 0)
+        return 0;
+    else
+        return system_info.dwNumberOfProcessors;
+}
+
+unsigned int cpu_count_phys() {
+    LPFN_GLPI glpi;
+    DWORD rc;
+    PSYSTEM_LOGICAL_PROCESSOR_INFORMATION buffer = NULL;
+    PSYSTEM_LOGICAL_PROCESSOR_INFORMATION ptr = NULL;
+    DWORD length = 0;
+    DWORD offset = 0;
+    unsigned int ncpus = 0;
+
+    glpi = (LPFN_GLPI)GetProcAddress(GetModuleHandle(TEXT("kernel32")),
+                                     "GetLogicalProcessorInformation");
+    check(glpi,"");
+
+    while (1) {
+        rc = glpi(buffer, &length);
+        if (rc == FALSE) {
+            if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+                if (buffer)
+                    free(buffer);
+                buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)malloc(
+                    length);
+                check(buffer,"");
+            }
+            else {
+                goto error;
+            }
+        }
+        else {
+            break;
+        }
+    }
+
+    ptr = buffer;
+    while (offset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= length) {
+        if (ptr->Relationship == RelationProcessorCore)
+            ncpus += 1;
+        offset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+        ptr++;
+    }
+
+    free(buffer);
+    if (ncpus == 0)
+        goto error;
+    else
+        return ncpus;
+
+error:
+    
+    if (buffer != NULL)
+        free(buffer);
+    return 0;
+}
+
+unsigned int cpu_count(bool logical)
+{
+	if(logical)
+	return cpu_count_logical();
+	else
+	return cpu_count_phys();
+}
+uint32_t get_boot_time() {
+#if (_WIN32_WINNT >= 0x0600)  // Windows Vista
+    ULONGLONG uptime;
+#else
+    double uptime;
+
+#endif
+    time_t pt;
+    FILETIME fileTime;
+    long long ll;
+    HINSTANCE hKernel32;
+    psutil_GetTickCount64 = NULL;
+
+    GetSystemTimeAsFileTime(&fileTime);
+
+    ll = (((LONGLONG)(fileTime.dwHighDateTime)) << 32) 
+        + fileTime.dwLowDateTime;
+    pt = (time_t)((ll - 116444736000000000ull) / 10000000ull);
+
+    hKernel32 = GetModuleHandleW(L"KERNEL32");
+    psutil_GetTickCount64 = (void*)GetProcAddress(hKernel32, "GetTickCount64");
+    if (psutil_GetTickCount64 != NULL) {
+        // Windows >= Vista
+        uptime = psutil_GetTickCount64() / (ULONGLONG)1000.00f;
+    }
+    else {
+        // Windows XP.
+        uptime = GetTickCount() / 1000.00f;
+    }
+
+    return pt - uptime;
+}
+
+CpuTimes* per_cpu_times() {
+    // NtQuerySystemInformation stuff
+    typedef DWORD (_stdcall * NTQSI_PROC) (int, PVOID, ULONG, PULONG);
+    NTQSI_PROC NtQuerySystemInformation;
+    HINSTANCE hNtDll;
+
+    float idle, kernel, systemt, user, interrupt, dpc;
+    NTSTATUS status;
+    _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION *sppi = NULL;
+    SYSTEM_INFO si;
+    UINT i;
+    // obtain NtQuerySystemInformation
+    hNtDll = LoadLibrary(TEXT("ntdll.dll"));
+    check(hNtDll,"Error in loading library 'ntdll'");
+    NtQuerySystemInformation = (NTQSI_PROC)GetProcAddress(
+        hNtDll, "NtQuerySystemInformation");
+   
+    check(NtQuerySystemInformation, "Unable to fetch NtQuerySystemInformation");
+
+    // retrives number of processors
+    GetSystemInfo(&si);
+
+    // allocates an array of _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION
+    // structures, one per processor
+    sppi = (_SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION *) \
+           malloc(si.dwNumberOfProcessors * \
+                  sizeof(_SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION));
+    check(sppi,"Unable to allocate array of SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION");
+
+    // gets cpu time informations
+    status = NtQuerySystemInformation(
+        SystemProcessorPerformanceInformation,
+        sppi,
+        si.dwNumberOfProcessors * sizeof
+            (_SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION),
+        NULL);
+    check(status==0,"Unable to get CPU time");
+    
+	
+	CpuTimes *ret = (CpuTimes*)calloc(si.dwNumberOfProcessors,sizeof(CpuTimes));
+	CpuTimes *c=ret;
+	if(!ret)
+		goto error;
+    // computes system global times summing each
+    // processor value
+    idle = user = kernel = interrupt = dpc = 0;
+    for (i = 0; i < si.dwNumberOfProcessors; i++) {
+        user = (float)((HI_T * sppi[i].UserTime.HighPart) +
+                       (LO_T * sppi[i].UserTime.LowPart));
+        idle = (float)((HI_T * sppi[i].IdleTime.HighPart) +
+                       (LO_T * sppi[i].IdleTime.LowPart));
+        kernel = (float)((HI_T * sppi[i].KernelTime.HighPart) +
+                         (LO_T * sppi[i].KernelTime.LowPart));
+        interrupt = (float)((HI_T * sppi[i].InterruptTime.HighPart) +
+                            (LO_T * sppi[i].InterruptTime.LowPart));
+        dpc = (float)((HI_T * sppi[i].DpcTime.HighPart) +
+                      (LO_T * sppi[i].DpcTime.LowPart));
+
+        // kernel time includes idle time on windows
+        // we return only busy kernel time subtracting
+        // idle time from kernel time
+        systemt = kernel - idle;
+        
+        c->user=user;
+        c->system=systemt;
+        c->interrupt=interrupt;
+        c->idle=idle;
+        c->dpc=dpc;
+        ++c;
+    }
+
+    free(sppi);
+    FreeLibrary(hNtDll);
+    return ret;
+
+error:
+    if (sppi)
+        free(sppi);
+    if (hNtDll)
+        FreeLibrary(hNtDll);
+    return NULL;
+}
+CpuTimes *sum_per_cpu_times(CpuTimes *per_cpu)
+{
+	UINT i;
+	CpuTimes *ret = (CpuTimes*)calloc(1,sizeof(CpuTimes));
+	check_mem(ret);
+	float user,system,idle,dpc,interrupt;
+	idle = user = system = interrupt = dpc = 0;
+	CpuTimes *c = per_cpu;
+	for(i = 0; i < cpu_count(true); ++i)
+	{
+		user += c->user;
+		system += c->system;
+		idle += c->idle;
+		interrupt += c->interrupt;
+		dpc += c->dpc;
+		++c;
+	}
+	ret->user=user;
+	ret->system=system;
+	ret->idle=idle;
+	ret->interrupt=interrupt;
+	ret->dpc=dpc;
+	return ret;
+error:
+	return NULL;
+}
+CpuTimes *cpu_times_summed()
+ {
+    float idle, kernel, user, system;
+    FILETIME idle_time, kernel_time, user_time;
+
+    check(GetSystemTimes(&idle_time, &kernel_time, &user_time),"")
+
+    idle = (float)((HI_T * idle_time.dwHighDateTime) + \
+                   (LO_T * idle_time.dwLowDateTime));
+    user = (float)((HI_T * user_time.dwHighDateTime) + \
+                   (LO_T * user_time.dwLowDateTime));
+    kernel = (float)((HI_T * kernel_time.dwHighDateTime) + \
+                     (LO_T * kernel_time.dwLowDateTime));
+
+    // Kernel time includes idle time.
+    // We return only busy kernel time subtracting idle time from
+    // kernel time.
+    system = (kernel - idle);
+    CpuTimes *data = (CpuTimes*)calloc(1,sizeof(CpuTimes));
+    check_mem(data);
+    data->idle=idle;
+    data->system=system;
+    data->user=user;
+    
+    CpuTimes *percpu = per_cpu_times();
+    check_mem(percpu);
+    CpuTimes *percpu_summed = sum_per_cpu_times(percpu);
+    check_mem(percpu_summed);
+    free(percpu);
+	data->interrupt = percpu_summed->interrupt;
+    data->dpc= percpu_summed->dpc;
+    free(percpu_summed);
+    return data;
+error:
+	return NULL;
+}
+CpuTimes *cpu_times(bool percpu)
+{
+	CpuTimes *ret;
+	if(!percpu)
+	{
+		return  cpu_times_summed();
+	}
+	else
+		return  per_cpu_times();
+		
+
+}
+
+CpuStats *cpu_stats() {
+    // NtQuerySystemInformation stuff
+    typedef DWORD (_stdcall * NTQSI_PROC) (int, PVOID, ULONG, PULONG);
+    NTQSI_PROC NtQuerySystemInformation;
+    HINSTANCE hNtDll;
+
+    NTSTATUS status;
+    _SYSTEM_PERFORMANCE_INFORMATION *spi = NULL;
+    _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION *sppi = NULL;
+    _SYSTEM_INTERRUPT_INFORMATION *InterruptInformation = NULL;
+    SYSTEM_INFO si;
+    UINT i;
+    ULONG64 dpcs = 0;
+    ULONG interrupts = 0;
+
+    // obtain NtQuerySystemInformation
+    hNtDll = LoadLibrary(TEXT("ntdll.dll"));
+    check(hNtDll,"Unable to fetch library 'ntdll'");
+    
+    NtQuerySystemInformation = (NTQSI_PROC)GetProcAddress(
+        hNtDll, "NtQuerySystemInformation");
+  
+    check(NtQuerySystemInformation, "Unable to fetch NtQuerySystemInformation");
+
+    // retrives number of processors
+    GetSystemInfo(&si);
+
+    // get syscalls / ctx switches
+    spi = (_SYSTEM_PERFORMANCE_INFORMATION *) \
+           malloc(si.dwNumberOfProcessors * \
+                  sizeof(_SYSTEM_PERFORMANCE_INFORMATION));
+    check_mem(spi);
+    status = NtQuerySystemInformation(
+        SystemPerformanceInformation,
+        spi,
+        si.dwNumberOfProcessors * sizeof(_SYSTEM_PERFORMANCE_INFORMATION),
+        NULL);
+  
+    check(status==0,"");
+
+    // get DPCs
+    InterruptInformation = \
+        malloc(sizeof(_SYSTEM_INTERRUPT_INFORMATION) *
+               si.dwNumberOfProcessors);
+   
+    check_mem(InterruptInformation);
+    status = NtQuerySystemInformation(
+        SystemInterruptInformation,
+        InterruptInformation,
+        si.dwNumberOfProcessors * sizeof(SYSTEM_INTERRUPT_INFORMATION),
+        NULL);
+    check(status==0,"");
+    
+    for (i = 0; i < si.dwNumberOfProcessors; i++) {
+        dpcs += InterruptInformation[i].DpcCount;
+    }
+
+    // get interrupts
+    sppi = (_SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION *) \
+        malloc(si.dwNumberOfProcessors * \
+               sizeof(_SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION));
+    check_mem(sppi);
+
+    status = NtQuerySystemInformation(
+        SystemProcessorPerformanceInformation,
+        sppi,
+        si.dwNumberOfProcessors * sizeof
+            (_SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION),
+        NULL);
+    
+    check(status==0,"");
+
+    for (i = 0; i < si.dwNumberOfProcessors; i++) {
+        interrupts += sppi[i].InterruptCount;
+    }
+
+    // done
+    free(spi);
+    free(InterruptInformation);
+    free(sppi);
+    FreeLibrary(hNtDll);
+    
+    
+    CpuStats *ret = (CpuStats*)calloc(1,sizeof(CpuStats));
+    check_mem(ret);
+    ret->ctx_switches = spi->ContextSwitches;
+    ret->interrupts = interrupts;
+    ret->dpcs = (unsigned long)dpcs;
+    ret->soft_interrupts = 0;
+    ret->syscalls = spi->SystemCalls;
+    
+    return ret;
+
+
+error:
+    if (spi)
+        free(spi);
+    if (InterruptInformation)
+        free(InterruptInformation);
+    if (sppi)
+        free(sppi);
+    if (hNtDll)
+        FreeLibrary(hNtDll);
+    return NULL;
+}
+
+uint32_t *pids(DWORD *numberOfReturnedPIDs) {
+
+
+    DWORD *procArray = NULL;
+    DWORD procArrayByteSz;
+    int procArraySz = 0;
+
+    // Stores the byte size of the returned array from enumprocesses
+    DWORD enumReturnSz = 0;
+
+    do {
+        procArraySz += 1024;
+        free(procArray);
+        procArrayByteSz = procArraySz * sizeof(DWORD);
+        procArray = malloc(procArrayByteSz);
+        
+	check_mem(procArray);
+       
+	check(K32EnumProcesses(procArray, procArrayByteSz, &enumReturnSz),"Unable to enumerate processes");
+    } while (enumReturnSz == procArraySz * sizeof(DWORD));
+
+    // The number of elements is the returned size / size of each element
+    *numberOfReturnedPIDs = enumReturnSz / sizeof(DWORD);
+
+    check(procArray,"");
+	    
+    return procArray;
+ error:
+
+    if (procArray != NULL)
+      free(procArray);
+    return NULL;
+}
+
+int pid_is_running(DWORD pid) {
+    HANDLE hProcess;
+    DWORD exitCode;
+
+    // Special case for PID 0 System Idle Process
+    if (pid == 0)
+        return 1;
+    if (pid < 0)
+        return 0;
+
+    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,FALSE, pid);
+    if (NULL == hProcess) {
+        // invalid parameter is no such process
+        if (GetLastError() == ERROR_INVALID_PARAMETER) {
+            CloseHandle(hProcess);
+            return 0;
+        }
+
+        // access denied obviously means there's a process to deny access to...
+        if (GetLastError() == ERROR_ACCESS_DENIED) {
+            CloseHandle(hProcess);
+            return 1;
+        }
+
+        CloseHandle(hProcess);
+        //PyErr_SetFromWindowsErr(0);
+        return -1;
+    }
+
+    if (GetExitCodeProcess(hProcess, &exitCode)) {
+        CloseHandle(hProcess);
+        return (exitCode == STILL_ACTIVE);
+    }
+
+    // access denied means there's a process there so we'll assume
+    // it's running
+    if (GetLastError() == ERROR_ACCESS_DENIED) {
+        CloseHandle(hProcess);
+        return 1;
+    }
+
+    //PyErr_SetFromWindowsErr(0);
+    CloseHandle(hProcess);
+    return -1;
+}
+
+bool pid_exists(long pid) 
+{
+    int status;
+
+    status = pid_is_running(pid);
+    
+    check(status!=-1,"Exception raised in pid_is_running");
+     return status;
+ error:
+    return false;
+}
+
+/*
+void test_virtual_memory()
+{
+	VirtMemInfo virt;
+	if(!virtual_memory(&virt))
+	{
+		printf("Aborting\n");
+		return;
+	}
+	printf("_______Virtual Memory_______\n");
+	printf("Total=%lld, Used=%lld, Free=%lld, Percent=%f\n\n",virt.total,virt.used, virt.avail,virt.percent);
+}
+void test_swap_memory()
+{
+	SwapMemInfo swap;
+	if(!swap_memory(&swap))
+	{
+		printf("Aborting\n");
+		return;
+	}
+	printf("________Swap Memory________\n");
+	printf("Total=%llu, Used=%llu, Free=%llu, Percent=%f, sin=%llu, sout=%llu\n\n",swap.total,swap.used, swap.free,swap.percent,swap.sin,swap.sout);
+	
+	
+}
+void test_pids()
+{
+	DWORD numberOfPIDs;
+	DWORD *pid = pids(&numberOfPIDs);
+	DWORD *c=pid;
+	DWORD i;
+	if(!pid)
+	{
+		printf("Aborting...\n");
+		return;
+	}
+	printf("__________PIDs_________\n");
+	for(i=0;i<numberOfPIDs;++i)
+	{
+		printf("%d, ",*c);
+		++c;
+	}
+	printf("\n\n");
+	free(pid);
+}
+void test_cpu_stats()
+{
+	CpuStats *tmp= cpu_stats();
+	if(!tmp)
+	{
+		printf("Aborting...\n");
+		return;
+	}
+	printf("_________Cpu Stats_________\n");
+	printf("Context Switches = %lu \n", tmp->ctx_switches);
+	printf("Interrupts = %lu \n", tmp->interrupts);
+	printf("Soft Interrupts = %lu \n", tmp->soft_interrupts);
+	printf("System Calls = %lu \n", tmp->syscalls);
+	printf("Dpcs = %lu \n\n", tmp->dpcs);
+	free(tmp);
+}
+void test_cputimes()
+{
+	CpuTimes * data = cpu_times(false);
+	if(!data)
+	{
+		printf("Aborting..\n");
+		return;
+	}
+	printf("_________CPU Times_________\n");
+	printf("User=%f, Idle=%f, System=%f, Interrupt=%f, Dpc=%f\n\n",data->user,data->idle,data->system,data->interrupt,data->dpc);
+	free(data);
+}
+void test_percputimes()
+{
+	CpuTimes * r = cpu_times(true);
+	if(!r)
+	{
+		printf("Aborting..\n");
+		return;
+	}
+	printf("_______CPU Times_Per CPU_______\n");
+	CpuTimes * c=r;
+	UINT i;
+	for(i=0;i<cpu_count(true);++i)
+	{
+		printf("User=%f, Idle=%f, System=%f, Interrupt=%f, Dpc=%f\n",c->user,c->idle,c->system,c->interrupt,c->dpc);
+		++c;		
+	}
+	printf("\n");
+	free(r);
+}
+void test_boottime()
+{
+	uint32_t time = get_boot_time();
+	printf("_________Boot Time_________\n");
+	printf("%"PRIu32"\n\n", time);
+}
+void test_pid_exists()
+{
+	long pid=0;int i =0;
+	printf("_________PID Exists_________\n");
+	
+	for (pid=rand()%22000,i=0;i<20;++i,pid=rand()%22000)
+	{
+		int x =0;
+		x = pid_exists(pid);
+		printf("%ld - %s \n",pid,x?"true":"false");
+		
+	}
+}
+
+void test_cpucount()
+{
+	printf("_________CPU Count_________\n");
+	printf("Number of Logical Processors: %d\n",cpu_count(true));
+	printf("Number of Physical Processors: %d\n\n",cpu_count(false));
+}
+void main()
+{
+	test_virtual_memory();
+	test_swap_memory();
+	test_cpucount();
+	test_cputimes();
+	test_percputimes();
+	test_boottime();
+	test_cpu_stats();
+	test_pids();
+	test_pid_exists();
+
+}
+*/

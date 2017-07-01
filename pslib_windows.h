@@ -2,9 +2,10 @@
 
 #include <windows.h>
 #include <powrprof.h>
+
 #define LO_T ((double)1e-7)
 #define HI_T (LO_T*4294967296.0)
-
+static ULONGLONG (*psutil_GetTickCount64)(void) = NULL;
 #define ERROR_NOSUCHPROCESS 0x8000001
 
 typedef BOOL(WINAPI *LPFN_GLPI)
@@ -246,20 +247,103 @@ typedef struct {
 	ULONG FirstLevelTbFills;
 	ULONG SecondLevelTbFills;
 	ULONG SystemCalls;
-
+  
 } _SYSTEM_PERFORMANCE_INFORMATION;
 
-
 typedef struct {
-	LARGE_INTEGER IdleTime;
-	LARGE_INTEGER KernelTime;
-	LARGE_INTEGER UserTime;
-	LARGE_INTEGER DpcTime;
-	LARGE_INTEGER InterruptTime;
-	ULONG InterruptCount;
+    LARGE_INTEGER IdleTime;
+    LARGE_INTEGER KernelTime;
+    LARGE_INTEGER UserTime;
+    LARGE_INTEGER DpcTime;
+    LARGE_INTEGER InterruptTime;
+    ULONG InterruptCount;
 } _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION;
 
 
+typedef struct {
+    LARGE_INTEGER IdleProcessTime;
+    LARGE_INTEGER IoReadTransferCount;
+    LARGE_INTEGER IoWriteTransferCount;
+    LARGE_INTEGER IoOtherTransferCount;
+    ULONG IoReadOperationCount;
+    ULONG IoWriteOperationCount;
+    ULONG IoOtherOperationCount;
+    ULONG AvailablePages;
+    ULONG CommittedPages;
+    ULONG CommitLimit;
+    ULONG PeakCommitment;
+    ULONG PageFaultCount;
+    ULONG CopyOnWriteCount;
+    ULONG TransitionCount;
+    ULONG CacheTransitionCount;
+    ULONG DemandZeroCount;
+    ULONG PageReadCount;
+    ULONG PageReadIoCount;
+    ULONG CacheReadCount;
+    ULONG CacheIoCount;
+    ULONG DirtyPagesWriteCount;
+    ULONG DirtyWriteIoCount;
+    ULONG MappedPagesWriteCount;
+    ULONG MappedWriteIoCount;
+    ULONG PagedPoolPages;
+    ULONG NonPagedPoolPages;
+    ULONG PagedPoolAllocs;
+    ULONG PagedPoolFrees;
+    ULONG NonPagedPoolAllocs;
+    ULONG NonPagedPoolFrees;
+    ULONG FreeSystemPtes;
+    ULONG ResidentSystemCodePage;
+    ULONG TotalSystemDriverPages;
+    ULONG TotalSystemCodePages;
+    ULONG NonPagedPoolLookasideHits;
+    ULONG PagedPoolLookasideHits;
+    ULONG AvailablePagedPoolPages;
+    ULONG ResidentSystemCachePage;
+    ULONG ResidentPagedPoolPage;
+    ULONG ResidentSystemDriverPage;
+    ULONG CcFastReadNoWait;
+    ULONG CcFastReadWait;
+    ULONG CcFastReadResourceMiss;
+    ULONG CcFastReadNotPossible;
+    ULONG CcFastMdlReadNoWait;
+    ULONG CcFastMdlReadWait;
+    ULONG CcFastMdlReadResourceMiss;
+    ULONG CcFastMdlReadNotPossible;
+    ULONG CcMapDataNoWait;
+    ULONG CcMapDataWait;
+    ULONG CcMapDataNoWaitMiss;
+    ULONG CcMapDataWaitMiss;
+    ULONG CcPinMappedDataCount;
+    ULONG CcPinReadNoWait;
+    ULONG CcPinReadWait;
+    ULONG CcPinReadNoWaitMiss;
+    ULONG CcPinReadWaitMiss;
+    ULONG CcCopyReadNoWait;
+    ULONG CcCopyReadWait;
+    ULONG CcCopyReadNoWaitMiss;
+    ULONG CcCopyReadWaitMiss;
+    ULONG CcMdlReadNoWait;
+    ULONG CcMdlReadWait;
+    ULONG CcMdlReadNoWaitMiss;
+    ULONG CcMdlReadWaitMiss;
+    ULONG CcReadAheadIos;
+    ULONG CcLazyWriteIos;
+    ULONG CcLazyWritePages;
+    ULONG CcDataFlushes;
+    ULONG CcDataPages;
+    ULONG ContextSwitches;
+    ULONG FirstLevelTbFills;
+    ULONG SecondLevelTbFills;
+    ULONG SystemCalls;
+    ULONG ContextSwitches;
+    ULONG DpcCount;
+    ULONG DpcRate;
+    ULONG TimeIncrement;
+    ULONG DpcBypassCount;
+    ULONG ApcBypassCount;
+} _SYSTEM_INTERRUPT_INFORMATION;
+
+	/*
 typedef struct {
 	ULONG ContextSwitches;
 	ULONG DpcCount;
@@ -269,6 +353,8 @@ typedef struct {
 	ULONG ApcBypassCount;
 } _SYSTEM_INTERRUPT_INFORMATION;
 
+
+	*/
 typedef struct {
 	pid_t *pid;
 	pid_t *ppid;
@@ -399,11 +485,58 @@ typedef struct _SYSTEM_PROCESS_INFORMATION2 {
 const int STATUS_INFO_LENGTH_MISMATCH = 0xC0000004;
 const int STATUS_BUFFER_TOO_SMALL = 0xC0000023L;
 
+
 typedef struct
 {
-	double user;
-	double system;
-	double idle;
-	double interrupt;
-	double dpc;
+	unsigned long ctx_switches; 
+	unsigned long interrupts;
+	unsigned long soft_interrupts;
+	unsigned long syscalls;
+	unsigned long dpcs;
+}CpuStats;
+
+typedef struct
+{
+	unsigned long min;
+	unsigned long max;
+	unsigned long current;
+	
+}CpuFreq;
+
+typedef struct
+{
+	long long total;
+	long long avail;
+	long long used;
+	float percent;
+}VirtMemInfo;
+
+typedef struct {
+  uint64_t total;
+  uint64_t used;
+  uint64_t free;
+  float percent;
+  uint64_t sin;
+  uint64_t sout;
+} SwapMemInfo;
+
+typedef struct
+{
+	float user;
+	float system;
+	float idle;
+	float interrupt;
+	float dpc;
 }CpuTimes;
+
+
+uint32_t get_boot_time(void);
+bool virtual_memory(VmemInfo *);
+bool swap_memory(SwapMemInfo *);
+CpuTimes *cpu_times(bool);
+uint32_t cpu_count(bool);
+bool pid_exists(pid_t);
+uint32_t *pids(DWORD*);
+CpuStats *cpu_stats();
+
+
