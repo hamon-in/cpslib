@@ -3,6 +3,14 @@
 #include <windows.h>
 #include <powrprof.h>
 
+
+typedef struct
+{
+	unsigned long min;
+	unsigned long max;
+	unsigned long current;
+}CpuFreq;
+
 #define LO_T ((double)1e-7)
 #define HI_T (LO_T*4294967296.0)
 static ULONGLONG (*psutil_GetTickCount64)(void) = NULL;
@@ -259,7 +267,7 @@ typedef struct {
     ULONG InterruptCount;
 } _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION;
 
-
+/*
 typedef struct {
     LARGE_INTEGER IdleProcessTime;
     LARGE_INTEGER IoReadTransferCount;
@@ -342,8 +350,8 @@ typedef struct {
     ULONG DpcBypassCount;
     ULONG ApcBypassCount;
 } _SYSTEM_INTERRUPT_INFORMATION;
+*/
 
-	/*
 typedef struct {
 	ULONG ContextSwitches;
 	ULONG DpcCount;
@@ -353,8 +361,6 @@ typedef struct {
 	ULONG ApcBypassCount;
 } _SYSTEM_INTERRUPT_INFORMATION;
 
-
-	*/
 typedef struct {
 	pid_t *pid;
 	pid_t *ppid;
@@ -486,74 +492,4 @@ const int STATUS_INFO_LENGTH_MISMATCH = 0xC0000004;
 const int STATUS_BUFFER_TOO_SMALL = 0xC0000023L;
 
 
-typedef struct
-{
-	unsigned long ctx_switches; 
-	unsigned long interrupts;
-	unsigned long soft_interrupts;
-	unsigned long syscalls;
-	unsigned long dpcs;
-}CpuStats;
 
-typedef struct
-{
-	unsigned long min;
-	unsigned long max;
-	unsigned long current;
-	
-}CpuFreq;
-
-typedef struct
-{
-	long long total;
-	long long avail;
-	long long used;
-	float percent;
-}VirtMemInfo;
-
-typedef struct {
-  uint64_t total;
-  uint64_t used;
-  uint64_t free;
-  float percent;
-  uint64_t sin;
-  uint64_t sout;
-} SwapMemInfo;
-
-typedef struct
-{
-	float user;
-	float system;
-	float idle;
-	float interrupt;
-	float dpc;
-}CpuTimes;
-
-typedef struct {
-  char *name;
-  uint64_t bytes_sent;
-  uint64_t bytes_recv;
-  uint64_t packets_sent;
-  uint64_t packets_recv;
-  uint64_t errin;
-  uint64_t errout;
-  uint64_t dropin;
-  uint64_t dropout;
-} NetIOCounters;
-
-typedef struct {
-  uint32_t nitems;
-  NetIOCounters *iocounters;
-} NetIOCounterInfo;
-
-
-uint32_t get_boot_time(void);
-bool virtual_memory(VmemInfo *);
-bool swap_memory(SwapMemInfo *);
-CpuTimes *cpu_times(bool);
-uint32_t cpu_count(bool);
-bool pid_exists(pid_t);
-uint32_t *pids(DWORD*);
-CpuStats *cpu_stats();
-NetIOCounterInfo *net_io_counters(bool);
-voi free_netiocounterinfo(NetIOCounterInfo*);

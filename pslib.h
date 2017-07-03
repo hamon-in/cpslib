@@ -1,12 +1,12 @@
 #pragma once
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
-#ifndef pid_t
-#define pid_t int
+#ifdef _WIN32
+    #define pid_t uint32_t
 #endif
-
 enum proc_status {
   STATUS_RUNNING,
   STATUS_SLEEPING,
@@ -19,7 +19,8 @@ enum proc_status {
   STATUS_WAKING,
   STATUS_IDLE,
   STATUS_LOCKED,
-  STATUS_WAITING
+  STATUS_WAITING,
+  STATUS_SUSPENDED
 };
 
 enum ioprio_class {
@@ -66,16 +67,17 @@ enum con_status {
   IDLE,
   BOUND
 };
-/*
+
 enum proc_priority {
-  ABOVE_NORMAL_PRIORITY_CLASS,
-  BELOW_NORMAL_PRIORITY_CLASS,
-  HIGH_PRIORITY_CLASS,
-  IDLE_PRIORITY_CLASS,
-  NORMAL_PRIORITY_CLASS,
-  REALTIME_PRIORITY_CLASS
+	ABOVE_NORMAL_PRIORITY = ABOVE_NORMAL_PRIORITY_CLASS,
+	BELOW_NORMAL_PRIORITY = BELOW_NORMAL_PRIORITY_CLASS,
+	HIGH_PRIORITY = HIGH_PRIORITY_CLASS,
+	IDLE_PRIORITY = IDLE_PRIORITY_CLASS,
+	NORMAL_PRIORITY = NORMAL_PRIORITY_CLASS,
+	REALTIME_PRIORITY = REALTIME_PRIORITY_CLASS,
+	PRIORITY_ERROR
 };
-*/
+
 typedef struct {
   uint64_t total;
   uint64_t used;
@@ -161,21 +163,35 @@ typedef struct {
   uint64_t sout;
 } SwapMemInfo;
 
-#if _WIN32
+typedef struct
+{
+	double user;
+	double system;
+	double idle;
+#ifdef _WIN32
+	double interrupt;
+	double dpc;
 #else
-typedef struct {
-  double user;
-  double system;
-  double idle;
-  double nice;
-  double iowait;
-  double irq;
-  double softirq;
-  double steal;
-  double guest;
-  double guest_nice;
-} CpuTimes;
+	double nice;
+	double iowait;
+	double irq;
+	double softirq;
+	double steal;
+	double guest;
+	double guest_nice;
 #endif
+}CpuTimes;
+
+typedef struct {
+	uint32_t ctx_switches;
+	uint32_t interrupts;
+	uint32_t soft_interrupts;
+	uint32_t syscalls;
+#ifdef _WIN32
+	uint32_t dpcs;
+#endif
+} cpustats;
+
 typedef struct {
   pid_t pid;
   pid_t ppid;
@@ -183,14 +199,22 @@ typedef struct {
   char *exe;
   char *cmdline;
   double create_time;
-  uint32_t uid;
+#ifdef _WIN32
+  uint32_t num_handles; // num handles only available in windows
+  enum con_status status;/* TODO : Implement others in this block in linux*/
+  enum proc_priority nice;
+  uint32_t num_ctx_switches; 
+  uint32_t num_threads;
+#else
+  uint32_t uid; // this block is not available on windows
   uint32_t euid;
   uint32_t suid;
   uint32_t gid;
   uint32_t egid;
   uint32_t sgid;
-  char *username;
   char *terminal;
+#endif 
+  char *username;
 } Process;
 
 bool disk_usage(const char[], DiskUsage *);
@@ -201,32 +225,38 @@ void free_disk_partition_info(DiskPartitionInfo *);
 DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
-//NetIOCounterInfo *net_io_counters(void);
-//void free_net_iocounter_info(NetIOCounterInfo *);
+NetIOCounterInfo *net_io_counters(void); 
+NetIOCounterInfo *net_io_counters_per_nic(void);
+void free_net_iocounter_info(NetIOCounterInfo *);
 
 UsersInfo *get_users(void);
 void free_users_info(UsersInfo *);
 
-//uint32_t get_boot_time(void);
+uint32_t get_boot_time(void);
 
-//bool virtual_memory(VmemInfo *);
-//bool swap_memory(SwapMemInfo *);
+bool virtual_memory(VmemInfo *);
+bool swap_memory(SwapMemInfo *);
 
-//CpuTimes *cpu_times(bool);
+CpuTimes *cpu_times(bool);
 
-//CpuTimes *cpu_times_percent(bool, CpuTimes *);
+CpuTimes *cpu_times_percent(bool, CpuTimes *);
 
 //double *cpu_util_percent(bool percpu, CpuTimes *prev_times);
+cpustats *cpu_stats();
+uint32_t cpu_count(bool);
 
-//uint32_t cpu_count(bool);
+bool pid_exists(pid_t);
+uint32_t *pids(uint32_t *);
 
-//bool pid_exists(pid_t);
+Process *get_process(pid_t);
+void free_process(Process *);
 
-//Process *get_process(pid_t);
-//void free_process(Process *);
+enum proc_status status(pid_t pid); //faster function for finding status of a process (in Windows)
 
 /* Required to avoid [-Wimplicit-function-declaration] for python bindings */
 void gcov_flush(void);
 
-// disk_io_counters_per_disk
-// net_io_counters_per_nic
+
+
+
+
