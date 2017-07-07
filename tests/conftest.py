@@ -72,9 +72,19 @@ def compare_cpu_times(almost_equal):
                     almost_equal(t1.system, t2.system),
                     almost_equal(t1.idle, t2.idle),
                     almost_equal(t1.nice, t2.nice)])
-
+					
+    def compare_win32(t1, t2):
+	return all([almost_equal(t1.user, t2.user),
+                    almost_equal(t1.system, t2.system),
+                    almost_equal(t1.idle, t2.idle),
+                    almost_equal(t1.interrupt, t2.interrupt),
+                    almost_equal(t1.dpc, t2.dpc)])
+					
+    if sys.platform == 'win32':
+	return compare_win32
     if sys.platform == 'darwin':
         return compare_darwin
+
     # TODO: add more cases as more platforms get implemented
     # See https://github.com/nibrahim/cpslib/issues/9 as well.
 
