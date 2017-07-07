@@ -16,7 +16,7 @@ def test_get_users(flush):
         found = False
         for part in psutil_users:
             if all([part.name == username,
-                    part.terminal == tty,
+                    part.terminal == tty or (part.terminal == None and tty == ''),# special case for behavior on windows
                     part.host == hostname or (part.host is None and hostname == ''), # special case for behavior on osx
                     part.started == tstamp]):
                 found = True
