@@ -25,7 +25,7 @@
 #pragma comment(lib, "WTSAPI32.lib")
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "Shell32.lib")
-
+#pragma comment(lib, "PSAPI.lib")
 // Link with Iphlpapi.lib
 #pragma comment(lib, "IPHLPAPI.lib")
 
@@ -365,8 +365,10 @@ UsersInfo *get_users() {
 		tmp = ConvertWcharToChar(buffer_user);
 		check(tmp, "Error in converting wchar");
 		users_info_ptr->users[users_info_ptr->nitems].username = tmp;
-		users_info_ptr->users[users_info_ptr->nitems].tstamp = (float)unix_time;
-		users_info_ptr->users[users_info_ptr->nitems].tty = NULL;
+		users_info_ptr->users[users_info_ptr->nitems].tstamp = (double)unix_time;
+		users_info_ptr->users[users_info_ptr->nitems].tty = (char *)calloc(1, sizeof(char));
+		check_mem(users_info_ptr->users[users_info_ptr->nitems].tty);
+		users_info_ptr->users[users_info_ptr->nitems].tty[0] = '\0';
 		users_info_ptr->nitems++;
 	}
 
@@ -452,6 +454,7 @@ bool virtual_memory(VmemInfo *ret)
     ret->available = memInfo.ullAvailPhys;
     ret->used = ret->total - ret->available;
 	ret->percent = (ret->used)*100.0/ret->total;
+	ret->free = ret->available;
 	return true;
 }
 
@@ -565,7 +568,8 @@ CpuTimes* per_cpu_times() {
     typedef DWORD (_stdcall * NTQSI_PROC) (int, PVOID, ULONG, PULONG);
     NTQSI_PROC NtQuerySystemInformation;
     HINSTANCE hNtDll;
-
+	CpuTimes *ret = NULL;
+	CpuTimes *c = NULL;
     float idle, kernel, systemt, user, interrupt, dpc;
     NTSTATUS status;
     _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION *sppi = NULL;
@@ -599,8 +603,8 @@ CpuTimes* per_cpu_times() {
     check(status==0,"Unable to get CPU time");
     
 	
-	CpuTimes *ret = (CpuTimes*)calloc(si.dwNumberOfProcessors,sizeof(CpuTimes));
-	CpuTimes *c=ret;
+	ret = (CpuTimes*)calloc(si.dwNumberOfProcessors,sizeof(CpuTimes));
+	c = ret;
 	if(!ret)
 		goto error;
     // computes system global times summing each
@@ -644,12 +648,13 @@ error:
 }
 CpuTimes *sum_per_cpu_times(CpuTimes *per_cpu)
 {
-	UINT i;
-	CpuTimes *ret = (CpuTimes*)calloc(1,sizeof(CpuTimes));
+	unsigned int i;
+	CpuTimes *ret = NULL, *c = NULL;
+	double user,system,idle,dpc,interrupt;
+	ret = (CpuTimes*)calloc(1,sizeof(CpuTimes));
 	check_mem(ret);
-	float user,system,idle,dpc,interrupt;
 	idle = user = system = interrupt = dpc = 0;
-	CpuTimes *c = per_cpu;
+	c = per_cpu;
 	for(i = 0; i < cpu_count(true); ++i)
 	{
 		user += c->user;
@@ -672,9 +677,8 @@ CpuTimes *cpu_times_summed()
  {
     float idle, kernel, user, system;
     FILETIME idle_time, kernel_time, user_time;
-
+	CpuTimes *data = NULL, *percpu = NULL, *percpu_summed = NULL;
 	check(GetSystemTimes(&idle_time, &kernel_time, &user_time), "failed to get System times");
-
     idle = (float)((HI_T * idle_time.dwHighDateTime) + \
                    (LO_T * idle_time.dwLowDateTime));
     user = (float)((HI_T * user_time.dwHighDateTime) + \
@@ -686,7 +690,6 @@ CpuTimes *cpu_times_summed()
     // We return only busy kernel time subtracting idle time from
     // kernel time.
     system = (kernel - idle);
-	CpuTimes *data = NULL, *percpu = NULL, *percpu_summed = NULL;;
     data = (CpuTimes*)calloc(1,sizeof(CpuTimes));
     check_mem(data);
     data->idle=idle;
@@ -727,7 +730,7 @@ cpustats *cpu_stats() {
     typedef DWORD (_stdcall * NTQSI_PROC) (int, PVOID, ULONG, PULONG);
     NTQSI_PROC NtQuerySystemInformation;
     HINSTANCE hNtDll;
-
+	cpustats *ret = NULL;
     NTSTATUS status;
     _SYSTEM_PERFORMANCE_INFORMATION *spi = NULL;
     _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION *sppi = NULL;
@@ -803,7 +806,7 @@ cpustats *cpu_stats() {
     FreeLibrary(hNtDll);
     
     
-    cpustats *ret = (cpustats*)calloc(1,sizeof(cpustats));
+    ret =  (cpustats*)calloc(1,sizeof(cpustats));
     check_mem(ret);
     ret->ctx_switches = spi->ContextSwitches;
     ret->interrupts = interrupts;
@@ -990,8 +993,10 @@ error:
 
 NetIOCounterInfo *net_io_counters_per_nic() 
 {
+	int len;
     DWORD dwRetVal = 0;
-
+	NetIOCounterInfo *ret = NULL;
+	NetIOCounters *counters = NULL, *nc = NULL;
 #if (_WIN32_WINNT >= 0x0600) // Windows Vista and above
     MIB_IF_ROW2 *pIfRow = NULL;
 #else // Windows XP
@@ -1004,8 +1009,6 @@ NetIOCounterInfo *net_io_counters_per_nic()
     if (pAddresses == NULL)
         goto error;
     pCurrAddresses = pAddresses;
-	NetIOCounterInfo *ret = NULL;
-	NetIOCounters *counters = NULL, *nc = NULL;
     ret = (NetIOCounterInfo*) calloc(1,sizeof(NetIOCounterInfo));
 	check_mem(ret);
     counters = (NetIOCounters*) calloc(15,sizeof(NetIOCounters));
@@ -1060,7 +1063,7 @@ NetIOCounterInfo *net_io_counters_per_nic()
 #endif
 
 	nc->name = (char *)calloc(wcslen(pCurrAddresses->FriendlyName) + 1, sizeof(char));
-	int len = wcslen(pCurrAddresses->FriendlyName);
+	len = wcslen(pCurrAddresses->FriendlyName);
 	pCurrAddresses->FriendlyName[len] = '\0';
 	nc->name = ConvertWcharToChar(pCurrAddresses->FriendlyName);
 	ret->nitems++;
@@ -1096,14 +1099,17 @@ void free_net_iocounter_info(NetIOCounterInfo *ret)
 
 NetIOCounterInfo *net_io_counters_summed(NetIOCounterInfo *info)
 {
-	NetIOCounterInfo *sum=(NetIOCounterInfo*) calloc(1,sizeof(NetIOCounterInfo));
+	NetIOCounterInfo *sum = NULL;
+	NetIOCounters *r = NULL,*c =NULL;
+	int i;
+	sum =(NetIOCounterInfo*) calloc(1,sizeof(NetIOCounterInfo));
 	check_mem(sum);
-	NetIOCounters *r = (NetIOCounters*) calloc(1,sizeof(NetIOCounters));
+	r = (NetIOCounters*) calloc(1,sizeof(NetIOCounters));
 	check_mem(r);
 	sum->iocounters = r;
 	sum->nitems = 1;
-	int i;
-	NetIOCounters *c=info->iocounters;
+
+	c =info->iocounters;
 	for(i=0;i<info->nitems;++i)
 	{
 		r->bytes_recv+=c->bytes_recv;
@@ -1127,8 +1133,7 @@ error:
 }
 NetIOCounterInfo *net_io_counters()
 {
-	NetIOCounterInfo *ret = net_io_counters_per_nic();
-	return net_io_counters_summed(ret);
+	return net_io_counters_per_nic();
 }
 
 pid_parent_map *ppid_map() {
@@ -1303,13 +1308,14 @@ int is_phandle_running(HANDLE hProcess, DWORD pid) {
 HANDLE handle_from_pid_waccess(DWORD pid, DWORD dwDesiredAccess) {
 	HANDLE hProcess;
 	LPTSTR err = NULL;
+	int ret;
 	if (pid == 0) // otherwise we'd get NoSuchProcess
 	{	
 		SetLastError(ERROR_ACCESS_DENIED);
 		return NULL;
 	}
 	hProcess = OpenProcess(dwDesiredAccess, FALSE, pid);
-	int ret = is_phandle_running(hProcess, pid);
+	ret = is_phandle_running(hProcess, pid);
 	if (ret == 1)
 		return hProcess;
 	else if(ret == 0)
@@ -1520,13 +1526,12 @@ char * Username(pid_t pid)
 	ULONG domainNameSize;
 	SID_NAME_USE nameUse;
 	LPTSTR err = NULL;
+	char *ret = NULL;
 	// resolve the SID to a name
 	nameSize = 0x100;
 	domainNameSize = 0x100;
 	// Get the user SID.
 	bufferSize = 0x100; 
-
-	char *ret = NULL;
 	ret = (char *)calloc(50, sizeof(char));
 	if (pid == 0 || pid == 4)
 		strcpy(ret, "NT AUTHORITY\\SYSTEM");

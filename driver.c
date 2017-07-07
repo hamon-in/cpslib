@@ -1,4 +1,4 @@
-#include <inttypes.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,21 +12,19 @@
 
 void test_diskusage() {
   	DiskUsage du;
-  	printf(" -- disk_usage \n");
 #ifdef _WIN32
-    char *disk1 = "C:/";
+    char *disk2 = "D:/";
+	char *disk1 = "C:/";
 #else
-    char *disk1 = "/";
+    char *disk2 = "/etc";
+	char *disk1 = "/";
 #endif
+
+	printf(" -- disk_usage \n");
     disk_usage(disk1, &du);
     printf("%s\ntotal: %" PRIu64 "\nused: %" PRIu64 "\nfree: %" PRIu64
          "\npercent: %.1f\n\n", disk1,
          du.total, du.used, du.free, du.percent);
-#ifdef _WIN32
-    char *disk2 = "D:/";
-#else
-    char *disk2 = "/etc";
-#endif
     disk_usage(disk2, &du);
     printf("%s\ntotal: %" PRIu64 "\nused: %" PRIu64 "\nfree: %" PRIu64
          "\npercent: %.1f\n\n", disk2,
@@ -73,6 +71,7 @@ void test_diskpartitioninfo() {
 void test_diskiocounters() {
   DiskIOCounterInfo *d;
   DiskIOCounters *dp;
+  uint32_t i;
   d = disk_io_counters();
   if (!d) {
     printf("Aborting");
@@ -81,7 +80,6 @@ void test_diskiocounters() {
 
   printf(" -- disk_io_counters \n");
   dp = d->iocounters;
-  uint32_t i;
   for (i = 0; i < d->nitems; i++) {
     printf("%s: \tread_count=%" PRIu64 ", write_count=%" PRIu64 ", \n"
            "\tread_bytes=%" PRIu64 ", write_bytes=%" PRIu64 ", \n"
@@ -98,7 +96,7 @@ void test_netiocounters() {
   NetIOCounterInfo *n;
   NetIOCounters *dp;
   uint32_t i;
-  n = net_io_counters_per_nic();
+  n = net_io_counters();
   dp = n->iocounters;
   printf(" -- net_io_counters_per_nic (interface count: %" PRIu32 ")\n", n->nitems);
   for (i = 0; i < n->nitems; i++) {
@@ -113,6 +111,7 @@ void test_netiocounters() {
   free_net_iocounter_info(n);
   printf("\n");
   n = net_io_counters();
+  n = net_io_counters_summed(n);
   dp = n->iocounters;
   printf(" -- net_io_counters (summed)\n");
   printf("bytes_sent=%" PRIu64 " bytes_rec=%" PRIu64
@@ -137,7 +136,7 @@ void test_getusers() {
   printf("Total: %" PRIu32 "\n", r->nitems);
   printf("Name\tTerminal Host\tStarted\n");
   for (i = 0; i < r->nitems; i++) {
-    printf("%s\t%s\t %s\t%.1f\n", r->users[i].username, r->users[i].tty,
+    printf("%s\t%s\t %s\t%f\n", r->users[i].username, r->users[i].tty,
            r->users[i].hostname, r->users[i].tstamp);
   }
   free_users_info(r);
@@ -228,6 +227,7 @@ void test_cpu_times() {
 
 void test_cpu_times_percpu() {
   CpuTimes *r, *c;
+  uint32_t i;
   uint32_t ncpus = cpu_count(true);
   c = r = cpu_times(true);
   if (!r) {
@@ -235,7 +235,7 @@ void test_cpu_times_percpu() {
     return;
   }
   printf(" -- cpu_times_percpu\n");
-  for (uint32_t i = 0; i < ncpus; i++) {
+  for (i = 0; i < ncpus; i++) {
     printf("CPU %" PRIu32 " :: ", i + 1);
 #ifdef _WIN32
 	printf("User: %.1lf;", c->user);
@@ -378,6 +378,7 @@ void test_cpu_times_percent() {
 
 void test_cpu_times_percent_percpu() {
   CpuTimes *info, *last, *r;
+  uint32_t i;
   uint32_t ncpus = cpu_count(true);
   last = cpu_times(true);
   
@@ -400,7 +401,7 @@ void test_cpu_times_percent_percpu() {
 	
 	printf(" -- cpu_times_percent_percpu\n");
 	printf("CPU times as percentage of total per CPU (0.1 second sample)\n");
-	for (uint32_t i = 0; i < ncpus; i++) {
+	for (i = 0; i < ncpus; i++) {
     printf("CPU %" PRIu32 " :: ", i + 1);
 #ifdef _WIN32
 	printf("User: %.1lf;", info->user);
@@ -443,6 +444,7 @@ void test_cpu_count() {
   printf("Logical : %" PRIu32 "\nPhysical : %" PRIu32 "\n", logical, physical);
   printf("\n");
 }
+
 const char *status_convert(enum proc_status statusid)
 {
 	switch (statusid)

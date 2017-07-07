@@ -1,12 +1,14 @@
 #pragma once
 
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdint.h>
+//#include <inttypes.h>
+//#include <stdbool.h>
+//#include <stdint.h>
 #include <sys/types.h>
 #ifdef _WIN32
-    #define pid_t uint32_t
+#include <windows.h>
+#define pid_t uint32_t
 #endif
+#include "types.h"
 enum proc_status {
   STATUS_RUNNING,
   STATUS_SLEEPING,
@@ -133,7 +135,7 @@ typedef struct {
   char *username;
   char *tty;
   char *hostname;
-  float tstamp;
+  double tstamp;
 } Users;
 
 typedef struct {
@@ -168,10 +170,8 @@ typedef struct
 	double user;
 	double system;
 	double idle;
-#ifdef _WIN32
 	double interrupt;
 	double dpc;
-#else
 	double nice;
 	double iowait;
 	double irq;
@@ -179,7 +179,6 @@ typedef struct
 	double steal;
 	double guest;
 	double guest_nice;
-#endif
 }CpuTimes;
 
 typedef struct {
@@ -200,8 +199,8 @@ typedef struct {
   char *cmdline;
   double create_time;
 #ifdef _WIN32
-  uint32_t num_handles; // num handles only available in windows
-  enum con_status status;/* TODO : Implement others in this block in linux*/
+  unsigned long num_handles; // num handles only available in windows
+  enum proc_status status;/* TODO : Implement others in this block in linux*/
   enum proc_priority nice;
   uint32_t num_ctx_switches; 
   uint32_t num_threads;
@@ -225,8 +224,9 @@ void free_disk_partition_info(DiskPartitionInfo *);
 DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 
-NetIOCounterInfo *net_io_counters(void); 
+NetIOCounterInfo *net_io_counters(void); //same as net_io_counter_per_nic
 NetIOCounterInfo *net_io_counters_per_nic(void);
+NetIOCounterInfo *net_io_counters_summed(NetIOCounterInfo *);//needs pointer returned by net_io_counters(or net_io_counter_per_nic)
 void free_net_iocounter_info(NetIOCounterInfo *);
 
 UsersInfo *get_users(void);
