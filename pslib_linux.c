@@ -254,7 +254,7 @@ static char *get_exe(pid_t pid) {
     }
   }
   check(ret != -1, "Couldn't expand symbolic link");
-  while (ret == bufsize - 1) {
+  while ((size_t) ret == bufsize - 1) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
     tmp = (char *)realloc(tmp, bufsize);
@@ -389,7 +389,7 @@ static char *get_terminal(pid_t pid) {
   check_mem(tmp);
   ret = readlink(procfile, tmp, bufsize - 1);
   check(ret != -1, "Couldn't expand symbolic link");
-  while (ret == bufsize - 1) {
+  while ((size_t) ret == bufsize - 1) {
     /* Buffer filled. Might be incomplete. Increase size and try again. */
     bufsize *= 2;
     tmp = (char *)realloc(tmp, bufsize);
