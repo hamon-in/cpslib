@@ -1,9 +1,10 @@
-
+/*use cl /MTd /D_DEBUG driver.c pslib_windows.c common.c to enable Debugging and find memory leak and memory correptions*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
 #include <Windows.h>
+#include <process.h>
 #else
 #include <unistd.h>
 #endif
@@ -522,6 +523,16 @@ void test_process() {
 }
 
 int main(void) {
+#ifdef _DEBUG
+	HANDLE hLogFile;  
+	hLogFile = CreateFile("E:\\log.txt", GENERIC_WRITE,   
+	FILE_SHARE_WRITE, NULL, CREATE_ALWAYS,   
+	FILE_ATTRIBUTE_NORMAL, NULL);  
+#endif
+	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);  
+	_CrtSetReportFile(_CRT_WARN, hLogFile);  
+
+	_RPT0(_CRT_WARN,"file message\n");  
   test_diskusage();
   test_diskpartitioninfo();
   test_diskiocounters();
@@ -545,4 +556,8 @@ int main(void) {
 
   test_pid_exists();
   test_process();
+  _CrtDumpMemoryLeaks();
+#ifdef _DEBUG
+  CloseHandle(hLogFile);	
+#endif
 }

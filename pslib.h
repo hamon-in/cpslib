@@ -9,6 +9,9 @@
 #define pid_t uint32_t
 #endif
 #include "types.h"
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 enum proc_status {
   STATUS_RUNNING,
   STATUS_SLEEPING,
@@ -146,7 +149,7 @@ typedef struct {
 typedef struct {
   uint64_t total;
   uint64_t available;
-  float percent;
+  double percent;
   uint64_t used;
   uint64_t free;
   uint64_t active;
@@ -160,7 +163,7 @@ typedef struct {
   uint64_t total;
   uint64_t used;
   uint64_t free;
-  float percent;
+  double percent;
   uint64_t sin;
   uint64_t sout;
 } SwapMemInfo;

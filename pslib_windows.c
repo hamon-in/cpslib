@@ -1,3 +1,4 @@
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <wtsapi32.h>
@@ -48,6 +49,8 @@ PCHAR GetError() {
 	strcpy(err, errormessage);
 	return err;
 error:
+	if(err)
+		free(err);
 	return NULL;
 }
 //used to convert null terminated WCHAR string to char string 
@@ -59,8 +62,6 @@ char *ConvertWcharToChar(WCHAR buffer[])
 	check_mem(tmp);
 	if (WideCharToMultiByte(CP_UTF8, 0, buffer, -1, tmp, length, NULL, NULL) == 0)
 	{
-		DWORD t;
-		GetError(&t);
 		goto error;
 	}
 	return tmp;
@@ -101,13 +102,13 @@ DiskIOCounterInfo *disk_io_counters(void) {
 			check_mem(ret->iocounters);
 			szDeviceDisplay = (char *)calloc(MAX_PATH, sizeof(char));
 			sprintf_s(szDeviceDisplay, MAX_PATH, "PhysicalDrive%d", devNum);
-			ret->iocounters[devNum].name = szDeviceDisplay;
-			ret->iocounters[devNum].reads = diskPerformance.ReadCount;
-			ret->iocounters[devNum].writes = diskPerformance.WriteCount;
-			ret->iocounters[devNum].readbytes = diskPerformance.BytesRead.QuadPart;
-			ret->iocounters[devNum].writebytes = diskPerformance.BytesWritten.QuadPart;
-			ret->iocounters[devNum].readtime = (unsigned long long)(diskPerformance.ReadTime.QuadPart * 10) / 1000;
-			ret->iocounters[devNum].writetime = (unsigned long long)(diskPerformance.WriteTime.QuadPart * 10) / 1000;
+			ret->iocounters[ret->nitems - 1].name = szDeviceDisplay;
+			ret->iocounters[ret->nitems - 1].reads = diskPerformance.ReadCount;
+			ret->iocounters[ret->nitems - 1].writes = diskPerformance.WriteCount;
+			ret->iocounters[ret->nitems - 1].readbytes = diskPerformance.BytesRead.QuadPart;
+			ret->iocounters[ret->nitems - 1].writebytes = diskPerformance.BytesWritten.QuadPart;
+			ret->iocounters[ret->nitems - 1].readtime = (unsigned long long)(diskPerformance.ReadTime.QuadPart * 10) / 1000;
+			ret->iocounters[ret->nitems - 1].writetime = (unsigned long long)(diskPerformance.WriteTime.QuadPart * 10) / 1000;
 		}
 		CloseHandle(hDevice);
 	}
@@ -121,6 +122,11 @@ error:
 }
 void free_disk_iocounter_info(DiskIOCounterInfo *tmp)
 {
+	uint32_t i;
+	for(i = 0; i < tmp->nitems; i++)
+	{
+		free(tmp->iocounters[i].name);
+	}
 	free(tmp->iocounters);
 	free(tmp);
 }
@@ -309,7 +315,7 @@ UsersInfo *get_users() {
 	check_mem(users_info_ptr);
 	check(WTSEnumerateSessions(hServer, 0, 1, &sessions, &count),
 			"error in retrieving list of sessions on a Remote Desktop Session Host server");
-	users_info_ptr->users = (Users *)calloc(count, sizeof(Users));
+	users_info_ptr->users = (Users *)calloc(1, sizeof(Users));
 	check_mem(users_info_ptr->users);
 	users_info_ptr->nitems = 0;
 	for (i = 0; i < count; i++) {
@@ -334,6 +340,8 @@ UsersInfo *get_users() {
 			&buffer_addr, &bytes),"error in retriving ClientAddress") 
 
 		address = (PWTS_CLIENT_ADDRESS)buffer_addr;
+		users_info_ptr->users = (Users *)realloc(users_info_ptr->users ,(users_info_ptr->nitems + 1)*sizeof(Users));
+		check_mem(users_info_ptr->users);
 		if (address->AddressFamily == 0) {  // AF_INET
 			sprintf_s(address_str,
 				_countof(address_str),
@@ -346,6 +354,7 @@ UsersInfo *get_users() {
 			check_mem(tmp);
 			strcpy(tmp,address_str);
 			users_info_ptr->users[users_info_ptr->nitems].hostname = tmp;
+			tmp = NULL;
 		}
 		else {
 			users_info_ptr->users[users_info_ptr->nitems].hostname = NULL;
@@ -386,6 +395,8 @@ error:
 		WTSFreeMemory(buffer_user);
 	if (buffer_addr != NULL)
 		WTSFreeMemory(buffer_addr);
+	if (users_info_ptr->users[users_info_ptr->nitems].hostname)
+		free(users_info_ptr->users[users_info_ptr->nitems].hostname);
 	if (users_info_ptr)
 		free_users_info(users_info_ptr);
 	if (tmp)
@@ -405,7 +416,7 @@ double get_valid_value(double a)
 CpuTimes *calculate(CpuTimes *t1, CpuTimes * t2)
 {
 	double all_delta;
-	int i;
+	uint32_t i;
 	CpuTimes *ret;
 	ret = (CpuTimes *)calloc(1,sizeof(CpuTimes));
 	check_mem(ret);
@@ -567,7 +578,7 @@ CpuTimes* per_cpu_times() {
     // NtQuerySystemInformation stuff
     typedef DWORD (_stdcall * NTQSI_PROC) (int, PVOID, ULONG, PULONG);
     NTQSI_PROC NtQuerySystemInformation;
-    HINSTANCE hNtDll;
+    HINSTANCE hNtDll = NULL;
 	CpuTimes *ret = NULL;
 	CpuTimes *c = NULL;
     float idle, kernel, systemt, user, interrupt, dpc;
@@ -604,9 +615,8 @@ CpuTimes* per_cpu_times() {
     
 	
 	ret = (CpuTimes*)calloc(si.dwNumberOfProcessors,sizeof(CpuTimes));
+	check_mem(ret);
 	c = ret;
-	if(!ret)
-		goto error;
     // computes system global times summing each
     // processor value
     idle = user = kernel = interrupt = dpc = 0;
@@ -644,11 +654,13 @@ error:
         free(sppi);
     if (hNtDll)
         FreeLibrary(hNtDll);
+	if (ret)
+		free(ret);
     return NULL;
 }
 CpuTimes *sum_per_cpu_times(CpuTimes *per_cpu)
 {
-	unsigned int i;
+	uint32_t i;
 	CpuTimes *ret = NULL, *c = NULL;
 	double user,system,idle,dpc,interrupt;
 	ret = (CpuTimes*)calloc(1,sizeof(CpuTimes));
@@ -699,8 +711,8 @@ CpuTimes *cpu_times_summed()
 	percpu = per_cpu_times();
     check_mem(percpu);
 	percpu_summed = sum_per_cpu_times(percpu);
+	free(percpu);
     check_mem(percpu_summed);
-    free(percpu);
 	data->interrupt = percpu_summed->interrupt;
     data->dpc= percpu_summed->dpc;
     free(percpu_summed);
@@ -834,8 +846,6 @@ CpuTimes *cpu_times_percent(bool percpu , CpuTimes * Last_Cpu_times)
 {
 	uint32_t no_cpu, i;
 	CpuTimes *t2 = NULL, *ret = NULL, *tmp = NULL;
-	t2 = (CpuTimes *)calloc(1, sizeof(CpuTimes));
-	check_mem(t2);
 	if (!percpu) {			
 			t2 = cpu_times(false);
 			ret = calculate(t2, Last_Cpu_times);
@@ -861,6 +871,7 @@ CpuTimes *cpu_times_percent(bool percpu , CpuTimes * Last_Cpu_times)
 			free(tmp);
 		}	
 	}	
+	free(t2);
 	return ret;
 error:
 	if (tmp)
@@ -1062,7 +1073,6 @@ NetIOCounterInfo *net_io_counters_per_nic()
 
 #endif
 
-	nc->name = (char *)calloc(wcslen(pCurrAddresses->FriendlyName) + 1, sizeof(char));
 	len = wcslen(pCurrAddresses->FriendlyName);
 	pCurrAddresses->FriendlyName[len] = '\0';
 	nc->name = ConvertWcharToChar(pCurrAddresses->FriendlyName);
@@ -1086,7 +1096,7 @@ error:
 }
 void free_net_iocounter_info(NetIOCounterInfo *ret)
 {
-	int i;
+	uint32_t i;
 	NetIOCounters *c=ret->iocounters;
 	for(i=0;i<ret->nitems;++i)
 	{
@@ -1101,7 +1111,7 @@ NetIOCounterInfo *net_io_counters_summed(NetIOCounterInfo *info)
 {
 	NetIOCounterInfo *sum = NULL;
 	NetIOCounters *r = NULL,*c =NULL;
-	int i;
+	uint32_t i;
 	sum =(NetIOCounterInfo*) calloc(1,sizeof(NetIOCounterInfo));
 	check_mem(sum);
 	r = (NetIOCounters*) calloc(1,sizeof(NetIOCounters));
@@ -1135,7 +1145,12 @@ NetIOCounterInfo *net_io_counters()
 {
 	return net_io_counters_per_nic();
 }
-
+void free_pid_parent_map(pid_parent_map * p)
+{
+	free(p->pid);
+	free(p->ppid);
+	free(p);
+}
 pid_parent_map *ppid_map() {
 	HANDLE handle = NULL;
 	PROCESSENTRY32 pe = { 0 };
@@ -1165,7 +1180,7 @@ pid_parent_map *ppid_map() {
 	return ret;
 error:
 	if (ret)
-		free(ret);
+		free_pid_parent_map(ret);
 	if (handle)
 		CloseHandle(handle);
 	return NULL;
@@ -1186,11 +1201,11 @@ pid_t ppid(pid_t pid)
 		}
 	}
 	check(i != map->nitems, "pid not found in the list of running process");
-	free(map);
+	free_pid_parent_map(map);
 	return ret;
 error:
 	if (map)
-		free(map);
+		free_pid_parent_map(map);
 	return -1;
 }
 TCHAR *convert_dos_path(TCHAR * path)
@@ -1237,7 +1252,8 @@ TCHAR *convert_dos_path(TCHAR * path)
 	}
 	ret = (TCHAR *)calloc(100, sizeof(TCHAR));
 	check_mem(ret);
-	check(_stprintf(ret,TEXT("%hs%hs"), driveletter,devicepath), "unable to join driveletter and rawdrive");
+	check(_stprintf(ret,TEXT("%hs%hs"), driveletter, devicepath), "unable to join driveletter and rawdrive");
+	free(devicepath);
 	return ret;
 error:
 	if (ret)
@@ -1265,7 +1281,7 @@ pid_in_pids(DWORD pid) {
 
 int is_phandle_running(HANDLE hProcess, DWORD pid) {
 	DWORD processExitCode = 0;
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	if (hProcess == NULL) {
 		if (GetLastError() == ERROR_INVALID_PARAMETER) {
 			SetLastError(ERROR_NOSUCHPROCESS);
@@ -1274,7 +1290,7 @@ int is_phandle_running(HANDLE hProcess, DWORD pid) {
 		err = GetError();
 		if (GetLastError() != ERROR_ACCESS_DENIED)
 			log_err("%s", err);
-		LocalFree(err);
+		free(err);
 		return -1;
 	}
 
@@ -1301,13 +1317,13 @@ int is_phandle_running(HANDLE hProcess, DWORD pid) {
 	err = GetError();
 	if(GetLastError() != ERROR_ACCESS_DENIED)
 		log_err("%s", err);
-	LocalFree(err);
+	free(err);
 	return -1;
 }
 
 HANDLE handle_from_pid_waccess(DWORD pid, DWORD dwDesiredAccess) {
 	HANDLE hProcess;
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	int ret;
 	if (pid == 0) // otherwise we'd get NoSuchProcess
 	{	
@@ -1330,7 +1346,7 @@ HANDLE handle_from_pid_waccess(DWORD pid, DWORD dwDesiredAccess) {
 	}
 error:
 	if (err)
-		LocalFree(err);
+		free(err);
 	return NULL;
 	
 }
@@ -1345,7 +1361,7 @@ char *get_cmdline(long pid) {
 	WCHAR *commandLineContents = NULL;
 	static _NtQueryInformationProcess NtQueryInformationProcess = NULL;
 	PROCESS_BASIC_INFORMATION pbi;
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	if (pid == 0 || pid == 4)
 	{
 		return NULL;
@@ -1381,7 +1397,7 @@ char *get_cmdline(long pid) {
 		&commandLine, sizeof(commandLine), NULL), "Could not read Command Line Unicode Structure");
 #endif
 	// allocate memory to hold the command line
-	commandLineContents = (WCHAR *)malloc(commandLine.Length + 1);
+	commandLineContents = (WCHAR *)malloc((commandLine.Length + 1) * sizeof(WCHAR));
 	check_mem(commandLineContents);
 
 	// read the command line
@@ -1393,22 +1409,26 @@ char *get_cmdline(long pid) {
 	// commandLine.Length is in bytes.
 	commandLineContents[(commandLine.Length / sizeof(WCHAR))] = '\0';
 	ret = ConvertWcharToChar(commandLineContents);
+	check(ret,"coverting WCHAR failed");
 	/* TODO : attempt to parse the command line using Win32 API  and return list of commandline args*/
 	free(commandLineContents);
 	CloseHandle(hProcess);
 	return ret;
 error:
-	err = GetError(); log_err("%s", err); LocalFree(err);
+	if(commandLineContents)
+		free(commandLineContents);
+
+	err = GetError(); log_err("%s", err); free(err);
 	return NULL;
 }
 
 
 char *exe(pid_t pid) {
-	HANDLE hProcess;
+	HANDLE hProcess = NULL;
 	TCHAR *tmp;
 	WCHAR tmpexe[MAX_PATH];
 	TCHAR exe[MAX_PATH];
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	char *ret = NULL;
 	if (pid == 0 || pid == 4)
 	{
@@ -1424,12 +1444,14 @@ char *exe(pid_t pid) {
 	}
 	tmp = convert_dos_path(exe);
 	_swprintf(tmpexe,L"%hs",tmp);
+	free(tmp);
 	ret = ConvertWcharToChar(tmpexe);
+	check(ret,"Converting Wchar failed");
 	return ret;
 error:
 	err = GetError();
 	log_err("%s", err);
-	LocalFree(err);;
+	free(err);;
 	if(hProcess)
 		CloseHandle(hProcess);
 	return NULL;
@@ -1514,7 +1536,7 @@ error:
 /*
 * Return process username as a "DOMAIN//USERNAME" string.
 */
-char * Username(pid_t pid)
+char *Username(pid_t pid)
 {
 	HANDLE processHandle = NULL;
 	HANDLE tokenHandle = NULL;
@@ -1525,20 +1547,24 @@ char * Username(pid_t pid)
 	ULONG nameSize;
 	ULONG domainNameSize;
 	SID_NAME_USE nameUse;
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	char *ret = NULL;
+	char *Dname = NULL,*Name = NULL;
 	// resolve the SID to a name
 	nameSize = 0x100;
 	domainNameSize = 0x100;
 	// Get the user SID.
 	bufferSize = 0x100; 
-	ret = (char *)calloc(50, sizeof(char));
 	if (pid == 0 || pid == 4)
+	{
+		ret = (char *)calloc(50, sizeof(char));
+		check_mem(ret);
 		strcpy(ret, "NT AUTHORITY\\SYSTEM");
+	}
 	else
 	{
 		processHandle = handle_from_pid_waccess(
-			pid, PROCESS_QUERY_INFORMATION);
+		pid, PROCESS_QUERY_INFORMATION);
 		check(processHandle, "Error in getting Handle from pid ");
 		check(OpenProcessToken(processHandle, TOKEN_QUERY, &tokenHandle), "Error in Opening Process Token");
 		CloseHandle(processHandle);
@@ -1574,14 +1600,24 @@ char * Username(pid_t pid)
 			}
 			break;
 		}
-		ret = (char *)realloc(ret, (wcslen(domainName) + wcslen(name) + 5) * sizeof(char));
-		sprintf(ret, "%s\\%s", ConvertWcharToChar(domainName), ConvertWcharToChar(name));
+		Dname = ConvertWcharToChar(domainName);
+		check(Dname, "Converting WCHAR failed");
+		Name = ConvertWcharToChar(name);
+		check(Name, "Converting WCHAR failed");
+		ret = (char *)calloc((strlen(Dname) + strlen(Name) + 3), sizeof(char));
+		check_mem(ret);
+		sprintf(ret, "%s\\%s",Dname , Name);
+		free(Name);
+		free(Dname);
+		free(domainName);
+		free(name);
+		free(user);
 	}
 	return ret;
 error:
 	err = GetError();
 	log_err("%s", err);
-	LocalFree(err);;
+	free(err);;
 	if (processHandle != NULL)
 		CloseHandle(processHandle);
 	if (tokenHandle != NULL)
@@ -1592,6 +1628,10 @@ error:
 		free(domainName);
 	if (user != NULL)
 		free(user);
+	if (Name)
+		free(Name);
+	if (Dname)
+		free(Dname);
 	return NULL;
 }
 int
@@ -1661,7 +1701,7 @@ enum proc_status status(pid_t pid) {
 	bool suspended = true;
 	PSYSTEM_PROCESS_INFORMATION process;
 	PVOID buffer;
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	check(get_proc_info(pid, &process, &buffer), "Cannot get Process Info");
 	for (i = 0; i < process->NumberOfThreads; i++) {
 		if (process->Threads[i].ThreadState != Waiting ||
@@ -1679,7 +1719,7 @@ enum proc_status status(pid_t pid) {
 error:
 	err = GetError();
 	log_err("%s", err);
-	LocalFree(err);;
+	free(err);;
 	return 20;
 }
 
@@ -1691,7 +1731,7 @@ enum proc_priority nice(pid_t pid)
 	DWORD priority;
 	HANDLE hProcess;
 	int32_t value;
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	hProcess = handle_from_pid_waccess(pid, PROCESS_QUERY_INFORMATION | PROCESS_VM_READ);
 	check(hProcess, "INVALID HANDLE");
 	priority = GetPriorityClass(hProcess);
@@ -1702,7 +1742,7 @@ enum proc_priority nice(pid_t pid)
 error:
 	err = GetError();
 	log_err("%s", err);
-	LocalFree(err);
+	free(err);
 	if (hProcess)
 		free(hProcess);
 	return PRIORITY_ERROR;
@@ -1718,7 +1758,7 @@ double create_time(pid_t pid) {
 	FILETIME    ftCreate, ftExit, ftKernel, ftUser;
 	PSYSTEM_PROCESS_INFORMATION process;
 	PVOID buffer = NULL;
-	LPTSTR err = NULL;
+	PCHAR err = NULL;
 	// special case for PIDs 0 and 4, return system boot time
 	if (0 == pid || 4 == pid)
 	{
@@ -1772,7 +1812,7 @@ find_time:
 error:
 	err = GetError();
 	log_err("%s", err);
-	LocalFree(err);
+	free(err);
 	if(hProcess)
 		CloseHandle(hProcess);
 	return -1;
@@ -1834,6 +1874,8 @@ Process *get_process(pid_t pid) {
 	process_info->status = _status;
 	return process_info;
 error:
+	if(process_info)
+		free_process(process_info);
 	return NULL;
 }
 void free_process(Process *p)
