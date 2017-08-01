@@ -18,10 +18,8 @@ ffi.set_source("pycpslib",
                library_dirs = [project_root],
                include_dirs = [project_root])
 
-ffi.cdef('''
-typedef int32_t pid_t;
-typedef int32_t bool;
-''')
+ffi.cdef('''typedef int32_t pid_t;
+typedef _Bool bool;''')
 
 lines = open(project_root+"/pslib.h").readlines()
 

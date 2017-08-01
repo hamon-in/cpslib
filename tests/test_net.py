@@ -25,3 +25,68 @@ def test_net_io_counters(flush):
         assert psutil_counters[name].errout == errout
         assert psutil_counters[name].dropin == dropin
         assert psutil_counters[name].dropout == dropout
+        
+def test_number_of_connections(flush):
+    kind = ["all", "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6", "unix", "inet", "inet4", "inet6"]
+    for each in kind:
+        expected_connections = psutil.net_connections(each)
+        actual_connections = P.net_connections(each)
+        assert actual_connections.nitems == len(expected_connections)
+
+
+def test_all_net_connection_attribs(flush):
+    kind = ["all", "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6", "unix", "inet", "inet4", "inet6"]
+    con_status = ffi.typeof('enum con_status')
+    for each in kind:
+        expected_connections = psutil.net_connections(each)
+        actual_connections = P.net_connections(each)
+        for i in range(actual_connections.nitems):
+            fd = actual_connections.Connections[i].fd
+            family = actual_connections.Connections[i].family
+            _type = actual_connections.Connections[i].type
+            if ffi.string(actual_connections.Connections[i].laddr.ip) == 'NONE':
+                laddr = ()
+            elif actual_connections.Connections[i].laddr.port == -1:
+                laddr = ffi.string(actual_connections.Connections[i].laddr.ip)
+            else:
+                laddr =  ffi.string(actual_connections.Connections[i].laddr.ip), actual_connections.Connections[i].laddr.port
+            if ffi.string(actual_connections.Connections[i].raddr.ip) == 'NONE':
+                raddr = ()
+            elif actual_connections.Connections[i].raddr.port == -1:
+                raddr = ffi.string(actual_connections.Connections[i].raddr.ip)
+            else:
+                raddr =  ffi.string(actual_connections.Connections[i].raddr.ip), actual_connections.Connections[i].raddr.port
+            status = con_status.elements[actual_connections.Connections[i].status]
+            pid = actual_connections.Connections[i].pid
+            found = False
+            for part in expected_connections:
+                if all([part.fd == fd,
+                        part.family == family,
+                        part.type == _type,
+                        part.laddr == laddr,
+                        part.raddr == raddr or (part.raddr == None and raddr == ''),
+                        part.status == status,
+                        part.pid == pid or (part.pid is None and pid == -1)]):
+                    found = True
+                    break
+            assert found, """No match for conn (fd = '{}',  family= '{}', type= '{}', laddr = '{}', raddr = '{}', status = '{}', pid = '{}')""".format(fd, family, _type, laddr, raddr, status, pid)
+
+def test_net_if_stats(flush):
+
+    psutil_stats = psutil.net_if_stats()
+    pslib_stats = P.net_if_stats()
+
+
+    for i in range(pslib_stats.nitems):
+        name = ffi.string(pslib_stats.ifstats[i].name)
+        isup = pslib_stats.ifstats[i].isup
+        duplex = pslib_stats.ifstats[i].duplex
+        speed = pslib_stats.ifstats[i].speed
+        mtu = pslib_stats.ifstats[i].mtu
+
+
+        assert isup==psutil_stats[name].isup
+        assert duplex==psutil_stats[name].duplex
+        assert speed==psutil_stats[name].speed
+        assert mtu==psutil_stats[name].mtu
+
