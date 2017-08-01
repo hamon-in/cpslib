@@ -4,28 +4,19 @@
 #include <pwd.h>
 #include <search.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/statvfs.h>
-#include <sys/sysinfo.h>
 #include <unistd.h>
 #include <utmp.h>
 #include <dirent.h>
 #include <inttypes.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
-#include <net/if.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <linux/if_packet.h>
-#include <sys/resource.h>
-#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
+#include <sys/sysinfo.h>
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
 #include <linux/if.h>
-
 
 #include "pslib.h"
 #include "common.h"
