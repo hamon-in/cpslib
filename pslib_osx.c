@@ -70,9 +70,7 @@ static CpuTimes *per_cpu_times() {
   return ret;
 
 error:
-  if (ret) {
-    free(ret);
-  }
+  free(ret);
   if (cpu_load_info != NULL) {
     sysret = vm_deallocate(mach_task_self(), (vm_address_t)info_array,
                            info_count * pagesize);
@@ -116,9 +114,7 @@ static CpuTimes *calculate_cpu_times_percentage(CpuTimes *t1, CpuTimes *t2) {
   return ret;
 
 error:
-  if (ret) {
-    free(ret);
-  }
+  free(ret);
   return NULL;
 }
 
@@ -316,12 +312,8 @@ static char *get_cmdline(pid_t pid) {
   }
 
 error:
-  if (procargs) {
-    free(procargs);
-  }
-  if (ret) {
-    free(ret);
-  }
+  free(procargs);
+  free(ret);
   return NULL;
 }
 
@@ -418,11 +410,11 @@ DiskPartitionInfo *disk_partitions(bool physical) {
   char opts[400];
   struct statfs *fs = NULL;
   uint32_t nparts = 5;
+  DiskPartitionInfo *ret = NULL;
 
   DiskPartition *partitions =
       (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
-  DiskPartitionInfo *ret =
-      (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
+  ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
   DiskPartition *d = partitions;
   check_mem(partitions);
   check_mem(ret);
@@ -526,8 +518,7 @@ DiskPartitionInfo *disk_partitions(bool physical) {
   return ret;
 
 error:
-  if (fs != NULL)
-    free(fs);
+  free(fs);
   free_disk_partition_info(ret);
   return NULL;
 }
@@ -686,14 +677,15 @@ NetIOCounterInfo *net_io_counters() {
   int32_t mib[6];
   size_t len;
   int32_t ninterfaces = 0;
-
-  NetIOCounterInfo *ret =
-      (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
-  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
-  NetIOCounters *nc = counters;
+  NetIOCounterInfo *ret = NULL;
+  NetIOCounters *counters = NULL;
+  NetIOCounters *nc = NULL;
+  ret = (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
+  counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
 
   check_mem(ret);
   check_mem(counters);
+  nc = counters;
 
   mib[0] = CTL_NET;        // networking subsystem
   mib[1] = PF_ROUTE;       // type of information
@@ -748,14 +740,9 @@ NetIOCounterInfo *net_io_counters() {
   return ret;
 
 error:
-  if (buf != NULL)
-    free(buf);
-  if (counters) {
-    free(counters);
-  }
-  if (nc) {
-    free(nc);
-  }
+  free(buf);
+  free(counters);
+  free(nc);
   return NULL;
 }
 
@@ -803,9 +790,7 @@ CpuTimes *cpu_times(bool percpu) {
   }
 
 error:
-  if (ret) {
-    free(ret);
-  }
+  free(ret);
   return NULL;
 }
 
@@ -824,9 +809,7 @@ double *cpu_util_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return percentage;
 error:
-  if (current) {
-    free(current);
-  }
+  free(current);
   return NULL;
 }
 
@@ -848,9 +831,7 @@ CpuTimes *cpu_times_percent(bool percpu, CpuTimes *prev_times) {
   free(current);
   return ret;
 error:
-  if (current) {
-    free(current);
-  }
+  free(current);
   return NULL;
 }
 
@@ -978,10 +959,8 @@ Process *get_process(pid_t pid) {
   }
 
   retval->terminal = get_terminal(pid);
-  if (uids)
-    free(uids);
-  if (gids)
-    free(gids);
+  free(uids);
+  free(gids);
   return retval;
 }
 

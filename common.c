@@ -1,7 +1,7 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
 
 #include "common.h"
 #ifdef _WIN32
@@ -52,6 +52,7 @@ char *grep_awk(FILE *fp, const char *fstr, int nfield, const char *delim) {
   free(line);
   return NULL;
 error:
+  free(line);
   return NULL;
 }
 
@@ -74,3 +75,4 @@ char *squeeze(char *string, const char *chars) {
   }
   return string;
 }
+
