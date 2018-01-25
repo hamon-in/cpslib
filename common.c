@@ -1,8 +1,12 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
 #include "common.h"
+#ifdef _WIN32
+#define strncasecmp strnicmp
+#endif 
 
 float percentage(uint64_t n, uint64_t d) {
   /* TODO: Error check here */
@@ -71,3 +75,4 @@ char *squeeze(char *string, const char *chars) {
   }
   return string;
 }
+

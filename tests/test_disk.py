@@ -1,6 +1,7 @@
 import psutil
 from pycpslib import lib as P
 from pycpslib import ffi
+import sys
 
 def test_number_of_partitions(flush):
     expected_all_partitions = psutil.disk_partitions(True)  # All partitions
@@ -33,7 +34,11 @@ def test_all_partition_attribs(flush):
         assert found, """No match for Partition(mountpoint = '{}', device = '{}', fstype = '{}', opts = '{}')""".format(mountpoint, device, fstype, opts)
 
 def test_disk_usage(flush):
-    for mountpoint in ["/", "/etc/", "/home", "/var"]:
+    if sys.platform == 'win32':
+        disk = ["C:/","D:/"]
+    else:
+        disk = ["/", "/etc/", "/home", "/var"]
+    for mountpoint in disk:
         pslib_usage = ffi.new("DiskUsage *")
         P.disk_usage(mountpoint, pslib_usage)
         psutil_usage = psutil.disk_usage(mountpoint)

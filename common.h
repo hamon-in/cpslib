@@ -2,8 +2,17 @@
 
 #include <errno.h>
 #include <stdio.h>
-#include <stdint.h>
+//#include <stdint.h>
 #include <string.h>
+
+typedef signed char        int8_t;
+typedef short              int16_t;
+typedef int                int32_t;
+typedef long long          int64_t;
+typedef unsigned char      uint8_t;
+typedef unsigned short     uint16_t;
+typedef unsigned int       uint32_t;
+typedef unsigned long long uint64_t;
 
 float percentage(uint64_t, uint64_t);
 int str_comp(const void *, const void *);
